@@ -5,7 +5,6 @@ import android.animation.ValueAnimator
 import androidx.annotation.CallSuper
 import androidx.core.animation.addListener
 import androidx.core.view.doOnPreDraw
-import kotlin.math.absoluteValue
 
 /**
  * [InputView]编辑区的编辑器动画
@@ -88,8 +87,7 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
                     onEnd = { editorAnimation = null }
                 )
                 // TODO: 计算时长和设置插值器
-                val p = (startOffset - endOffset).absoluteValue.toFloat()
-                duration = (2000 * (p / inputView.height)).toLong()
+                duration = 300
                 start()
             }
         }
@@ -140,6 +138,10 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
      */
     @CallSuper
     open fun onImeAnimationEnd() {
+        if (current == null && inputView != null && inputView!!.editorOffset > 0) {
+            // 兼容应用退至后台隐藏IME，onImeAnimationUpdate()执行不完整的情况
+            transform(startOffset, endOffset, currentOffset = 0)
+        }
         startOffset = NO_OFFSET
         endOffset = NO_OFFSET
     }
