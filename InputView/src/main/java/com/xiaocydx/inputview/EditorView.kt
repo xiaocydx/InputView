@@ -9,16 +9,18 @@ import androidx.core.view.WindowInsetsControllerCompat
 import java.lang.ref.WeakReference
 
 /**
+ * [InputView]的编辑区，负责管理[Editor]
+ *
  * @author xcc
  * @date 2023/1/7
  */
 internal class EditorView(context: Context) : FrameLayout(context) {
-    private val views = mutableMapOf<EditorType, View?>()
+    private val views = mutableMapOf<Editor, View?>()
     private var editTextRef: WeakReference<EditText>? = null
     private var controller: WindowInsetsControllerCompat? = null
-    var imeType: EditorType? = null
+    var ime: Editor? = null
         private set
-    var currentType: EditorType? = null
+    var current: Editor? = null
         private set
     var adapter: EditorAdapter<*>? = null
         private set
@@ -36,9 +38,16 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     fun setAdapter(adapter: EditorAdapter<*>) {
         if (childCount > 0) removeAllViews()
         this.adapter = adapter
-        imeType = adapter.types.firstOrNull {
-            checkedAdapter()?.isImeType(it) == true
+        val checkedAdapter = checkedAdapter() ?: return
+        var imeCount = 0
+        adapter.editors.forEach {
+            if (checkedAdapter.isIme(it)) {
+                ime = it
+                imeCount++
+            }
         }
+        require(imeCount > 0) { "editors不包含表示IME的Editor" }
+        require(imeCount == 1) { "editors包${imeCount}个表示IME的Editor" }
     }
 
     fun setEditText(editText: EditText) {
@@ -50,57 +59,57 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         }
     }
 
-    fun dispatchIme(show: Boolean) {
-        val imeType = imeType ?: return
-        when {
-            currentType != imeType && show -> showChecked(imeType)
-            currentType === imeType && !show -> hideChecked(imeType)
-        }
-    }
-
-    fun showChecked(type: EditorType) {
+    fun showChecked(editor: Editor) {
         val adapter = checkedAdapter()
-        if (adapter == null || currentType == type) return
+        if (adapter == null || current === editor) return
         val view: View?
-        val previousType = currentType
-        val previousView = views[previousType]
-        if (!views.contains(type)) {
-            view = when (type) {
-                imeType -> null
-                else -> adapter.onCreateView(this, type)
+        val previous = current
+        val previousView = views[previous]
+        if (!views.contains(editor)) {
+            view = when {
+                editor === ime -> null
+                else -> adapter.onCreateView(this, editor)
             }
-            views[type] = view
+            views[editor] = view
         } else {
-            view = views[type]
+            view = views[editor]
         }
         previousView?.let(::removeView)
         view?.let(::addView)
-        currentType = type
-        if (previousType == imeType) {
-            controlIme(show = false)
-        } else if (type == imeType) {
-            controlIme(show = true)
+        if (previous === ime) {
+            controlIme(isShow = false)
+        } else if (editor === ime) {
+            controlIme(isShow = true)
         }
-        adapter.dispatchVisible(previousType, currentType)
+        current = editor
+        adapter.onVisibleChanged(previous, current)
     }
 
-    fun hideChecked(type: EditorType) {
+    fun hideChecked(editor: Editor) {
         val adapter = checkedAdapter()
-        if (adapter != null && currentType == type) {
-            views[type]?.let(::removeView)
-            currentType = null
-            if (type == imeType) controlIme(show = false)
-            adapter.dispatchVisible(type, null)
+        if (adapter != null && current === editor) {
+            views[editor]?.let(::removeView)
+            if (editor === ime) controlIme(isShow = false)
+            current = null
+            adapter.onVisibleChanged(editor, current)
         }
     }
 
-    private fun controlIme(show: Boolean) {
+    fun dispatchIme(isShow: Boolean) {
+        val ime = ime ?: return
+        when {
+            current !== ime && isShow -> showChecked(ime)
+            current === ime && !isShow -> hideChecked(ime)
+        }
+    }
+
+    private fun controlIme(isShow: Boolean) {
         val type = WindowInsetsCompat.Type.ime()
-        if (show) controller?.show(type) else controller?.hide(type)
+        if (isShow) controller?.show(type) else controller?.hide(type)
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun checkedAdapter(): EditorAdapter<EditorType>? {
-        return adapter as? EditorAdapter<EditorType>
+    private fun checkedAdapter(): EditorAdapter<Editor>? {
+        return adapter as? EditorAdapter<Editor>
     }
 }

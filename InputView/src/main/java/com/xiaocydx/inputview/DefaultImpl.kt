@@ -3,18 +3,29 @@ package com.xiaocydx.inputview
 import android.annotation.SuppressLint
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN
+import android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
 import androidx.core.view.doOnPreDraw
 
-object Ime : EditorType
+/**
+ * [Editor]的IME默认实现
+ */
+object Ime : Editor
 
+/**
+ * [EditorAdapter]的默认实现，支持只需要IME的场景
+ */
 class DefaultEditorAdapter : EditorAdapter<Ime>() {
-    override val types: List<Ime> = listOf(Ime)
+    override val editors: List<Ime> = listOf(Ime)
 
-    override fun isImeType(type: Ime): Boolean = type === Ime
+    override fun isIme(editor: Ime): Boolean = editor === Ime
 
-    override fun onCreateView(parent: ViewGroup, type: Ime): View? = null
+    override fun onCreateView(parent: ViewGroup, editor: Ime): View? = null
 }
 
+/**
+ * [EditorAnimator]的默认实现
+ */
 class DefaultEditorAnimator private constructor(private val isResize: Boolean) : EditorAnimator() {
 
     override fun transform(startOffset: Int, endOffset: Int, currentOffset: Int) {
@@ -29,20 +40,29 @@ class DefaultEditorAnimator private constructor(private val isResize: Boolean) :
     }
 
     companion object {
+        /**
+         * 运行动画平移`contentView`，类似[SOFT_INPUT_ADJUST_PAN]
+         */
         fun pan() = DefaultEditorAnimator(isResize = false)
 
+        /**
+         * 运行动画修改`contentView`的尺寸，类似[SOFT_INPUT_ADJUST_RESIZE]
+         */
         fun resize() = DefaultEditorAnimator(isResize = true)
     }
 }
 
+/**
+ * [EditorAnimator]不运行动画的实现
+ */
 @SuppressLint("MissingSuperCall")
 class NopEditorAnimator private constructor(private val isResize: Boolean) : EditorAnimator() {
     private var isCurrentIme = false
 
-    override fun onVisibleChanged(previous: EditorType?, current: EditorType?) {
-        isCurrentIme = isImeType(current)
+    override fun onVisibleChanged(previous: Editor?, current: Editor?) {
+        isCurrentIme = isIme(current)
         if (isCurrentIme) return
-        inputView?.doOnPreDraw { transform(getEditorEndOffset()) }
+        inputView?.doOnPreDraw { transform(getEditorHeight()) }
     }
 
     override fun onImeAnimationStart(endValue: Int) {
@@ -70,8 +90,14 @@ class NopEditorAnimator private constructor(private val isResize: Boolean) : Edi
     }
 
     companion object {
+        /**
+         * 不运行动画平移`contentView`，类似[SOFT_INPUT_ADJUST_PAN]
+         */
         fun pan() = NopEditorAnimator(isResize = false)
 
+        /**
+         * 不运行动画修改`contentView`的尺寸，类似[SOFT_INPUT_ADJUST_RESIZE]
+         */
         fun resize() = NopEditorAnimator(isResize = true)
     }
 }

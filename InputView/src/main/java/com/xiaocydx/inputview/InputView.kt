@@ -20,12 +20,12 @@ import androidx.core.view.*
  * 1. 在[Activity.onCreate]调用`InputView.init(window)`。
  * 2. [InputView]初始化时只能有一个子View，该子View将作为[contentView]。
  * 3. [setEditText]设置的[EditText]，用于兼容Android各版本显示和隐藏软键盘。
- * 4. [setEditorAdapter]设置的[EditorAdapter]，支持多种[EditorType]的视图创建和显示。
- * 5. [setEditorAnimator]设置的[EditorAnimator]，支持多种[EditorType]的显示变换动画，
+ * 4. [setEditorAdapter]设置的[EditorAdapter]，支持多种[Editor]的视图创建和显示。
+ * 5. [setEditorAnimator]设置的[EditorAnimator]，支持多种[Editor]的显示变换动画，
  * 默认实现为[DefaultEditorAnimator]，若不需要动画，则设置[NopEditorAnimator]。
  *
- * [contentView]的初始化布局位置等同于[Gravity.CENTER]，并且测量高度不受`layoutParams.height`影响，
- * 最大值是[InputView]的测量高度，[EditorType]的视图位于[contentView]下方，显示[EditorType]的视图时，
+ * [contentView]的初始化布局位置等同于[Gravity.CENTER]，其测量高度不受`layoutParams.height`影响，
+ * 最大值是[InputView]的测量高度，[Editor]的视图位于[contentView]下方，通知显示[Editor]的视图时，
  * 会平移[contentView]，或者修改[contentView]的尺寸，具体是哪一种行为取决于[EditorAnimator]的实现。
  *
  * @author xcc
@@ -62,9 +62,9 @@ class InputView @JvmOverloads constructor(
     }
 
     /**
-     * [adapter]支持多种[EditorType]的视图创建和显示
+     * [adapter]支持多种[Editor]的视图创建和显示
      *
-     * 若只需要IME类型，则设置[DefaultEditorAnimator]：
+     * 若只需要IME，则设置[DefaultEditorAnimator]：
      * ```
      * val adapter = DefaultEditorAdapter()
      * inputView.setEditorAdapter(adapter)
@@ -85,7 +85,7 @@ class InputView @JvmOverloads constructor(
     }
 
     /**
-     * [animator]支持多种[EditorType]的显示变换动画
+     * [animator]支持多种[Editor]的显示动画
      *
      * 1. [DefaultEditorAnimator.pan]运行动画平移[contentView]。
      * 2. [DefaultEditorAnimator.resize]运行动画修改[contentView]的尺寸。
@@ -185,7 +185,7 @@ class InputView @JvmOverloads constructor(
         }
     }
 
-    // TODO: 支持导航栏边到边
+    // TODO: 支持导航栏edge-to-edge
     private class ImeWindowInsetsHandler(
         private val inputView: InputView
     ) : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_STOP) {
@@ -217,7 +217,7 @@ class InputView @JvmOverloads constructor(
                 val imeInsets = insets.getInsets(imeType)
                 val navBarsInsets = insets.getInsets(navBarsType)
                 typeMask = animation.typeMask
-                editorView.dispatchIme(show = imeInsets.bottom > 0)
+                editorView.dispatchIme(isShow = imeInsets.bottom > 0)
                 val value = (imeInsets.bottom - navBarsInsets.bottom).coerceAtLeast(0)
                 inputView.editorAnimator.onImeAnimationStart(endValue = value)
             }
