@@ -23,8 +23,8 @@ import android.view.ViewGroup
  *     override fun onCreateView(parent: ViewGroup, editor: MessageEditor): View? {
  *         return when(editor) {
  *             MessageEditor.IME -> null
- *             MessageEditor.EDITOR_A -> View(parent.content)
- *             MessageEditor.EDITOR_B -> View(parent.content)
+ *             MessageEditor.EDITOR_A -> View(parent.context)
+ *             MessageEditor.EDITOR_B -> View(parent.context)
  *         }
  *     }
  * }
