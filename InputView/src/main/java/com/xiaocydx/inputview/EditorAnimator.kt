@@ -2,6 +2,7 @@ package com.xiaocydx.inputview
 
 import android.animation.Animator
 import android.animation.ValueAnimator
+import android.view.animation.DecelerateInterpolator
 import androidx.annotation.CallSuper
 import androidx.core.animation.addListener
 import androidx.core.view.doOnPreDraw
@@ -86,8 +87,9 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
                     onCancel = { editorAnimation = null },
                     onEnd = { editorAnimation = null }
                 )
-                // TODO: 计算时长和设置插值器
-                duration = 300
+                // duration和interpolator参考自Impl21OnApplyWindowInsetsListener
+                duration = 160
+                interpolator = DecelerateInterpolator()
                 start()
             }
         }
