@@ -9,7 +9,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -42,7 +41,7 @@ class MessageListActivity : AppCompatActivity() {
 
         // 2. 初始化RecyclerView的配置
         rvMessage.apply {
-            layoutManager = LinearLayoutManager(root.context).apply {
+            layoutManager = LinearLayoutManager(context).apply {
                 stackFromEnd = true
                 reverseLayout = true
             }
@@ -141,11 +140,11 @@ class MessageListActivity : AppCompatActivity() {
         override fun onVisibleChanged(previous: MessageEditor?, current: MessageEditor?) {
             if (previous === VOICE) {
                 tvVoice.isVisible = false
-                etMessage.isInvisible = false
+                etMessage.isVisible = true
                 if (current === IME) etMessage.requestFocus()
             } else if (current === VOICE) {
                 tvVoice.isVisible = true
-                etMessage.isInvisible = true
+                etMessage.isVisible = false
             }
             actions.forEach { it.value.showSelfIcon() }
             current?.let(actions::get)?.takeIf { !it.isKeep }?.showImeIcon()
