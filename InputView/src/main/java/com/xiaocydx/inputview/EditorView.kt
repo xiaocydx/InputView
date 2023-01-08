@@ -46,7 +46,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
             }
         }
         require(imeCount > 0) { "editors不包含表示IME的Editor" }
-        require(imeCount == 1) { "editors包${imeCount}个表示IME的Editor" }
+        require(imeCount == 1) { "editors包含${imeCount}个表示IME的Editor" }
     }
 
     fun setEditText(editText: EditText) {
