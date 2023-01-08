@@ -142,6 +142,7 @@ class MessageListActivity : AppCompatActivity() {
             if (previous === VOICE) {
                 tvVoice.isVisible = false
                 etMessage.isInvisible = false
+                if (current === IME) etMessage.requestFocus()
             } else if (current === VOICE) {
                 tvVoice.isVisible = true
                 etMessage.isInvisible = true
