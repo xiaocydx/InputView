@@ -53,9 +53,9 @@ class InputView @JvmOverloads constructor(
     /**
      * [editText]用于兼容Android各版本显示和隐藏IME
      *
-     * 显示IME[editText]会获得焦点，隐藏IME若需要清除[editText]的焦点，
-     * 则通过[EditorAdapter.addEditorVisibleListener]观察更改后的`current`，
-     * 当`current`不是IME类型时，清除[editText]的焦点。
+     * 显示IME[editText]会获得焦点，隐藏IME会清除[editText]的焦点，
+     * 可以观察[EditorAdapter.addEditorVisibleListener]的更改结果，
+     * 处理[editText]的焦点。
      */
     fun setEditText(editText: EditText) {
         editorView.setEditText(editText)
@@ -164,7 +164,7 @@ class InputView @JvmOverloads constructor(
     }
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
-        contentView ?: return
+        val contentView = contentView ?: return
         // 基于inputView底部向下布局editorView，
         // 通过editorOffset向上偏移editorView。
         editorView.let {
@@ -176,7 +176,7 @@ class InputView @JvmOverloads constructor(
         }
 
         // 基于editorView顶部向上布局contentView
-        contentView!!.let {
+        contentView.let {
             val left = (measuredWidth - it.measuredWidth) / 2
             val bottom = editorView.top - it.marginBottom
             val right = left + it.measuredWidth

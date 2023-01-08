@@ -28,8 +28,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         val editText = editTextRef?.get()
-        editTextRef = null
-        if (editText != null) {
+        if (controller == null && editText != null) {
             val window = findViewTreeWindow() ?: return
             controller = WindowInsetsControllerCompat(window, editText)
         }
@@ -51,11 +50,10 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     }
 
     fun setEditText(editText: EditText) {
+        editTextRef = WeakReference(editText)
         if (isAttachedToWindow) {
             val window = findViewTreeWindow() ?: return
             controller = WindowInsetsControllerCompat(window, editText)
-        } else {
-            editTextRef = WeakReference(editText)
         }
     }
 
@@ -105,7 +103,14 @@ internal class EditorView(context: Context) : FrameLayout(context) {
 
     private fun controlIme(isShow: Boolean) {
         val type = WindowInsetsCompat.Type.ime()
-        if (isShow) controller?.show(type) else controller?.hide(type)
+        val editText = editTextRef?.get()
+        if (isShow) {
+            editText?.requestFocus()
+            controller?.show(type)
+        } else {
+            editText?.clearFocus()
+            controller?.hide(type)
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
