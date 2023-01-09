@@ -1,16 +1,10 @@
 package com.xiaocydx.inputview
 
 import android.annotation.SuppressLint
-import android.content.Context
-import android.graphics.Color
-import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.widget.AppCompatTextView
 import com.xiaocydx.inputview.MessageEditor.*
-import com.xiaocydx.sample.dp
-import com.xiaocydx.sample.matchParent
-import com.xiaocydx.sample.withLayoutParams
 
 /**
  * @author xcc
@@ -22,27 +16,12 @@ class MessageEditorAdapter : EditorAdapter<MessageEditor>() {
     override fun isIme(editor: MessageEditor): Boolean = editor === IME
 
     @SuppressLint("SetTextI18n")
-    override fun onCreateView(parent: ViewGroup, editor: MessageEditor): View? {
-        return when (editor) {
-            IME, VOICE -> null
-            EMOJI -> createTextView(parent.context).apply {
-                text = "Emoji Editor"
-                gravity = Gravity.CENTER
-                withLayoutParams(matchParent, 350.dp)
-            }
-            EXTRA -> createTextView(parent.context).apply {
-                text = "Extra Editor"
-                gravity = Gravity.CENTER_HORIZONTAL
-                withLayoutParams(matchParent, 250.dp) { topMargin = 16.dp }
-            }
-        }
-    }
-
-    private fun createTextView(
-        context: Context
-    ) = AppCompatTextView(context).apply {
-        textSize = 14.dp.toFloat()
-        setTextColor(Color.BLACK)
+    override fun onCreateView(parent: ViewGroup, editor: MessageEditor): View? = when (editor) {
+        IME, VOICE -> null
+        EMOJI -> LayoutInflater.from(parent.context)
+            .inflate(R.layout.message_editor_emoji, parent, false)
+        EXTRA -> LayoutInflater.from(parent.context)
+            .inflate(R.layout.message_editor_extra, parent, false)
     }
 }
 
