@@ -21,8 +21,7 @@ import androidx.core.view.*
  * 2. [InputView]初始化时只能有一个子View，该子View将作为[contentView]。
  * 3. [setEditText]设置的[EditText]，用于兼容Android各版本显示和隐藏软键盘。
  * 4. [setEditorAdapter]设置的[EditorAdapter]，支持多种[Editor]的视图创建和显示。
- * 5. [setEditorAnimator]设置的[EditorAnimator]，支持多种[Editor]的显示变换动画，
- * 默认实现为[DefaultEditorAnimator]，若不需要动画，则设置[NopEditorAnimator]。
+ * 5. [setEditorAnimator]设置的[EditorAnimator]，支持[Editor]之间的切换动画。
  *
  * [contentView]的初始化布局位置等同于[Gravity.CENTER]，其测量高度不受`layoutParams.height`影响，
  * 最大值是[InputView]的测量高度，[Editor]的视图位于[contentView]下方，通知显示[Editor]的视图时，
@@ -35,7 +34,7 @@ class InputView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : ViewGroup(context, attrs, defStyleAttr) {
     private val editorView = EditorView(context)
-    private var editorAnimator: EditorAnimator = DefaultEditorAnimator.resize()
+    private var editorAnimator = EditorAnimator.resize()
     private var contentView: View? = null
 
     /**
@@ -46,7 +45,7 @@ class InputView @JvmOverloads constructor(
         private set
 
     init {
-        setEditorAdapter(DefaultEditorAdapter())
+        setEditorAdapter(ImeAdapter())
         ImeWindowInsetsHandler(this).attach()
     }
 
@@ -64,9 +63,9 @@ class InputView @JvmOverloads constructor(
     /**
      * [adapter]支持多种[Editor]的视图创建和显示
      *
-     * 若只需要IME，则设置[DefaultEditorAnimator]：
+     * 若只需要IME，则设置[ImeAdapter]：
      * ```
-     * val adapter = DefaultEditorAdapter()
+     * val adapter = ImeAdapter()
      * inputView.setEditorAdapter(adapter)
      *
      * // 显示IME
@@ -85,12 +84,12 @@ class InputView @JvmOverloads constructor(
     }
 
     /**
-     * [animator]支持多种[Editor]的显示动画
+     * [animator]支持[Editor]之间的切换动画
      *
-     * 1. [DefaultEditorAnimator.pan]运行动画平移[contentView]。
-     * 2. [DefaultEditorAnimator.resize]运行动画修改[contentView]的尺寸。
-     * 3. [NopEditorAnimator.pan]不运行动画平移[contentView]。
-     * 4. [NopEditorAnimator.pan]不运行动画修改[contentView]的尺寸。
+     * 1. `EditorAnimator.pan()`运行动画平移[contentView]。
+     * 2. `EditorAnimator.resize()`运行动画修改[contentView]的尺寸。
+     * 3. `EditorAnimator.nopPan()`不运行动画平移[contentView]。
+     * 4. `EditorAnimator.nopResize()`不运行动画修改[contentView]的尺寸。
      */
     fun setEditorAnimator(animator: EditorAnimator) {
         val adapter = editorView.adapter
@@ -189,10 +188,6 @@ class InputView @JvmOverloads constructor(
     private class ImeWindowInsetsHandler(
         private val inputView: InputView
     ) : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_STOP) {
-        /**
-         * Android 8.0以下[imeType]跟[WindowInsetsAnimationCompat.getTypeMask]不一致，
-         * 因此在[onStart]记录下[typeMask]，然后在[onProgress]跟[typeMask]进行匹配。
-         */
         private var typeMask = NO_TYPE_MASK
         private val editorView = inputView.editorView
         private val imeType = WindowInsetsCompat.Type.ime()
@@ -203,23 +198,23 @@ class InputView @JvmOverloads constructor(
         }
 
         /**
-         * 该函数调用自[ViewTreeObserver.OnDrawListener]，
-         * 此时可以获取到编辑区和[contentView]的最新尺寸。
+         * 该函数调用自[ViewTreeObserver.OnDrawListener.onDraw]，
+         * 此时可以获取[contentView]和[editorView]的最新尺寸。
          */
         override fun onStart(
             animation: WindowInsetsAnimationCompat,
             bounds: WindowInsetsAnimationCompat.BoundsCompat
         ): WindowInsetsAnimationCompat.BoundsCompat {
-            // 通过rootWindowInsets判断是显示还是隐藏IME，
-            // 避免分发过程有父View替换IME的WindowInsets。
-            val insets = ViewCompat.getRootWindowInsets(editorView)
-            if (insets != null) {
-                val imeInsets = insets.getInsets(imeType)
-                val navBarsInsets = insets.getInsets(navBarsType)
-                typeMask = animation.typeMask
-                editorView.dispatchIme(isShow = imeInsets.bottom > 0)
-                val value = (imeInsets.bottom - navBarsInsets.bottom).coerceAtLeast(0)
-                inputView.editorAnimator.onImeAnimationStart(endValue = value)
+            if (typeMask == NO_TYPE_MASK && animation.typeMask and imeType == imeType) {
+                val insets = ViewCompat.getRootWindowInsets(editorView)
+                if (insets != null) {
+                    val imeInsets = insets.getInsets(imeType)
+                    val navBarsInsets = insets.getInsets(navBarsType)
+                    typeMask = animation.typeMask
+                    editorView.dispatchIme(isShow = imeInsets.bottom > 0)
+                    val value = (imeInsets.bottom - navBarsInsets.bottom).coerceAtLeast(0)
+                    inputView.editorAnimator.onImeAnimationStart(value, animation)
+                }
             }
             return super.onStart(animation, bounds)
         }
@@ -228,19 +223,21 @@ class InputView @JvmOverloads constructor(
             insets: WindowInsetsCompat,
             runningAnimations: MutableList<WindowInsetsAnimationCompat>
         ): WindowInsetsCompat {
-            val imeAnimation = runningAnimations.firstOrNull { it.typeMask == typeMask }
-            if (imeAnimation != null) {
+            val animation = runningAnimations.firstOrNull { it.typeMask == typeMask }
+            if (animation != null) {
                 val imeInsets = insets.getInsets(imeType)
                 val navBarsInsets = insets.getInsets(navBarsType)
                 val value = (imeInsets.bottom - navBarsInsets.bottom).coerceAtLeast(0)
-                inputView.editorAnimator.onImeAnimationUpdate(currentValue = value)
+                inputView.editorAnimator.onImeAnimationUpdate(value, animation)
             }
             return insets
         }
 
         override fun onEnd(animation: WindowInsetsAnimationCompat) {
+            if (animation.typeMask == typeMask) {
+                inputView.editorAnimator.onImeAnimationEnd(animation)
+            }
             typeMask = NO_TYPE_MASK
-            inputView.editorAnimator.onImeAnimationEnd()
         }
     }
 

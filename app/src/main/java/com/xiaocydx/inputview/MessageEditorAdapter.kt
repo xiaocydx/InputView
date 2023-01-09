@@ -26,11 +26,11 @@ class MessageEditorAdapter : EditorAdapter<MessageEditor>() {
         return when (editor) {
             IME, VOICE -> null
             EMOJI -> createTextView(parent.context).apply {
-                text = "EmojiEditor"
-                withLayoutParams(matchParent, 200.dp)
+                text = "Emoji Editor"
+                withLayoutParams(matchParent, 350.dp)
             }
             EXTRA -> createTextView(parent.context).apply {
-                text = "ExtraEditor"
+                text = "Extra Editor"
                 withLayoutParams(matchParent, 150.dp)
             }
         }

@@ -8,23 +8,19 @@ import android.view.ViewGroup
  *
  * ```
  * enum class MessageEditor : Editor {
- *     IME, EDITOR_A, EDITOR_B
+ *     IME, VOICE, EMOJI
  * }
  *
  * class MessageEditorAdapter : EditorAdapter<MessageEditor>() {
- *     override val editors: List<MessageEditor> = listOf(
- *         MessageEditor.IME, MessageEditor.EDITOR_A, MessageEditor.EDITOR_B
- *     )
+ *     override val editors: List<MessageEditor> = listOf(IME, VOICE, EMOJI)
  *
- *     override fun isIme(editor: MessageEditor): Boolean {
- *         return editor == MessageEditor.IME
- *     }
+ *     override fun isIme(editor: MessageEditor): Boolean = editor === IME
  *
  *     override fun onCreateView(parent: ViewGroup, editor: MessageEditor): View? {
  *         return when(editor) {
- *             MessageEditor.IME -> null
- *             MessageEditor.EDITOR_A -> View(parent.context)
- *             MessageEditor.EDITOR_B -> View(parent.context)
+ *             IME -> null
+ *             VOICE -> VoiceView(parent.context)
+ *             EMOJI -> EmojiView(parent.context)
  *         }
  *     }
  * }
@@ -53,19 +49,19 @@ abstract class EditorAdapter<T : Editor> {
     abstract fun isIme(editor: T): Boolean
 
     /**
-     * 创建[editor]的视图，返回`null`表示不需要视图，例如IME或者语音消息
+     * 创建[editor]的视图，返回`null`表示不需要视图，当[editor]为IME时，该函数不会被调用
      */
     abstract fun onCreateView(parent: ViewGroup, editor: T): View?
 
     /**
      * 当前[EditorAdapter]添加到[inputView]
      */
-    protected fun onAttachToInputView(inputView: InputView) = Unit
+    protected open fun onAttachToInputView(inputView: InputView) = Unit
 
     /**
      * 当前[EditorAdapter]从[inputView]移除
      */
-    protected fun onDetachFromInputView(inputView: InputView) = Unit
+    protected open fun onDetachFromInputView(inputView: InputView) = Unit
 
     /**
      * 添加[EditorVisibleListener]
@@ -110,7 +106,7 @@ abstract class EditorAdapter<T : Editor> {
  * 推荐用`enum class`或者`sealed class `实现[Editor]，例如：
  * ```
  * enum class MessageEditor : Editor {
- *     IME, EDITOR_A, EDITOR_B
+ *     IME, VOICE, EMOJI
  * }
  * ```
  */
