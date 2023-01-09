@@ -27,11 +27,13 @@ class MessageEditorAdapter : EditorAdapter<MessageEditor>() {
             IME, VOICE -> null
             EMOJI -> createTextView(parent.context).apply {
                 text = "Emoji Editor"
+                gravity = Gravity.CENTER
                 withLayoutParams(matchParent, 350.dp)
             }
             EXTRA -> createTextView(parent.context).apply {
                 text = "Extra Editor"
-                withLayoutParams(matchParent, 150.dp)
+                gravity = Gravity.CENTER_HORIZONTAL
+                withLayoutParams(matchParent, 250.dp) { topMargin = 16.dp }
             }
         }
     }
@@ -39,7 +41,6 @@ class MessageEditorAdapter : EditorAdapter<MessageEditor>() {
     private fun createTextView(
         context: Context
     ) = AppCompatTextView(context).apply {
-        gravity = Gravity.CENTER
         textSize = 14.dp.toFloat()
         setTextColor(Color.BLACK)
     }

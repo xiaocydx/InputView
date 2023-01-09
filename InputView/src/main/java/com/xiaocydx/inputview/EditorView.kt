@@ -24,6 +24,8 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         private set
     var adapter: EditorAdapter<*>? = null
         private set
+    var changeRecord = ChangeRecord()
+        private set
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
@@ -60,35 +62,38 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     fun showChecked(editor: Editor) {
         val adapter = checkedAdapter()
         if (adapter == null || current === editor) return
-        val view: View?
+        val currentChild: View?
         val previous = current
-        val previousView = views[previous]
+        val previousChild = views[previous]
         if (!views.contains(editor)) {
-            view = when {
+            currentChild = when {
                 editor === ime -> null
                 else -> adapter.onCreateView(this, editor)
             }
-            views[editor] = view
+            views[editor] = currentChild
         } else {
-            view = views[editor]
+            currentChild = views[editor]
         }
-        previousView?.let(::removeView)
-        view?.let(::addView)
+        removeAllViews()
+        currentChild?.let(::addView)
         if (previous === ime) {
             controlIme(isShow = false)
         } else if (editor === ime) {
             controlIme(isShow = true)
         }
         current = editor
+        changeRecord = ChangeRecord(previousChild, currentChild)
         adapter.onVisibleChanged(previous, current)
     }
 
     fun hideChecked(editor: Editor) {
         val adapter = checkedAdapter()
         if (adapter != null && current === editor) {
-            views[editor]?.let(::removeView)
+            val previousChild = views[editor]
+            removeAllViews()
             if (editor === ime) controlIme(isShow = false)
             current = null
+            changeRecord = ChangeRecord(previousChild, currentChild = null)
             adapter.onVisibleChanged(editor, current)
         }
     }
@@ -117,4 +122,6 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     private fun checkedAdapter(): EditorAdapter<Editor>? {
         return adapter as? EditorAdapter<Editor>
     }
+
+    class ChangeRecord(val previousChild: View? = null, val currentChild: View? = null)
 }

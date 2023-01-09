@@ -2,17 +2,15 @@ package com.xiaocydx.inputview
 
 import android.animation.Animator
 import android.animation.ValueAnimator
-import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.View
+import android.view.animation.DecelerateInterpolator
+import android.view.animation.LinearInterpolator
 import androidx.core.animation.addListener
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.doOnPreDraw
 
 /**
  * [InputView]编辑区的[Editor]切换动画
- *
- * 1. [onVisibleChanged]处理`previous`和`current`不是IME的动画。
- * 2. [onImeAnimationStart]、[onImeAnimationUpdate]、[onImeAnimationEnd]，
- * 处理`previous`和`current`其中一个是IME的动画。
  *
  * @author xcc
  * @date 2023/1/8
@@ -22,39 +20,58 @@ abstract class EditorAnimator(
 ) : EditorVisibleListener<Editor> {
     private var previous: Editor? = null
     private var current: Editor? = null
-    private var imeStartOffset = NO_OFFSET
-    private var imeEndOffset = NO_OFFSET
-    private var willRunImeAnimation = false
-    private var preDrawRunAnimation = false
-    private var editorAnimation: Animator? = null
+    private var insetsStartOffset = NO_VALUE
+    private var insetsEndOffset = NO_VALUE
+    private var willRunInsetsAnimation = false
+    private var willRunSimpleAnimation = false
+    private var simpleAnimation: Animator? = null
     private var editorAdapter: EditorAdapter<*>? = null
+    private val editorView: EditorView?
+        get() = editorAdapter?.editorView
     protected val inputView: InputView?
         get() = editorAdapter?.inputView
 
     /**
      * 动画开始
      *
-     * @param startOffset   编辑区的起始偏移值
-     * @param endOffset     编辑区的结束偏移值
+     * @param startView   编辑区的起始视图
+     * @param endView     编辑区的结束视图
+     * @param startOffset 编辑区的起始偏移值
+     * @param endOffset   编辑区的结束偏移值
      */
-    protected open fun onAnimationStart(startOffset: Int, endOffset: Int) = Unit
+    protected open fun onAnimationStart(
+        startView: View?, endView: View?,
+        startOffset: Int, endOffset: Int
+    ) = Unit
 
     /**
      * 动画更新
      *
+     * @param startView     编辑区的起始视图
+     * @param endView       编辑区的结束视图
      * @param startOffset   编辑区的起始偏移值
      * @param endOffset     编辑区的结束偏移值
      * @param currentOffset 编辑区的当前偏移值
      */
-    protected open fun onAnimationUpdate(startOffset: Int, endOffset: Int, currentOffset: Int) = Unit
+    protected open fun onAnimationUpdate(
+        startView: View?, endView: View?,
+        startOffset: Int, endOffset: Int, currentOffset: Int
+    ) = Unit
 
     /**
      * 动画结束
      *
-     * @param startOffset   编辑区的起始偏移值
-     * @param endOffset     编辑区的结束偏移值
+     * @param startView   编辑区的起始视图
+     * @param endView     编辑区的结束视图
+     * @param startOffset 编辑区的起始偏移值
+     * @param endOffset   编辑区的结束偏移值
+     *
+     * **注意**：动画结束时，应当将[startView]和[endView]恢复为初始状态。
      */
-    protected open fun onAnimationEnd(startOffset: Int, endOffset: Int) = Unit
+    protected open fun onAnimationEnd(
+        startView: View?, endView: View?,
+        startOffset: Int, endOffset: Int
+    ) = Unit
 
     /**
      * 当前[EditorAnimator]添加到[adapter]
@@ -66,133 +83,165 @@ abstract class EditorAnimator(
      */
     protected open fun onDetachFromEditorAdapter(adapter: EditorAdapter<*>) = Unit
 
+    /**
+     * 1. [EditorView]更改[Editor]时会先移除全部子View，再添加当前[Editor]的子View，
+     * 运行动画之前调用[addStartViewBeforeRunAnimation]将移除的子View重新添加回来，
+     * 参与动画的更新过程，动画结束时调用[removeStartViewAfterAnimationEnd]移除子View。
+     *
+     * 2. 若[previous]和[current]不是IME，则调用[runSimpleAnimationIfNecessary]运行简单动画，
+     * 若[previous]和[current]其中一个是IME，则运行insets动画，在[onWindowInsetsAnimationStart]、
+     * [onWindowInsetsAnimationProgress]、[onWindowInsetsAnimationEnd]做进一步处理。
+     */
+    final override fun onVisibleChanged(previous: Editor?, current: Editor?) {
+        this.previous = previous
+        this.current = current
+        simpleAnimation?.end()
+        addStartViewBeforeRunAnimation()
+        willRunInsetsAnimation = isIme(previous) || isIme(current)
+        if (willRunInsetsAnimation) return
+
+        val inputView = inputView
+        if (inputView == null || willRunSimpleAnimation) return
+        willRunSimpleAnimation = true
+        val startOffset = inputView.editorOffset
+        inputView.doOnPreDraw {
+            willRunSimpleAnimation = false
+            if (willRunInsetsAnimation) return@doOnPreDraw
+            val endOffset = getEditorEndOffset()
+            runSimpleAnimationIfNecessary(startOffset, endOffset) run@{
+                if (startOffset == 0 || endOffset == 0) return@run
+                // previous和current不是IME，匀速的过渡效果更流畅
+                interpolator = LinearInterpolator()
+            }
+        }
+    }
+
+    /**
+     * [WindowInsetsAnimationCompat]动画开始
+     *
+     * @param endValue [animation]动画结束时的偏移值
+     */
+    internal fun onWindowInsetsAnimationStart(endValue: Int, animation: WindowInsetsAnimationCompat) {
+        if (!willRunInsetsAnimation) return
+        insetsStartOffset = inputView?.editorOffset ?: NO_VALUE
+        insetsEndOffset = if (isIme(current)) endValue else getEditorEndOffset()
+        val imeToOther = isIme(previous) && current != null && !isIme(current)
+        val otherToIme = previous != null && !isIme(previous) && isIme(current)
+        val startView = editorView?.changeRecord?.previousChild
+        val endView = editorView?.changeRecord?.currentChild
+        when {
+            insetsStartOffset == insetsEndOffset -> {
+                dispatchAnimationEnd(startView, endView, insetsStartOffset, insetsEndOffset)
+            }
+            !canRunAnimation || imeToOther || otherToIme -> {
+                // imeToOther的animation是0到imeEndOffset，
+                // otherToIme的animation是imeStartOffset到0，
+                // 这两种情况依靠animation进行更新，实现的过渡效果并不流畅，
+                // 因此用animation的duration和interpolator运行动画进行更新。
+                runSimpleAnimationIfNecessary(insetsStartOffset, insetsEndOffset) {
+                    duration = animation.durationMillis
+                    interpolator = animation.interpolator ?: ANIMATION_INTERPOLATOR
+                }
+                insetsStartOffset = NO_VALUE
+                insetsEndOffset = NO_VALUE
+            }
+            else -> onAnimationStart(startView, endView, insetsStartOffset, insetsEndOffset)
+        }
+    }
+
+    /**
+     * [WindowInsetsAnimationCompat]动画更新
+     *
+     * @param currentValue [animation]动画运行中的偏移值
+     */
+    internal fun onWindowInsetsAnimationProgress(currentValue: Int, animation: WindowInsetsAnimationCompat) {
+        if (insetsStartOffset == NO_VALUE || insetsEndOffset == NO_VALUE) return
+        val startView = editorView?.changeRecord?.previousChild
+        val endView = editorView?.changeRecord?.currentChild
+        onAnimationUpdate(startView, endView, insetsStartOffset, insetsEndOffset, currentValue)
+    }
+
+    /**
+     * [WindowInsetsAnimationCompat]动画结束
+     */
+    internal fun onWindowInsetsAnimationEnd(animation: WindowInsetsAnimationCompat) {
+        val startView = editorView?.changeRecord?.previousChild
+        val endView = editorView?.changeRecord?.currentChild
+        dispatchAnimationEnd(startView, endView, insetsStartOffset, insetsEndOffset)
+    }
+
     private fun isIme(editor: Editor?): Boolean {
-        val editorView = editorAdapter?.editorView
-        if (editor == null || editorView == null) return false
-        return editorView.ime == editor
+        return editor != null && editorView != null && editorView!!.ime === editor
     }
 
     private fun getEditorEndOffset(): Int {
-        return editorAdapter?.editorView?.height ?: NO_OFFSET
+        val editorView = editorView ?: return NO_VALUE
+        return editorView.changeRecord.currentChild?.height ?: 0
     }
 
-    private inline fun runEditorAnimationIfNecessary(
+    private inline fun runSimpleAnimationIfNecessary(
         startOffset: Int,
         endOffset: Int,
         block: ValueAnimator.() -> Unit = {}
     ) {
-        editorAnimation?.takeIf { it.isRunning }?.end()
-        if (startOffset == endOffset) return
-        if (!canRunAnimation) {
-            onAnimationStart(startOffset, endOffset)
-            onAnimationUpdate(startOffset, endOffset, endOffset)
-            onAnimationEnd(startOffset, endOffset)
+        simpleAnimation?.end()
+        val startView = editorView?.changeRecord?.previousChild
+        val endView = editorView?.changeRecord?.currentChild
+        if (!canRunAnimation || startOffset == endOffset) {
+            onAnimationStart(startView, endView, startOffset, endOffset)
+            onAnimationUpdate(startView, endView, startOffset, endOffset, endOffset)
+            dispatchAnimationEnd(startView, endView, startOffset, endOffset)
             return
         }
 
-        editorAnimation = ValueAnimator.ofInt(startOffset, endOffset).apply {
+        simpleAnimation = ValueAnimator.ofInt(startOffset, endOffset).apply {
             addListener(
-                onStart = {
-                    onAnimationStart(startOffset, endOffset)
-                },
-                onCancel = {
-                    editorAnimation = null
-                    onAnimationUpdate(startOffset, endOffset, endOffset)
-                    onAnimationEnd(startOffset, endOffset)
-                },
-                onEnd = {
-                    editorAnimation = null
-                    onAnimationEnd(startOffset, endOffset)
-                }
+                onStart = { onAnimationStart(startView, endView, startOffset, endOffset) },
+                onCancel = { dispatchAnimationEnd(startView, endView, startOffset, endOffset) },
+                onEnd = { dispatchAnimationEnd(startView, endView, startOffset, endOffset) }
             )
             addUpdateListener {
                 val currentOffset = it.animatedValue as Int
-                onAnimationUpdate(startOffset, endOffset, currentOffset)
+                onAnimationUpdate(startView, endView, startOffset, endOffset, currentOffset)
             }
             duration = ANIMATION_DURATION
             interpolator = ANIMATION_INTERPOLATOR
-            this.block()
+            block(this)
             start()
         }
     }
 
-    final override fun onVisibleChanged(previous: Editor?, current: Editor?) {
-        this.previous = previous
-        this.current = current
-        editorAnimation?.takeIf { it.isRunning }?.end()
-        willRunImeAnimation = isIme(previous) || isIme(current)
-        if (willRunImeAnimation) return
+    private fun dispatchAnimationEnd(
+        startView: View?, endView: View?,
+        startOffset: Int, endOffset: Int
+    ) {
+        simpleAnimation = null
+        if (endOffset != NO_VALUE && inputView != null && inputView!!.editorOffset != endOffset) {
+            // 兼容应用退至后台隐藏IME，动画更新不完整的情况
+            onAnimationUpdate(startView, endView, startOffset, endOffset, endOffset)
+        }
+        if (startOffset != NO_VALUE && endOffset != NO_VALUE) {
+            onAnimationEnd(startView, endView, startOffset, endOffset)
+        }
+        removeStartViewAfterAnimationEnd()
+        insetsStartOffset = NO_VALUE
+        insetsEndOffset = NO_VALUE
+    }
 
-        val inputView = editorAdapter?.inputView
-        if (inputView == null || preDrawRunAnimation) return
-        preDrawRunAnimation = true
-        val startOffset = inputView.editorOffset
-        inputView.doOnPreDraw {
-            preDrawRunAnimation = false
-            runEditorAnimationIfNecessary(startOffset, getEditorEndOffset())
+    private fun addStartViewBeforeRunAnimation() {
+        val editorView = editorView ?: return
+        val startView = editorView.changeRecord.previousChild
+        if (canRunAnimation && startView != null && startView.parent == null) {
+            editorView.addView(startView)
         }
     }
 
-    /**
-     * IME动画开始
-     *
-     * @param endValue  IME动画结束时的偏移值
-     * @param animation IME动画
-     */
-    internal fun onImeAnimationStart(endValue: Int, animation: WindowInsetsAnimationCompat) {
-        val inputView = editorAdapter?.inputView
-        if (!willRunImeAnimation || inputView == null) return
-
-        imeStartOffset = inputView.editorOffset
-        imeEndOffset = if (isIme(current)) endValue else getEditorEndOffset()
-        val imeToOther = isIme(previous) && current != null && !isIme(current)
-        val otherToIme = previous != null && !isIme(previous) && isIme(current)
-        when {
-            imeStartOffset == imeEndOffset -> resetImeOffset()
-            !canRunAnimation || imeToOther || otherToIme -> {
-                // imeToOther的animation是0到imeEndOffset，
-                // otherToIme的animation是imeStartOffset到0，
-                // 这两种情况依靠animation进行更新，不好实现流畅的过渡效果，
-                // 因此用animation的duration和interpolator运行动画进行更新。
-                runEditorAnimationIfNecessary(imeStartOffset, imeEndOffset) {
-                    duration = animation.durationMillis
-                    interpolator = animation.interpolator ?: ANIMATION_INTERPOLATOR
-                }
-                resetImeOffset()
-            }
-            else -> onAnimationStart(imeStartOffset, imeEndOffset)
+    private fun removeStartViewAfterAnimationEnd() {
+        val editorView = editorView ?: return
+        val startView = editorView.changeRecord.previousChild
+        if (canRunAnimation && startView != null && startView.parent === editorView) {
+            editorView.removeView(startView)
         }
-    }
-
-    /**
-     * IME动画更新
-     *
-     * @param currentValue IME动画运行中的偏移值
-     * @param animation    IME动画
-     */
-    internal fun onImeAnimationUpdate(currentValue: Int, animation: WindowInsetsAnimationCompat) {
-        if (imeStartOffset == NO_OFFSET || imeEndOffset == NO_OFFSET) return
-        onAnimationUpdate(imeStartOffset, imeEndOffset, currentValue)
-    }
-
-    /**
-     * IME动画结束
-     *
-     * @param animation IME动画
-     */
-    internal fun onImeAnimationEnd(animation: WindowInsetsAnimationCompat) {
-        if (imeStartOffset == NO_OFFSET || imeEndOffset == NO_OFFSET) return
-        if (inputView != null && inputView!!.editorOffset != imeEndOffset) {
-            // 兼容应用退至后台隐藏IME，onImeAnimationUpdate()执行不完整的情况
-            onAnimationUpdate(imeStartOffset, imeEndOffset, imeEndOffset)
-        }
-        onAnimationEnd(imeStartOffset, imeEndOffset)
-        resetImeOffset()
-    }
-
-    private fun resetImeOffset() {
-        imeStartOffset = NO_OFFSET
-        imeEndOffset = NO_OFFSET
     }
 
     internal fun attach(adapter: EditorAdapter<*>) {
@@ -209,8 +258,8 @@ abstract class EditorAnimator(
     }
 
     companion object {
-        private const val NO_OFFSET = -1
+        private const val NO_VALUE = -1
         private const val ANIMATION_DURATION = 250L
-        private val ANIMATION_INTERPOLATOR = AccelerateDecelerateInterpolator()
+        private val ANIMATION_INTERPOLATOR = DecelerateInterpolator()
     }
 }

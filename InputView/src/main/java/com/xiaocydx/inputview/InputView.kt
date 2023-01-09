@@ -213,7 +213,7 @@ class InputView @JvmOverloads constructor(
                     typeMask = animation.typeMask
                     editorView.dispatchIme(isShow = imeInsets.bottom > 0)
                     val value = (imeInsets.bottom - navBarsInsets.bottom).coerceAtLeast(0)
-                    inputView.editorAnimator.onImeAnimationStart(value, animation)
+                    inputView.editorAnimator.onWindowInsetsAnimationStart(value, animation)
                 }
             }
             return super.onStart(animation, bounds)
@@ -228,14 +228,14 @@ class InputView @JvmOverloads constructor(
                 val imeInsets = insets.getInsets(imeType)
                 val navBarsInsets = insets.getInsets(navBarsType)
                 val value = (imeInsets.bottom - navBarsInsets.bottom).coerceAtLeast(0)
-                inputView.editorAnimator.onImeAnimationUpdate(value, animation)
+                inputView.editorAnimator.onWindowInsetsAnimationProgress(value, animation)
             }
             return insets
         }
 
         override fun onEnd(animation: WindowInsetsAnimationCompat) {
             if (animation.typeMask == typeMask) {
-                inputView.editorAnimator.onImeAnimationEnd(animation)
+                inputView.editorAnimator.onWindowInsetsAnimationEnd(animation)
             }
             typeMask = NO_TYPE_MASK
         }
