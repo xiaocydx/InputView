@@ -15,9 +15,7 @@ import androidx.core.view.doOnPreDraw
  * @author xcc
  * @date 2023/1/8
  */
-abstract class EditorAnimator(
-    private val canRunAnimation: Boolean = true
-) : EditorVisibleListener<Editor> {
+abstract class EditorAnimator : EditorVisibleListener<Editor> {
     private var previous: Editor? = null
     private var current: Editor? = null
     private var insetsStartOffset = NO_VALUE
@@ -28,8 +26,9 @@ abstract class EditorAnimator(
     private var editorAdapter: EditorAdapter<*>? = null
     private val editorView: EditorView?
         get() = editorAdapter?.editorView
-    protected val inputView: InputView?
+    private val inputView: InputView?
         get() = editorAdapter?.inputView
+    internal open val canRunAnimation: Boolean = true
 
     /**
      * 动画开始
@@ -72,6 +71,15 @@ abstract class EditorAnimator(
         startView: View?, endView: View?,
         startOffset: Int, endOffset: Int
     ) = Unit
+
+    /**
+     * 更新编辑区的偏移值
+     *
+     * **注意**：只能在[onAnimationStart]、[onAnimationUpdate]、[onAnimationEnd]调用该函数。
+     */
+    protected fun updateEditorOffset(offset: Int) {
+        inputView?.updateEditorOffset(offset, resizeInNextLayout = canRunAnimation)
+    }
 
     /**
      * 当前[EditorAnimator]添加到[adapter]
@@ -215,7 +223,6 @@ abstract class EditorAnimator(
         startView: View?, endView: View?,
         startOffset: Int, endOffset: Int
     ) {
-        simpleAnimation = null
         if (endOffset != NO_VALUE && inputView != null && inputView!!.editorOffset != endOffset) {
             // 兼容应用退至后台隐藏IME，动画更新不完整的情况
             onAnimationUpdate(startView, endView, startOffset, endOffset, endOffset)
@@ -224,6 +231,9 @@ abstract class EditorAnimator(
             onAnimationEnd(startView, endView, startOffset, endOffset)
         }
         removeStartViewAfterAnimationEnd()
+        simpleAnimation = null
+        willRunInsetsAnimation = false
+        willRunSimpleAnimation = false
         insetsStartOffset = NO_VALUE
         insetsEndOffset = NO_VALUE
     }
@@ -244,6 +254,15 @@ abstract class EditorAnimator(
         }
     }
 
+    private fun endAnimation() {
+        val startView = editorView?.changeRecord?.previousChild
+        val endView = editorView?.changeRecord?.currentChild
+        simpleAnimation?.end()
+        if (willRunInsetsAnimation) {
+            dispatchAnimationEnd(startView, endView, insetsStartOffset, insetsEndOffset)
+        }
+    }
+
     internal fun attach(adapter: EditorAdapter<*>) {
         editorAdapter = adapter
         adapter.addEditorVisibleListener(this)
@@ -252,6 +271,7 @@ abstract class EditorAnimator(
 
     internal fun detach(adapter: EditorAdapter<*>) {
         assert(editorAdapter === adapter) { "EditorAdapter不相同" }
+        endAnimation()
         editorAdapter = null
         adapter.removeEditorVisibleListener(this)
         onDetachFromEditorAdapter(adapter)

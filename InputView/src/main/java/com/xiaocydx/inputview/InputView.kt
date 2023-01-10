@@ -25,7 +25,7 @@ import androidx.core.view.*
  *
  * [contentView]的初始化布局位置等同于[Gravity.CENTER]，其测量高度不受`layoutParams.height`影响，
  * 最大值是[InputView]的测量高度，[Editor]的视图位于[contentView]下方，通知显示[Editor]的视图时，
- * 会平移[contentView]，或者修改[contentView]的尺寸，具体是哪一种行为取决于[EditorAnimator]的实现。
+ * 会平移[contentView]，或者修改[contentView]的尺寸，具体是哪一种行为取决于[EditorMode]。
  *
  * @author xcc
  * @date 2023/1/6
@@ -34,7 +34,8 @@ class InputView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : ViewGroup(context, attrs, defStyleAttr) {
     private val editorView = EditorView(context)
-    private var editorAnimator = EditorAnimator.resize()
+    private var editorMode: EditorMode = EditorMode.ADJUST_RESIZE
+    private var editorAnimator: EditorAnimator = DefaultEditorAnimator()
     private var contentView: View? = null
 
     /**
@@ -46,11 +47,11 @@ class InputView @JvmOverloads constructor(
 
     init {
         setEditorAdapter(ImeAdapter())
-        ImeWindowInsetsHandler(this).attach()
+        WindowInsetsAnimationHandler().attach()
     }
 
     /**
-     * [editText]用于兼容Android各版本显示和隐藏IME
+     * 设置用于兼容Android各版本显示和隐藏IME的[EditText]
      *
      * 显示IME[editText]会获得焦点，隐藏IME会清除[editText]的焦点，
      * 可以观察[EditorAdapter.addEditorVisibleListener]的更改结果，
@@ -61,9 +62,21 @@ class InputView @JvmOverloads constructor(
     }
 
     /**
-     * [adapter]支持多种[Editor]的视图创建和显示
+     * 设置[EditorMode]，默认是[EditorMode.ADJUST_RESIZE]
      *
-     * 若只需要IME，则设置[ImeAdapter]：
+     * @param mode
+     * 1. [EditorMode.ADJUST_PAN]，显示[Editor]时平移[contentView]。
+     * 2. [EditorMode.ADJUST_RESIZE]，显示[Editor]时修改[contentView]的尺寸。
+     */
+    fun setEditorMode(mode: EditorMode) {
+        editorMode = mode
+        requestLayout()
+    }
+
+    /**
+     * 设置[EditorAdapter]，默认是[ImeAdapter]
+     *
+     * [ImeAdapter]可用于只需要IME的场景：
      * ```
      * val adapter = ImeAdapter()
      * inputView.setEditorAdapter(adapter)
@@ -76,52 +89,25 @@ class InputView @JvmOverloads constructor(
      */
     fun setEditorAdapter(adapter: EditorAdapter<*>) {
         val previous = editorView.adapter
-        previous?.detach(this, editorView)
         previous?.let(editorAnimator::detach)
+        previous?.detach(this, editorView)
         editorView.setAdapter(adapter)
         adapter.attach(this, editorView)
         adapter.let(editorAnimator::attach)
+        editorOffset = 0
+        requestLayout()
     }
 
     /**
-     * [animator]支持[Editor]之间的切换动画
+     * 设置[EditorAnimator]，默认是[DefaultEditorAnimator]
      *
-     * 1. `EditorAnimator.pan()`运行动画平移[contentView]。
-     * 2. `EditorAnimator.resize()`运行动画修改[contentView]的尺寸。
-     * 3. `EditorAnimator.nopPan()`不运行动画平移[contentView]。
-     * 4. `EditorAnimator.nopResize()`不运行动画修改[contentView]的尺寸。
+     * @param animator 若为`null`，则不运行动画
      */
-    fun setEditorAnimator(animator: EditorAnimator) {
+    fun setEditorAnimator(animator: EditorAnimator?) {
         val adapter = editorView.adapter
         adapter?.let(editorAnimator::detach)
-        editorAnimator = animator
+        editorAnimator = animator ?: NopEditorAnimator()
         adapter?.let(editorAnimator::attach)
-    }
-
-    /**
-     * 更新编辑区的偏移值，并平移[contentView]
-     */
-    fun offsetChildrenLocation(@IntRange(from = 0) offset: Int, diff: Int) {
-        val safeOffset = offset.coerceAtLeast(0)
-        if (editorOffset == safeOffset) return
-        editorOffset = safeOffset
-        for (index in 0 until childCount) {
-            val child = getChildAt(index)
-            // 平移contentView不需要重新measure和layout
-            child.offsetTopAndBottom(diff)
-        }
-    }
-
-    /**
-     * 更新编辑区的偏移值，并修改[contentView]的尺寸
-     */
-    fun offsetContentSize(@IntRange(from = 0) offset: Int) {
-        val safeOffset = offset.coerceAtLeast(0)
-        if (editorOffset == safeOffset) return
-        editorOffset = safeOffset
-        contentView?.updateLayoutParams {
-            height = this@InputView.height - editorOffset
-        }
     }
 
     override fun shouldDelayChildPressedState(): Boolean = false
@@ -130,16 +116,35 @@ class InputView @JvmOverloads constructor(
         return MarginLayoutParams(context, attrs)
     }
 
-    private fun Int.toExactlyMeasureSpec() = makeMeasureSpec(this, EXACTLY)
+    /**
+     * 更新编辑区的偏移值，该函数仅由[EditorAnimator]调用
+     *
+     * [EditorView]更改[Editor]后，[EditorAnimator]在下一帧[ViewTreeObserver.OnDrawListener.onDraw]，
+     * 获取当前[Editor]的偏移（包括IME的偏移），此时已完成[editorView]和[contentView]的measure和layout，
+     * 若[editorMode]为[EditorMode.ADJUST_PAN]，则偏移[editorView]和[contentView]即可，
+     * 若[editorMode]为[EditorMode.ADJUST_RESIZE]，并且[resizeInNextLayout]不为true，
+     * 则对[contentView]重新measure和layout，确保[contentView]的尺寸和位置在当前帧draw之前是正确的，
+     * measure有测量缓存，layout有边界对比，对[contentView]重新measure和layout不一定会产生性能损耗。
+     */
+    internal fun updateEditorOffset(offset: Int, resizeInNextLayout: Boolean) {
+        val safeOffset = offset.coerceAtLeast(0)
+        if (editorOffset == safeOffset) return
+        val diff = editorOffset - safeOffset
+        editorOffset = safeOffset
 
-    private fun Int.toAtMostMeasureSpec() = makeMeasureSpec(this, AT_MOST)
-
-    private fun checkContentView() {
-        if (childCount == 0) return
-        if (contentView == null) {
-            require(childCount == 1) { "InputView初始化时只能有一个子View" }
-            contentView = getChildAt(0)
-            addView(editorView, MATCH_PARENT, WRAP_CONTENT)
+        val contentView = contentView ?: return
+        when (editorMode) {
+            EditorMode.ADJUST_PAN -> {
+                editorView.offsetTopAndBottom(diff)
+                contentView.offsetTopAndBottom(diff)
+            }
+            EditorMode.ADJUST_RESIZE -> if (!resizeInNextLayout) {
+                editorView.offsetTopAndBottom(diff)
+                measureContentView(contentView)
+                layoutContentView(contentView)
+            } else {
+                requestLayout()
+            }
         }
     }
 
@@ -147,18 +152,7 @@ class InputView @JvmOverloads constructor(
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         checkContentView()
         val contentView = contentView ?: return
-        val horizontalMargin = contentView.let { it.marginLeft + it.marginRight }
-        val verticalMargin = contentView.let { it.marginTop + it.marginBottom }
-        val maxContentWidth = measuredWidth - horizontalMargin
-        val maxContentHeight = measuredHeight - verticalMargin
-        contentView.measure(
-            when (val width = contentView.layoutParams.width) {
-                MATCH_PARENT -> maxContentWidth.toExactlyMeasureSpec()
-                WRAP_CONTENT -> maxContentWidth.toAtMostMeasureSpec()
-                else -> width.coerceAtMost(maxContentWidth).toExactlyMeasureSpec()
-            },
-            maxContentHeight.toExactlyMeasureSpec()
-        )
+        measureContentView(contentView)
         editorView.measure(widthMeasureSpec, measuredHeight.toAtMostMeasureSpec())
     }
 
@@ -175,6 +169,41 @@ class InputView @JvmOverloads constructor(
         }
 
         // 基于editorView顶部向上布局contentView
+        layoutContentView(contentView)
+    }
+
+    private fun Int.toExactlyMeasureSpec() = makeMeasureSpec(this, EXACTLY)
+
+    private fun Int.toAtMostMeasureSpec() = makeMeasureSpec(this, AT_MOST)
+
+    private fun checkContentView() {
+        if (childCount == 0) return
+        if (contentView == null) {
+            require(childCount == 1) { "InputView初始化时只能有一个子View" }
+            contentView = getChildAt(0)
+            addView(editorView, MATCH_PARENT, WRAP_CONTENT)
+        }
+    }
+
+    private fun measureContentView(contentView: View) {
+        val horizontalMargin = contentView.let { it.marginLeft + it.marginRight }
+        val verticalMargin = contentView.let { it.marginTop + it.marginBottom }
+        val maxContentWidth = measuredWidth - horizontalMargin
+        var maxContentHeight = measuredHeight - verticalMargin
+        if (editorMode === EditorMode.ADJUST_RESIZE) {
+            maxContentHeight -= editorOffset
+        }
+        contentView.measure(
+            when (val width = contentView.layoutParams.width) {
+                MATCH_PARENT -> maxContentWidth.toExactlyMeasureSpec()
+                WRAP_CONTENT -> maxContentWidth.toAtMostMeasureSpec()
+                else -> width.coerceAtMost(maxContentWidth).toExactlyMeasureSpec()
+            },
+            maxContentHeight.toExactlyMeasureSpec()
+        )
+    }
+
+    private fun layoutContentView(contentView: View) {
         contentView.let {
             val left = (measuredWidth - it.measuredWidth) / 2
             val bottom = editorView.top - it.marginBottom
@@ -185,11 +214,9 @@ class InputView @JvmOverloads constructor(
     }
 
     // TODO: 支持导航栏edge-to-edge
-    private class ImeWindowInsetsHandler(
-        private val inputView: InputView
-    ) : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_STOP) {
+    private inner class WindowInsetsAnimationHandler :
+            WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_STOP) {
         private var typeMask = NO_TYPE_MASK
-        private val editorView = inputView.editorView
         private val imeType = WindowInsetsCompat.Type.ime()
         private val navBarsType = WindowInsetsCompat.Type.navigationBars()
 
@@ -213,7 +240,7 @@ class InputView @JvmOverloads constructor(
                     typeMask = animation.typeMask
                     editorView.dispatchIme(isShow = imeInsets.bottom > 0)
                     val value = (imeInsets.bottom - navBarsInsets.bottom).coerceAtLeast(0)
-                    inputView.editorAnimator.onWindowInsetsAnimationStart(value, animation)
+                    editorAnimator.onWindowInsetsAnimationStart(value, animation)
                 }
             }
             return super.onStart(animation, bounds)
@@ -228,14 +255,14 @@ class InputView @JvmOverloads constructor(
                 val imeInsets = insets.getInsets(imeType)
                 val navBarsInsets = insets.getInsets(navBarsType)
                 val value = (imeInsets.bottom - navBarsInsets.bottom).coerceAtLeast(0)
-                inputView.editorAnimator.onWindowInsetsAnimationProgress(value, animation)
+                editorAnimator.onWindowInsetsAnimationProgress(value, animation)
             }
             return insets
         }
 
         override fun onEnd(animation: WindowInsetsAnimationCompat) {
             if (animation.typeMask == typeMask) {
-                inputView.editorAnimator.onWindowInsetsAnimationEnd(animation)
+                editorAnimator.onWindowInsetsAnimationEnd(animation)
             }
             typeMask = NO_TYPE_MASK
         }

@@ -36,7 +36,9 @@ class MessageListActivity : AppCompatActivity() {
         inputView.apply {
             setEditText(etMessage)
             setEditorAdapter(editorAdapter)
-            setEditorAnimator(EditorAnimator.pan())
+            setEditorMode(EditorMode.ADJUST_PAN)
+            // 不运行动画
+            // setEditorAnimator(null)
         }
 
         // 2. 初始化RecyclerView的配置

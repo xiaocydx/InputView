@@ -37,8 +37,19 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     }
 
     fun setAdapter(adapter: EditorAdapter<*>) {
-        if (childCount > 0) removeAllViews()
         this.adapter = adapter
+        current?.let(::hideChecked)
+        if (views.isNotEmpty()) {
+            removeAllViews()
+            views.clear()
+        }
+        if (changeRecord.previousChild != null
+                || changeRecord.currentChild != null) {
+            changeRecord = ChangeRecord()
+        }
+
+        ime = null
+        current = null
         val checkedAdapter = checkedAdapter() ?: return
         var imeCount = 0
         adapter.editors.forEach {
