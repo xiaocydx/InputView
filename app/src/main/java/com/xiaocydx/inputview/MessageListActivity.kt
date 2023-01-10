@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView.VERTICAL
 import com.xiaocydx.inputview.MessageEditor.*
 import com.xiaocydx.inputview.databinding.ActivityMessageListBinding
 import com.xiaocydx.sample.onClick
@@ -26,11 +27,11 @@ class MessageListActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        InputView.init(window)
-        setContentView(ActivityMessageListBinding.inflate(layoutInflater).initView().root)
+        InputView.init(window, gestureNavBarEdgeToEdge = true)
+        setContentView(ActivityMessageListBinding.inflate(layoutInflater).init().root)
     }
 
-    private fun ActivityMessageListBinding.initView() = apply {
+    private fun ActivityMessageListBinding.init() = apply {
         // 1. 初始化InputView的配置
         val editorAdapter = MessageEditorAdapter()
         inputView.apply {
@@ -43,10 +44,9 @@ class MessageListActivity : AppCompatActivity() {
 
         // 2. 初始化RecyclerView的配置
         rvMessage.apply {
-            layoutManager = LinearLayoutManager(context).apply {
-                stackFromEnd = true
-                reverseLayout = true
-            }
+            layoutManager = LinearLayoutManager(
+                context, VERTICAL, /* reverseLayout */true
+            )
             adapter = MessageListAdapter(itemCount = 20)
             scrollToPosition(0)
         }

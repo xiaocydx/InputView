@@ -31,8 +31,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         super.onAttachedToWindow()
         val editText = editTextRef?.get()
         if (controller == null && editText != null) {
-            val window = findViewTreeWindow() ?: return
-            controller = WindowInsetsControllerCompat(window, editText)
+            controller = findViewTreeWindow()?.createWindowInsetsController(editText)
         }
     }
 
@@ -65,8 +64,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     fun setEditText(editText: EditText) {
         editTextRef = WeakReference(editText)
         if (isAttachedToWindow) {
-            val window = findViewTreeWindow() ?: return
-            controller = WindowInsetsControllerCompat(window, editText)
+            controller = findViewTreeWindow()?.createWindowInsetsController(editText)
         }
     }
 

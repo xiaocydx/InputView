@@ -3,13 +3,10 @@ package com.xiaocydx.inputview
 import android.app.Activity
 import android.content.Context
 import android.util.AttributeSet
-import android.view.Gravity
-import android.view.View
+import android.view.*
 import android.view.View.MeasureSpec.*
-import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-import android.view.ViewTreeObserver
 import android.widget.EditText
 import androidx.annotation.IntRange
 import androidx.core.view.*
@@ -37,6 +34,8 @@ class InputView @JvmOverloads constructor(
     private var editorMode: EditorMode = EditorMode.ADJUST_RESIZE
     private var editorAnimator: EditorAnimator = DefaultEditorAnimator()
     private var contentView: View? = null
+    private var window: ViewTreeWindow? = null
+    private var navBarOffset = NO_VALUE
 
     /**
      * 编辑区的偏移值，可作为[EditorAnimator]动画的起始值
@@ -116,6 +115,25 @@ class InputView @JvmOverloads constructor(
         return MarginLayoutParams(context, attrs)
     }
 
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        if (window == null) {
+            window = findViewTreeWindow()
+        }
+    }
+
+    /**
+     * [contentView]和[editorView]之间会有一个[navBarOffset]区域，
+     * 当支持手势导航栏边到边时，[navBarOffset]等于导航栏的高度，此时显示[Editor]，
+     * 在[editorOffset]超过[navBarOffset]后，才会更新[contentView]的尺寸或位置。
+     */
+    override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
+        navBarOffset = window?.getNavigationOffset(
+            WindowInsetsCompat.toWindowInsetsCompat(insets)
+        ) ?: NO_VALUE
+        return super.onApplyWindowInsets(insets)
+    }
+
     /**
      * 更新编辑区的偏移值，该函数仅由[EditorAnimator]调用
      *
@@ -126,20 +144,31 @@ class InputView @JvmOverloads constructor(
      * 则对[contentView]重新measure和layout，确保[contentView]的尺寸和位置在当前帧draw之前是正确的，
      * measure有测量缓存，layout有边界对比，对[contentView]重新measure和layout不一定会产生性能损耗。
      */
+    @Suppress("KotlinConstantConditions", "ConvertTwoComparisonsToRangeCheck")
     internal fun updateEditorOffset(offset: Int, resizeInNextLayout: Boolean) {
-        val safeOffset = offset.coerceAtLeast(0)
-        if (editorOffset == safeOffset) return
-        val diff = editorOffset - safeOffset
-        editorOffset = safeOffset
+        val current = offset.coerceAtLeast(0)
+        if (editorOffset == current) return
+        val previous = editorOffset
+        val editorDiff = previous - current
+        editorOffset = current
 
         val contentView = contentView ?: return
         when (editorMode) {
             EditorMode.ADJUST_PAN -> {
-                editorView.offsetTopAndBottom(diff)
-                contentView.offsetTopAndBottom(diff)
+                editorView.offsetTopAndBottom(editorDiff)
+                val threshold = navBarOffset
+                val contentDiff = when {
+                    previous >= threshold && current >= threshold -> editorDiff
+                    previous < threshold && current > threshold -> threshold - current
+                    previous > threshold && current < threshold -> previous - threshold
+                    else -> Int.MIN_VALUE
+                }
+                if (contentDiff != Int.MIN_VALUE) {
+                    contentView.offsetTopAndBottom(contentDiff)
+                }
             }
             EditorMode.ADJUST_RESIZE -> if (!resizeInNextLayout) {
-                editorView.offsetTopAndBottom(diff)
+                editorView.offsetTopAndBottom(editorDiff)
                 measureContentView(contentView)
                 layoutContentView(contentView)
             } else {
@@ -189,9 +218,9 @@ class InputView @JvmOverloads constructor(
         val horizontalMargin = contentView.let { it.marginLeft + it.marginRight }
         val verticalMargin = contentView.let { it.marginTop + it.marginBottom }
         val maxContentWidth = measuredWidth - horizontalMargin
-        var maxContentHeight = measuredHeight - verticalMargin
+        var maxContentHeight = measuredHeight - verticalMargin - navBarOffset
         if (editorMode === EditorMode.ADJUST_RESIZE) {
-            maxContentHeight -= editorOffset
+            maxContentHeight -= getLayoutOffset()
         }
         contentView.measure(
             when (val width = contentView.layoutParams.width) {
@@ -206,19 +235,20 @@ class InputView @JvmOverloads constructor(
     private fun layoutContentView(contentView: View) {
         contentView.let {
             val left = (measuredWidth - it.measuredWidth) / 2
-            val bottom = editorView.top - it.marginBottom
+            val bottom = height - it.marginBottom - navBarOffset - getLayoutOffset()
             val right = left + it.measuredWidth
             val top = bottom - it.measuredHeight
             it.layout(left, top, right, bottom)
         }
     }
 
-    // TODO: 支持导航栏edge-to-edge
+    private fun getLayoutOffset(): Int {
+        return (editorOffset - navBarOffset).coerceAtLeast(0)
+    }
+
     private inner class WindowInsetsAnimationHandler :
             WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_STOP) {
-        private var typeMask = NO_TYPE_MASK
-        private val imeType = WindowInsetsCompat.Type.ime()
-        private val navBarsType = WindowInsetsCompat.Type.navigationBars()
+        private var typeMask = NO_VALUE
 
         fun attach() {
             ViewCompat.setWindowInsetsAnimationCallback(editorView, this)
@@ -232,30 +262,26 @@ class InputView @JvmOverloads constructor(
             animation: WindowInsetsAnimationCompat,
             bounds: WindowInsetsAnimationCompat.BoundsCompat
         ): WindowInsetsAnimationCompat.BoundsCompat {
-            if (typeMask == NO_TYPE_MASK && animation.typeMask and imeType == imeType) {
-                val insets = ViewCompat.getRootWindowInsets(editorView)
-                if (insets != null) {
-                    val imeInsets = insets.getInsets(imeType)
-                    val navBarsInsets = insets.getInsets(navBarsType)
-                    typeMask = animation.typeMask
-                    editorView.dispatchIme(isShow = imeInsets.bottom > 0)
-                    val value = (imeInsets.bottom - navBarsInsets.bottom).coerceAtLeast(0)
-                    editorAnimator.onWindowInsetsAnimationStart(value, animation)
-                }
+            val window = window ?: return bounds
+            if (typeMask == NO_VALUE && window.containsImeType(animation.typeMask)) {
+                val insets = window.getRootWindowInsets() ?: return bounds
+                typeMask = animation.typeMask
+                editorView.dispatchIme(isShow = window.getImeHeight(insets) > 0)
+                val endValue = window.getImeOffset(insets)
+                editorAnimator.onWindowInsetsAnimationStart(endValue, animation)
             }
-            return super.onStart(animation, bounds)
+            return bounds
         }
 
         override fun onProgress(
             insets: WindowInsetsCompat,
             runningAnimations: MutableList<WindowInsetsAnimationCompat>
         ): WindowInsetsCompat {
+            val window = window ?: return insets
             val animation = runningAnimations.firstOrNull { it.typeMask == typeMask }
             if (animation != null) {
-                val imeInsets = insets.getInsets(imeType)
-                val navBarsInsets = insets.getInsets(navBarsType)
-                val value = (imeInsets.bottom - navBarsInsets.bottom).coerceAtLeast(0)
-                editorAnimator.onWindowInsetsAnimationProgress(value, animation)
+                val currentValue = window.getImeOffset(insets)
+                editorAnimator.onWindowInsetsAnimationProgress(currentValue, animation)
             }
             return insets
         }
@@ -264,11 +290,11 @@ class InputView @JvmOverloads constructor(
             if (animation.typeMask == typeMask) {
                 editorAnimator.onWindowInsetsAnimationEnd(animation)
             }
-            typeMask = NO_TYPE_MASK
+            typeMask = NO_VALUE
         }
     }
 
     companion object {
-        private const val NO_TYPE_MASK = -1
+        private const val NO_VALUE = -1
     }
 }
