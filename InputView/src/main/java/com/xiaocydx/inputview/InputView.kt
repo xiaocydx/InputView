@@ -35,7 +35,7 @@ class InputView @JvmOverloads constructor(
     private var editorAnimator: EditorAnimator = DefaultEditorAnimator()
     private var contentView: View? = null
     private var window: ViewTreeWindow? = null
-    private var navBarOffset = NO_VALUE
+    private var navBarOffset = 0
 
     /**
      * 编辑区的偏移值，可作为[EditorAnimator]动画的起始值
@@ -130,7 +130,7 @@ class InputView @JvmOverloads constructor(
     override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
         navBarOffset = window?.getNavigationOffset(
             WindowInsetsCompat.toWindowInsetsCompat(insets)
-        ) ?: NO_VALUE
+        ) ?: 0
         return super.onApplyWindowInsets(insets)
     }
 
