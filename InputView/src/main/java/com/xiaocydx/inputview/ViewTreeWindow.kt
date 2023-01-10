@@ -26,14 +26,28 @@ fun InputView.Companion.init(
 }
 
 /**
+ * 设置视图树的[ViewTreeWindow]
+ */
+internal fun View.setViewTreeWindow(window: ViewTreeWindow) {
+    setTag(R.id.tag_view_tree_window, window)
+}
+
+/**
+ * 获取视图树的[ViewTreeWindow]，若未设置，则返回`null`
+ */
+internal fun View.getViewTreeWindow(): ViewTreeWindow? {
+    return getTag(R.id.tag_view_tree_window) as? ViewTreeWindow
+}
+
+/**
  * 查找视图树的[ViewTreeWindow]，若查找不到，则返回`null`
  */
 internal fun View.findViewTreeWindow(): ViewTreeWindow? {
-    var found: ViewTreeWindow? = getTag(R.id.tag_view_tree_window) as? ViewTreeWindow
+    var found: ViewTreeWindow? = getViewTreeWindow()
     if (found != null) return found
     var parent: ViewParent? = parent
     while (found == null && parent is View) {
-        found = parent.getTag(R.id.tag_view_tree_window) as? ViewTreeWindow
+        found = parent.getViewTreeWindow()
         parent = (parent as View).parent
     }
     return found
@@ -72,7 +86,7 @@ internal class ViewTreeWindow(
         // 兼容Android各版本IME的WindowInsets分发
         @Suppress("DEPRECATION")
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-        window.decorView.setTag(R.id.tag_view_tree_window, this)
+        window.decorView.setViewTreeWindow(this)
     }
 
     @CheckResult
@@ -81,7 +95,7 @@ internal class ViewTreeWindow(
         if (statusBarEdgeToEdge) {
             outcome = outcome.consumeStatusBarrHeight()
         }
-        if (outcome.supportGestureNavBarEdgeToEdge()) {
+        if (supportGestureNavBarEdgeToEdge(outcome)) {
             outcome = outcome.consumeNavigationBarHeight()
         }
         return outcome
@@ -107,17 +121,17 @@ internal class ViewTreeWindow(
     }
 
     private fun WindowInsetsCompat.contentPaddingBottom(): Int = when {
-        supportGestureNavBarEdgeToEdge() -> 0
+        supportGestureNavBarEdgeToEdge(this) -> 0
         else -> getNavigationBarHeight(this)
-    }
-
-    private fun WindowInsetsCompat.supportGestureNavBarEdgeToEdge(): Boolean {
-        return gestureNavBarEdgeToEdge && isGestureNavigationBar()
     }
 
     private fun WindowInsetsCompat.isGestureNavigationBar(): Boolean {
         val threshold = (24 * window.decorView.resources.displayMetrics.density).toInt()
         return getNavigationBarHeight(this) <= threshold.coerceAtLeast(66)
+    }
+
+    fun supportGestureNavBarEdgeToEdge(insets: WindowInsetsCompat): Boolean {
+        return gestureNavBarEdgeToEdge && insets.isGestureNavigationBar()
     }
 
     fun getRootWindowInsets(): WindowInsetsCompat? {
@@ -138,13 +152,13 @@ internal class ViewTreeWindow(
 
     fun getImeOffset(insets: WindowInsetsCompat): Int {
         val imeHeight = getImeHeight(insets)
-        if (insets.supportGestureNavBarEdgeToEdge()) return imeHeight
+        if (supportGestureNavBarEdgeToEdge(insets)) return imeHeight
         val navBarHeight = getNavigationBarHeight(insets)
         return (imeHeight - navBarHeight).coerceAtLeast(0)
     }
 
     fun getNavigationOffset(insets: WindowInsetsCompat): Int = when {
-        !insets.supportGestureNavBarEdgeToEdge() -> 0
+        !supportGestureNavBarEdgeToEdge(insets) -> 0
         else -> getNavigationBarHeight(insets)
     }
 
