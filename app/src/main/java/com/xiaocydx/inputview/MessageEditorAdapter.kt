@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.LayoutRes
+import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import com.xiaocydx.inputview.MessageEditor.*
 
@@ -31,12 +32,25 @@ class MessageEditorAdapter : EditorAdapter<MessageEditor>(), EditorHelper {
     }
 
     private fun View.setupWindowInsetsHandler() = apply {
-        (this as? ViewGroup)?.clipToPadding = false
+        val initialHeight = layoutParams.height
         doOnApplyWindowInsetsCompat { view, insets, initialState ->
+            val supportGestureNavBarEdgeToEdge = view.supportGestureNavBarEdgeToEdge(insets)
+            val navigationBarHeight = insets.getNavigationBarHeight()
+
+            val height = when {
+                !supportGestureNavBarEdgeToEdge -> initialHeight
+                else -> navigationBarHeight + initialHeight
+            }
+            if (view.layoutParams.height != height) {
+                view.updateLayoutParams { this.height = height }
+            }
+
             view.updatePadding(bottom = when {
-                !view.supportGestureNavBarEdgeToEdge(insets) -> initialState.paddings.bottom
-                else -> insets.getNavigationBarHeight() + initialState.paddings.bottom
+                !supportGestureNavBarEdgeToEdge -> initialState.paddings.bottom
+                else -> navigationBarHeight + initialState.paddings.bottom
             })
+
+            (view as? ViewGroup)?.clipToPadding = !supportGestureNavBarEdgeToEdge
         }
     }
 }
