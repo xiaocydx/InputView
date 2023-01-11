@@ -4,5 +4,5 @@ InputView是一个通用的输入控件，支持多种编辑器的创建和显�
 
 
 
-https://user-images.githubusercontent.com/43429149/211554424-5a6b591c-3051-4023-8df6-a9b864fb6557.mp4
+https://user-images.githubusercontent.com/43429149/211866066-ebbc9c60-ee72-4ff6-9e9f-084f4ecc2893.mp4
 
