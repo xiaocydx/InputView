@@ -18,7 +18,7 @@ import androidx.core.view.*
  * 2. [InputView]初始化时只能有一个子View，该子View作为[contentView]。
  * 3. [editText]用于兼容Android各版本显示和隐藏软键盘。
  * 4. [editorAdapter]支持多种[Editor]的视图创建和显示。
- * 5. [editorAnimator]支持[Editor]之间的切换动画。
+ * 5. [editorAnimator]支持[Editor]之间的过渡动画。
  *
  * [contentView]的初始化布局位置等同于[Gravity.CENTER]，其测量高度不受`layoutParams.height`影响，
  * 最大值是[InputView]的测量高度，[Editor]的视图位于[contentView]下方，通知显示[Editor]的视图时，
@@ -86,9 +86,9 @@ class InputView @JvmOverloads constructor(
         }
 
     /**
-     * [editorAnimator]默认为[DefaultEditorAnimator]
+     * [editorAnimator]默认为[AlphaEditorAnimator]
      */
-    var editorAnimator: EditorAnimator = DefaultEditorAnimator()
+    var editorAnimator: EditorAnimator = AlphaEditorAnimator()
         set(value) {
             val adapter = editorView.adapter
             adapter?.let(field::detach)
@@ -98,7 +98,6 @@ class InputView @JvmOverloads constructor(
 
     init {
         editorAdapter = ImeAdapter()
-        WindowInsetsAnimationHandler().attach()
     }
 
     override fun shouldDelayChildPressedState(): Boolean = false
@@ -238,55 +237,5 @@ class InputView @JvmOverloads constructor(
         return (editorOffset - navBarOffset).coerceAtLeast(0)
     }
 
-    private inner class WindowInsetsAnimationHandler :
-            WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_STOP) {
-        private var typeMask = NO_VALUE
-
-        fun attach() {
-            ViewCompat.setWindowInsetsAnimationCallback(editorView, this)
-        }
-
-        /**
-         * 该函数调用自[ViewTreeObserver.OnDrawListener.onDraw]，
-         * 此时可以获取[contentView]和[editorView]的最新尺寸。
-         */
-        override fun onStart(
-            animation: WindowInsetsAnimationCompat,
-            bounds: WindowInsetsAnimationCompat.BoundsCompat
-        ): WindowInsetsAnimationCompat.BoundsCompat {
-            val window = window ?: return bounds
-            if (typeMask == NO_VALUE && window.containsImeType(animation.typeMask)) {
-                val insets = window.getRootWindowInsets() ?: return bounds
-                typeMask = animation.typeMask
-                editorView.dispatchIme(isShow = window.getImeHeight(insets) > 0)
-                val endValue = window.getImeOffset(insets)
-                editorAnimator.onWindowInsetsAnimationStart(endValue, animation)
-            }
-            return bounds
-        }
-
-        override fun onProgress(
-            insets: WindowInsetsCompat,
-            runningAnimations: MutableList<WindowInsetsAnimationCompat>
-        ): WindowInsetsCompat {
-            val window = window ?: return insets
-            val animation = runningAnimations.firstOrNull { it.typeMask == typeMask }
-            if (animation != null) {
-                val currentValue = window.getImeOffset(insets)
-                editorAnimator.onWindowInsetsAnimationProgress(currentValue, animation)
-            }
-            return insets
-        }
-
-        override fun onEnd(animation: WindowInsetsAnimationCompat) {
-            if (animation.typeMask == typeMask) {
-                editorAnimator.onWindowInsetsAnimationEnd(animation)
-            }
-            typeMask = NO_VALUE
-        }
-    }
-
-    companion object {
-        private const val NO_VALUE = -1
-    }
+    companion object
 }

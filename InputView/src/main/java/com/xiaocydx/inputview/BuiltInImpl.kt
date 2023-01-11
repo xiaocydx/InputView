@@ -2,6 +2,8 @@ package com.xiaocydx.inputview
 
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.Interpolator
+import android.view.animation.LinearInterpolator
 
 /**
  * [Editor]的IME默认实现
@@ -20,9 +22,9 @@ class ImeAdapter : EditorAdapter<Ime>() {
 }
 
 /**
- * [EditorAnimator]的默认实现
+ * [Editor]的透明度过渡动画
  */
-class DefaultEditorAnimator : EditorAnimator() {
+open class AlphaEditorAnimator : EditorAnimator() {
 
     override fun onAnimationStart(
         startView: View?, endView: View?,
@@ -74,9 +76,21 @@ class DefaultEditorAnimator : EditorAnimator() {
         startView?.alpha = 1f
         endView?.alpha = 1f
     }
+
+    override fun getAnimationInterpolator(
+        startView: View?, endView: View?,
+        startOffset: Int, endOffset: Int
+    ): Interpolator {
+        // 两个非IME的Editor切换，匀速的动画效果更流畅
+        if (startOffset != 0 && endOffset != 0) return LinearInterpolator()
+        return super.getAnimationInterpolator(startView, endView, startOffset, endOffset)
+    }
 }
 
-internal class NopEditorAnimator : EditorAnimator() {
+/**
+ * 不运行[Editor]的过渡动画，仅记录Insets动画的状态
+ */
+class NopEditorAnimator : EditorAnimator() {
     override val canRunAnimation: Boolean = false
 
     override fun onAnimationUpdate(
