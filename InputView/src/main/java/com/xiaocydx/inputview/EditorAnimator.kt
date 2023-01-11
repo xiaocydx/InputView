@@ -259,7 +259,7 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
         }
     }
 
-    internal inner class AnimationRecord : AnimationState {
+    private inner class AnimationRecord : AnimationState {
         override var previous: Editor? = null; private set
         override var current: Editor? = null; private set
         override var startView: View? = null; private set
