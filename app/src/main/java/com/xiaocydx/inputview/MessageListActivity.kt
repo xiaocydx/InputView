@@ -27,22 +27,23 @@ class MessageListActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 1. 初始化InputView所需的配置
         InputView.init(window, gestureNavBarEdgeToEdge = true)
         setContentView(ActivityMessageListBinding.inflate(layoutInflater).init().root)
     }
 
     private fun ActivityMessageListBinding.init() = apply {
-        // 1. 初始化InputView的配置
+        // 2. 初始化InputView的属性
         val editorAdapter = MessageEditorAdapter()
         inputView.apply {
-            setEditText(etMessage)
-            setEditorAdapter(editorAdapter)
-            setEditorMode(EditorMode.ADJUST_PAN)
+            editText = etMessage
+            editorMode = EditorMode.ADJUST_PAN
+            this.editorAdapter = editorAdapter
             // 不运行动画
             // setEditorAnimator(null)
         }
 
-        // 2. 初始化RecyclerView的配置
+        // 3. 初始化RecyclerView的属性
         rvMessage.apply {
             layoutManager = LinearLayoutManager(
                 context, VERTICAL, /* reverseLayout */true
@@ -51,7 +52,7 @@ class MessageListActivity : AppCompatActivity() {
             scrollToPosition(0)
         }
 
-        // 3. 关联各场景的交互
+        // 4. 关联各场景的交互
         RecyclerViewTouchHideEditor(editorAdapter).attach(rvMessage)
         RecyclerViewScrollToFirst(rvMessage).attach(etMessage, editorAdapter)
         EditorToggleController(tvVoice, ivVoice, ivEmoji, ivExtra, etMessage, editorAdapter).attach()

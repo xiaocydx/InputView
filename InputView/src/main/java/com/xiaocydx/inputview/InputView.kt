@@ -15,10 +15,10 @@ import androidx.core.view.*
  * 输入控件
  *
  * 1. 在[Activity.onCreate]调用`InputView.init(window)`。
- * 2. [InputView]初始化时只能有一个子View，该子View将作为[contentView]。
- * 3. [setEditText]设置的[EditText]，用于兼容Android各版本显示和隐藏软键盘。
- * 4. [setEditorAdapter]设置的[EditorAdapter]，支持多种[Editor]的视图创建和显示。
- * 5. [setEditorAnimator]设置的[EditorAnimator]，支持[Editor]之间的切换动画。
+ * 2. [InputView]初始化时只能有一个子View，该子View作为[contentView]。
+ * 3. [editText]用于兼容Android各版本显示和隐藏软键盘。
+ * 4. [editorAdapter]支持多种[Editor]的视图创建和显示。
+ * 5. [editorAnimator]支持[Editor]之间的切换动画。
  *
  * [contentView]的初始化布局位置等同于[Gravity.CENTER]，其测量高度不受`layoutParams.height`影响，
  * 最大值是[InputView]的测量高度，[Editor]的视图位于[contentView]下方，通知显示[Editor]的视图时，
@@ -31,8 +31,6 @@ class InputView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : ViewGroup(context, attrs, defStyleAttr) {
     private val editorView = EditorView(context)
-    private var editorMode: EditorMode = EditorMode.ADJUST_RESIZE
-    private var editorAnimator: EditorAnimator = DefaultEditorAnimator()
     private var contentView: View? = null
     private var window: ViewTreeWindow? = null
     private var navBarOffset = 0
@@ -44,69 +42,63 @@ class InputView @JvmOverloads constructor(
     var editorOffset = 0
         private set
 
-    init {
-        setEditorAdapter(ImeAdapter())
-        WindowInsetsAnimationHandler().attach()
-    }
-
     /**
-     * 设置用于兼容Android各版本显示和隐藏IME的[EditText]
+     * 用于兼容Android各版本显示和隐藏IME的[EditText]
      *
      * 显示IME[editText]会获得焦点，隐藏IME会清除[editText]的焦点，
      * 可以观察[EditorAdapter.addEditorVisibleListener]的更改结果，
      * 处理[editText]的焦点。
      */
-    fun setEditText(editText: EditText) {
-        editorView.setEditText(editText)
-    }
+    var editText: EditText?
+        get() = editorView.editText
+        set(value) {
+            editorView.editText = value
+        }
 
     /**
-     * 设置[EditorMode]，默认是[EditorMode.ADJUST_RESIZE]
+     * [EditorMode]默认为[EditorMode.ADJUST_RESIZE]
      *
-     * @param mode
      * 1. [EditorMode.ADJUST_PAN]，显示[Editor]时平移[contentView]。
      * 2. [EditorMode.ADJUST_RESIZE]，显示[Editor]时修改[contentView]的尺寸。
      */
-    fun setEditorMode(mode: EditorMode) {
-        editorMode = mode
-        requestLayout()
-    }
+    var editorMode: EditorMode = EditorMode.ADJUST_RESIZE
+        set(value) {
+            if (field === value) return
+            field = value
+            requestLayout()
+        }
 
     /**
-     * 设置[EditorAdapter]，默认是[ImeAdapter]
-     *
-     * [ImeAdapter]可用于只需要IME的场景：
-     * ```
-     * val adapter = ImeAdapter()
-     * inputView.setEditorAdapter(adapter)
-     *
-     * // 显示IME
-     * adapter.notifyShowIme()
-     * // 隐藏IME
-     * adapter.notifyHideIme()
-     * ```
+     * [editorAdapter]默认为[ImeAdapter]
      */
-    fun setEditorAdapter(adapter: EditorAdapter<*>) {
-        val previous = editorView.adapter
-        previous?.let(editorAnimator::detach)
-        previous?.detach(this, editorView)
-        editorView.setAdapter(adapter)
-        adapter.attach(this, editorView)
-        adapter.let(editorAnimator::attach)
-        editorOffset = 0
-        requestLayout()
-    }
+    var editorAdapter: EditorAdapter<*>
+        get() = requireNotNull(editorView.adapter) { "未初始化EditorAdapter" }
+        set(value) {
+            val previous = editorView.adapter
+            if (previous === value) return
+            previous?.let(editorAnimator::detach)
+            previous?.detach(this, editorView)
+            editorView.setAdapter(value)
+            value.attach(this, editorView)
+            value.let(editorAnimator::attach)
+            editorOffset = 0
+            requestLayout()
+        }
 
     /**
-     * 设置[EditorAnimator]，默认是[DefaultEditorAnimator]
-     *
-     * @param animator 若为`null`，则不运行动画
+     * [editorAnimator]默认为[DefaultEditorAnimator]
      */
-    fun setEditorAnimator(animator: EditorAnimator?) {
-        val adapter = editorView.adapter
-        adapter?.let(editorAnimator::detach)
-        editorAnimator = animator ?: NopEditorAnimator()
-        adapter?.let(editorAnimator::attach)
+    var editorAnimator: EditorAnimator = DefaultEditorAnimator()
+        set(value) {
+            val adapter = editorView.adapter
+            adapter?.let(field::detach)
+            field = value
+            adapter?.let(field::attach)
+        }
+
+    init {
+        editorAdapter = ImeAdapter()
+        WindowInsetsAnimationHandler().attach()
     }
 
     override fun shouldDelayChildPressedState(): Boolean = false

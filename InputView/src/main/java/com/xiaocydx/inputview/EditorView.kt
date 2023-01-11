@@ -27,9 +27,18 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     var changeRecord = ChangeRecord()
         private set
 
+    var editText: EditText?
+        get() = editTextRef?.get()
+        set(value) {
+            editTextRef = value?.let(::WeakReference)
+            if (value != null && isAttachedToWindow) {
+                controller = findViewTreeWindow()?.createWindowInsetsController(value)
+            }
+        }
+
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        val editText = editTextRef?.get()
+        val editText = editText
         if (controller == null && editText != null) {
             controller = findViewTreeWindow()?.createWindowInsetsController(editText)
         }
@@ -59,13 +68,6 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         }
         require(imeCount > 0) { "editors不包含表示IME的Editor" }
         require(imeCount == 1) { "editors包含${imeCount}个表示IME的Editor" }
-    }
-
-    fun setEditText(editText: EditText) {
-        editTextRef = WeakReference(editText)
-        if (isAttachedToWindow) {
-            controller = findViewTreeWindow()?.createWindowInsetsController(editText)
-        }
     }
 
     fun showChecked(editor: Editor) {
