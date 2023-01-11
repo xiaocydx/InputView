@@ -4,6 +4,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.Interpolator
 import android.view.animation.LinearInterpolator
+import androidx.annotation.FloatRange
 
 /**
  * [Editor]的IME默认实现
@@ -22,23 +23,20 @@ class ImeAdapter : EditorAdapter<Ime>() {
 }
 
 /**
- * [Editor]的透明度过渡动画
+ * [Editor]的淡入淡出动画
  */
-open class AlphaEditorAnimator : EditorAnimator() {
+open class FadeEditorAnimator : EditorAnimator() {
+    @FloatRange(from = 0.0, to = 0.5)
+    protected open val thresholdFaction = 0.4f
 
-    override fun onAnimationStart(
-        startView: View?, endView: View?,
-        startOffset: Int, endOffset: Int
-    ) {
+    override fun onAnimationStart(state: AnimationState): Unit = with(state) {
         startView?.alpha = 1f
         endView?.alpha = 0f
     }
 
-    override fun onAnimationUpdate(
-        startView: View?, endView: View?,
-        startOffset: Int, endOffset: Int, currentOffset: Int
-    ) {
+    override fun onAnimationUpdate(state: AnimationState): Unit = with(state) {
         updateEditorOffset(currentOffset)
+
         var start = startOffset
         var end = endOffset
         var current = currentOffset
@@ -49,9 +47,14 @@ open class AlphaEditorAnimator : EditorAnimator() {
             current = start + diff
         }
 
-        var threshold = (end - start) * 0.4f
-        threshold = threshold.coerceAtLeast(0.5f)
+        val threshold = (end - start) * thresholdFaction
         when {
+            startView == null && endView != null -> {
+                endView!!.alpha = faction
+            }
+            startView != null && endView == null -> {
+                startView!!.alpha = 1 - faction
+            }
             current >= 0 && current <= start + threshold -> {
                 val fraction = (current - start) / threshold
                 startView?.alpha = 1 - fraction
@@ -69,21 +72,15 @@ open class AlphaEditorAnimator : EditorAnimator() {
         }
     }
 
-    override fun onAnimationEnd(
-        startView: View?, endView: View?,
-        startOffset: Int, endOffset: Int
-    ) {
+    override fun onAnimationEnd(state: AnimationState): Unit = with(state) {
         startView?.alpha = 1f
         endView?.alpha = 1f
     }
 
-    override fun getAnimationInterpolator(
-        startView: View?, endView: View?,
-        startOffset: Int, endOffset: Int
-    ): Interpolator {
+    override fun getAnimationInterpolator(state: AnimationState): Interpolator = state.run {
         // 两个非IME的Editor切换，匀速的动画效果更流畅
-        if (startOffset != 0 && endOffset != 0) return LinearInterpolator()
-        return super.getAnimationInterpolator(startView, endView, startOffset, endOffset)
+        if (startView != null && endView != null) return LinearInterpolator()
+        super.getAnimationInterpolator(state)
     }
 }
 
@@ -93,10 +90,7 @@ open class AlphaEditorAnimator : EditorAnimator() {
 class NopEditorAnimator : EditorAnimator() {
     override val canRunAnimation: Boolean = false
 
-    override fun onAnimationUpdate(
-        startView: View?, endView: View?,
-        startOffset: Int, endOffset: Int, currentOffset: Int
-    ) {
-        updateEditorOffset(currentOffset)
+    override fun onAnimationUpdate(state: AnimationState) {
+        updateEditorOffset(state.currentOffset)
     }
 }

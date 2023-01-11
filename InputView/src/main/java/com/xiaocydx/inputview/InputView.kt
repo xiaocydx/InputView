@@ -86,9 +86,9 @@ class InputView @JvmOverloads constructor(
         }
 
     /**
-     * [editorAnimator]默认为[AlphaEditorAnimator]
+     * [editorAnimator]默认为[FadeEditorAnimator]
      */
-    var editorAnimator: EditorAnimator = AlphaEditorAnimator()
+    var editorAnimator: EditorAnimator = FadeEditorAnimator()
         set(value) {
             val adapter = editorView.adapter
             adapter?.let(field::detach)

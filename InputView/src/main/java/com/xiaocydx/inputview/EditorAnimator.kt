@@ -5,11 +5,13 @@ import android.animation.ValueAnimator
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.Interpolator
+import androidx.annotation.FloatRange
 import androidx.core.animation.addListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.doOnPreDraw
+import kotlin.math.absoluteValue
 
 /**
  * [InputView]编辑区的[Editor]过渡动画
@@ -36,74 +38,43 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
     /**
      * 动画开始
      *
-     * @param startView   编辑区的起始视图
-     * @param endView     编辑区的结束视图
-     * @param startOffset 编辑区的起始偏移值
-     * @param endOffset   编辑区的结束偏移值
+     * @param state [InputView]编辑区的动画状态
      */
-    protected open fun onAnimationStart(
-        startView: View?, endView: View?,
-        startOffset: Int, endOffset: Int
-    ) = Unit
+    protected open fun onAnimationStart(state: AnimationState) = Unit
 
     /**
      * 动画更新
      *
-     * @param startView     编辑区的起始视图
-     * @param endView       编辑区的结束视图
-     * @param startOffset   编辑区的起始偏移值
-     * @param endOffset     编辑区的结束偏移值
-     * @param currentOffset 编辑区的当前偏移值
+     * @param state [InputView]编辑区的动画状态
      */
-    protected open fun onAnimationUpdate(
-        startView: View?, endView: View?,
-        startOffset: Int, endOffset: Int, currentOffset: Int
-    ) = Unit
+    protected open fun onAnimationUpdate(state: AnimationState) = Unit
 
     /**
      * 动画结束
      *
-     * @param startView   编辑区的起始视图
-     * @param endView     编辑区的结束视图
-     * @param startOffset 编辑区的起始偏移值
-     * @param endOffset   编辑区的结束偏移值
+     * **注意**：动画结束时，应当将`state.startView`和`state.endView`恢复为初始状态。
      *
-     * **注意**：动画结束时，应当将[startView]和[endView]恢复为初始状态。
+     * @param state [InputView]编辑区的动画状态
      */
-    protected open fun onAnimationEnd(
-        startView: View?, endView: View?,
-        startOffset: Int, endOffset: Int
-    ) = Unit
+    protected open fun onAnimationEnd(state: AnimationState) = Unit
 
     /**
      * 获取动画时长，单位：ms
      *
-     * @param startView   编辑区的起始视图
-     * @param endView     编辑区的结束视图
-     * @param startOffset 编辑区的起始偏移值
-     * @param endOffset   编辑区的结束偏移值
-     *
      * **注意**：显示或隐藏IME时，内部实现会配合Insets动画，因此不会调用该函数。
+     *
+     * @param state [InputView]编辑区的动画状态
      */
-    protected open fun getAnimationDuration(
-        startView: View?, endView: View?,
-        startOffset: Int, endOffset: Int
-    ): Long = ANIMATION_DURATION
+    protected open fun getAnimationDuration(state: AnimationState): Long = ANIMATION_DURATION
 
     /**
      * 获取动画时长，单位：ms
      *
-     * @param startView   编辑区的起始视图
-     * @param endView     编辑区的结束视图
-     * @param startOffset 编辑区的起始偏移值
-     * @param endOffset   编辑区的结束偏移值
-     *
      * **注意**：显示或隐藏IME时，内部实现会配合Insets动画，因此不会调用该函数。
+     *
+     * @param state [InputView]编辑区的动画状态
      */
-    protected open fun getAnimationInterpolator(
-        startView: View?, endView: View?,
-        startOffset: Int, endOffset: Int
-    ): Interpolator = ANIMATION_INTERPOLATOR
+    protected open fun getAnimationInterpolator(state: AnimationState): Interpolator = ANIMATION_INTERPOLATOR
 
     /**
      * 更新编辑区的偏移值
@@ -141,7 +112,9 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
             inputView.doOnPreDraw {
                 val record = animationRecord
                 if (record == null || record.willRunInsetsAnimation) return@doOnPreDraw
-                record.setAnimationOffset(inputView.editorOffset, getEditorEndOffset())
+                val startOffset = inputView.editorOffset
+                val endOffset = getEditorEndOffset()
+                record.setAnimationOffset(startOffset, endOffset, startOffset)
                 runSimpleAnimationIfNecessary(record)
             }
         }
@@ -176,34 +149,31 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
             addUpdateListener { dispatchAnimationUpdate(record, it.animatedValue as Int) }
             if (block(this)) return@apply start()
 
-            duration = record.run {
-                getAnimationDuration(startView, endView, startOffset, endOffset)
-            }
-            interpolator = record.run {
-                getAnimationInterpolator(startView, endView, startOffset, endOffset)
-            }
+            duration = getAnimationDuration(record)
+            interpolator = getAnimationInterpolator(record)
             start()
         }.also(record::setSimpleAnimation)
     }
 
-    private fun dispatchAnimationStart(record: AnimationRecord) = with(record) {
-        if (startOffset == NO_VALUE || endOffset == NO_VALUE) return@with
-        onAnimationStart(startView, endView, startOffset, endOffset)
+    private fun dispatchAnimationStart(record: AnimationRecord) {
+        if (record.checkOffset()) onAnimationStart(record)
     }
 
-    private fun dispatchAnimationUpdate(record: AnimationRecord, currentOffset: Int) = with(record) {
-        if (startOffset == NO_VALUE || endOffset == NO_VALUE) return@with
-        onAnimationUpdate(startView, endView, startOffset, endOffset, currentOffset)
+    private fun dispatchAnimationUpdate(record: AnimationRecord, currentOffset: Int) {
+        if (!record.checkOffset()) return
+        record.setAnimationOffset(currentOffset = currentOffset)
+        onAnimationUpdate(record)
     }
 
-    private fun dispatchAnimationEnd(record: AnimationRecord) = with(record) {
-        if (startOffset != NO_VALUE && endOffset != NO_VALUE) {
-            if (inputView != null && inputView!!.editorOffset != endOffset) {
-                dispatchAnimationUpdate(record, endOffset)
+    private fun dispatchAnimationEnd(record: AnimationRecord) {
+        if (record.checkOffset()) {
+            record.setAnimationOffset(currentOffset = record.endOffset)
+            if (inputView != null && inputView!!.editorOffset != record.endOffset) {
+                dispatchAnimationUpdate(record, record.endOffset)
             }
-            onAnimationEnd(startView, endView, startOffset, endOffset)
+            onAnimationEnd(record)
         }
-        removeStartViewIfNecessary()
+        record.removeStartViewIfNecessary()
         animationRecord = null
     }
 
@@ -247,11 +217,10 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
             editorView?.dispatchIme(isShow = window.getImeHeight(insets) > 0)
 
             val record = animationRecord?.takeIf { it.willRunInsetsAnimation } ?: return bounds
-            val isCurrentIme = record.isIme(record.current)
-            record.setAnimationOffset(
-                startOffset = inputView?.editorOffset ?: NO_VALUE,
-                endOffset = if (isCurrentIme) window.getImeOffset(insets) else getEditorEndOffset()
-            )
+            val isIme = record.isIme(record.current)
+            val startOffset = inputView?.editorOffset ?: NO_VALUE
+            val endOffset = if (isIme) window.getImeOffset(insets) else getEditorEndOffset()
+            record.setAnimationOffset(startOffset, endOffset, startOffset)
             record.setInsetsAnimation(animation)
             when {
                 !canRunAnimation || (record.startOffset == record.endOffset)
@@ -290,27 +259,18 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
         }
     }
 
-    private inner class AnimationRecord {
-        var previous: Editor? = null
-            private set
-        var current: Editor? = null
-            private set
-        var startView: View? = null
-            private set
-        var endView: View? = null
-            private set
-        var startOffset: Int = NO_VALUE
-            private set
-        var endOffset: Int = NO_VALUE
-            private set
-        var willRunInsetsAnimation = false
-            private set
-        var willRunSimpleAnimation = false
-            private set
-        var insetsAnimation: WindowInsetsAnimationCompat? = null
-            private set
-        var simpleAnimation: Animator? = null
-            private set
+    internal inner class AnimationRecord : AnimationState {
+        override var previous: Editor? = null; private set
+        override var current: Editor? = null; private set
+        override var startView: View? = null; private set
+        override var endView: View? = null; private set
+        override var startOffset: Int = NO_VALUE; private set
+        override var endOffset: Int = NO_VALUE; private set
+        override var currentOffset: Int = NO_VALUE; private set
+        var willRunInsetsAnimation = false; private set
+        var willRunSimpleAnimation = false; private set
+        var insetsAnimation: WindowInsetsAnimationCompat? = null; private set
+        var simpleAnimation: Animator? = null; private set
 
         fun imeToOther() = isIme(previous) && current != null && !isIme(current)
 
@@ -318,6 +278,10 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
 
         fun isIme(editor: Editor?): Boolean {
             return editor != null && editorView != null && editorView!!.ime === editor
+        }
+
+        fun checkOffset(): Boolean {
+            return startOffset != NO_VALUE && endOffset != NO_VALUE && currentOffset != NO_VALUE
         }
 
         fun updateStartViewAndEndView() {
@@ -362,9 +326,14 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
             endView = editorView?.changeRecord?.currentChild
         }
 
-        fun setAnimationOffset(startOffset: Int, endOffset: Int) {
+        fun setAnimationOffset(
+            startOffset: Int = this.startOffset,
+            endOffset: Int = this.endOffset,
+            currentOffset: Int = this.currentOffset
+        ) {
             this.startOffset = startOffset
             this.endOffset = endOffset
+            this.currentOffset = currentOffset
         }
 
         fun setInsetsAnimation(animation: WindowInsetsAnimationCompat) {
@@ -389,6 +358,56 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
             // 存在逻辑缺陷，insetsAnimation不可结束，需要主动更新为结束值
             if (insetsAnimation != null) dispatchAnimationEnd(this)
         }
+    }
+
+    /**
+     * [InputView]编辑区的动画状态
+     */
+    protected interface AnimationState {
+        /**
+         * 动画起始[Editor]
+         */
+        val previous: Editor?
+
+        /**
+         * 动画结束[Editor]
+         */
+        val current: Editor?
+
+        /**
+         * 动画起始[Editor]的视图
+         */
+        val startView: View?
+
+        /**
+         * 动画结束[Editor]的视图
+         */
+        val endView: View?
+
+        /**
+         * 动画起始偏移值
+         */
+        val startOffset: Int
+
+        /**
+         * 动画结束偏移值
+         */
+        val endOffset: Int
+
+        /**
+         * 动画当前偏移值
+         */
+        val currentOffset: Int
+
+        /**
+         * 动画起始状态和结束状态之间的分数进度
+         */
+        @get:FloatRange(from = 0.0, to = 1.0)
+        val faction: Float
+            get() {
+                val diff = (currentOffset - startOffset).absoluteValue
+                return diff.toFloat() / (endOffset - startOffset).absoluteValue
+            }
     }
 
     companion object {
