@@ -85,7 +85,7 @@ open class FadeEditorAnimator : EditorAnimator() {
 }
 
 /**
- * 不运行[Editor]的过渡动画，仅记录Insets动画的状态
+ * 不运行[Editor]的过渡动画，仅记录动画状态，分发动画回调
  */
 class NopEditorAnimator : EditorAnimator() {
     override val canRunAnimation: Boolean = false

@@ -33,20 +33,26 @@ class InputView @JvmOverloads constructor(
     private val editorView = EditorView(context)
     private var contentView: View? = null
     private var window: ViewTreeWindow? = null
-    private var navBarOffset = 0
+
+    /**
+     * 导航栏的偏移值，可作为[EditorAnimator]动画的计算参数
+     */
+    @get:IntRange(from = 0)
+    internal var navBarOffset = 0
+        private set
 
     /**
      * 编辑区的偏移值，可作为[EditorAnimator]动画的起始值
      */
     @get:IntRange(from = 0)
-    var editorOffset = 0
+    internal var editorOffset = 0
         private set
 
     /**
      * 用于兼容Android各版本显示和隐藏IME的[EditText]
      *
      * 显示IME[editText]会获得焦点，隐藏IME会清除[editText]的焦点，
-     * 可以观察[EditorAdapter.addEditorVisibleListener]的更改结果，
+     * 可以观察[EditorAdapter.addEditorChangedListener]的更改结果，
      * 处理[editText]的焦点。
      */
     var editText: EditText?
@@ -119,9 +125,10 @@ class InputView @JvmOverloads constructor(
      * 在[editorOffset]超过[navBarOffset]后，才会更新[contentView]的尺寸或位置。
      */
     override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
-        navBarOffset = window?.getNavigationOffset(
-            WindowInsetsCompat.toWindowInsetsCompat(insets)
-        ) ?: 0
+        val insetsCompat = WindowInsetsCompat.toWindowInsetsCompat(insets)
+        navBarOffset = window?.getNavigationOffset(insetsCompat) ?: 0
+        val imeHeight = window?.getImeHeight(insetsCompat) ?: 0
+        editorView.dispatchIme(isShow = imeHeight > 0)
         return super.onApplyWindowInsets(insets)
     }
 

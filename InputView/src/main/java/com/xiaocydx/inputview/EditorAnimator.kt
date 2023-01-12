@@ -6,6 +6,7 @@ import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.Interpolator
 import androidx.annotation.FloatRange
+import androidx.annotation.IntRange
 import androidx.core.animation.addListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsAnimationCompat
@@ -19,10 +20,11 @@ import kotlin.math.absoluteValue
  * @author xcc
  * @date 2023/1/8
  */
-abstract class EditorAnimator : EditorVisibleListener<Editor> {
+abstract class EditorAnimator : EditorChangedListener<Editor> {
     private var animationRecord: AnimationRecord? = null
     private var editorAdapter: EditorAdapter<*>? = null
     private val insetsHandler = InsetsHandler()
+    private val callbacks = ArrayList<AnimationCallback>(2)
     private val editorView: EditorView?
         get() = editorAdapter?.editorView
     private val inputView: InputView?
@@ -34,6 +36,22 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
      */
     val isRunning: Boolean
         get() = animationRecord != null
+
+    /**
+     * 添加[AnimationCallback]
+     *
+     * 在[EditorChangedListener]的各个函数可以调用[removeAnimationCallback]。
+     */
+    fun addAnimationCallback(callback: AnimationCallback) {
+        if (!callbacks.contains(callback)) callbacks.add(callback)
+    }
+
+    /**
+     * 移除[AnimationCallback]
+     */
+    fun removeAnimationCallback(callback: AnimationCallback) {
+        callbacks.remove(callback)
+    }
 
     /**
      * 动画开始
@@ -103,7 +121,7 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
      * 2. 若[previous]和[current]不是IME，则调用[runSimpleAnimationIfNecessary]运行简单动画，
      * 若[previous]和[current]其中一个是IME，则运行Insets动画，在[InsetsHandler]做进一步处理。
      */
-    final override fun onVisibleChanged(previous: Editor?, current: Editor?) {
+    final override fun onEditorChanged(previous: Editor?, current: Editor?) {
         val inputView = inputView ?: return
         // 若还未到下一帧运行动画，则不会置空animationRecord，而是更新记录的属性
         animationRecord?.endAnimation()
@@ -123,6 +141,7 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
             updateStartViewAndEndView()
             updateRunAnimationType(previous, current)
         }
+        dispatchAnimationCallback { onEditorChanged(previous, current) }
     }
 
     private fun getEditorEndOffset(): Int {
@@ -156,13 +175,16 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
     }
 
     private fun dispatchAnimationStart(record: AnimationRecord) {
-        if (record.checkOffset()) onAnimationStart(record)
+        if (!record.checkOffset()) return
+        onAnimationStart(record)
+        dispatchAnimationCallback { onAnimationStart(record) }
     }
 
     private fun dispatchAnimationUpdate(record: AnimationRecord, currentOffset: Int) {
         if (!record.checkOffset()) return
         record.setAnimationOffset(currentOffset = currentOffset)
         onAnimationUpdate(record)
+        dispatchAnimationCallback { onAnimationUpdate(record) }
     }
 
     private fun dispatchAnimationEnd(record: AnimationRecord) {
@@ -172,16 +194,21 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
                 dispatchAnimationUpdate(record, record.endOffset)
             }
             onAnimationEnd(record)
+            dispatchAnimationCallback { onAnimationEnd(record) }
         }
         record.removeStartViewIfNecessary()
         animationRecord = null
+    }
+
+    private inline fun dispatchAnimationCallback(action: AnimationCallback.() -> Unit) {
+        for (index in callbacks.indices.reversed()) callbacks[index].apply(action)
     }
 
     internal fun attach(adapter: EditorAdapter<*>) {
         editorAdapter = adapter
         insetsHandler.reset()
         editorView?.let { ViewCompat.setWindowInsetsAnimationCallback(it, insetsHandler) }
-        adapter.addEditorVisibleListener(this)
+        adapter.addEditorChangedListener(this)
         onAttachToEditorAdapter(adapter)
     }
 
@@ -190,7 +217,7 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
         animationRecord?.endAnimation()
         editorView?.let { ViewCompat.setWindowInsetsAnimationCallback(it, null) }
         editorAdapter = null
-        adapter.removeEditorVisibleListener(this)
+        adapter.removeEditorChangedListener(this)
         onDetachFromEditorAdapter(adapter)
     }
 
@@ -214,7 +241,6 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
                 return bounds
             }
             typeMask = animation.typeMask
-            editorView?.dispatchIme(isShow = window.getImeHeight(insets) > 0)
 
             val record = animationRecord?.takeIf { it.willRunInsetsAnimation } ?: return bounds
             val isIme = record.isIme(record.current)
@@ -267,6 +293,9 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
         override var startOffset: Int = NO_VALUE; private set
         override var endOffset: Int = NO_VALUE; private set
         override var currentOffset: Int = NO_VALUE; private set
+        override val navBarOffset: Int
+            get() = inputView?.navBarOffset ?: 0
+
         var willRunInsetsAnimation = false; private set
         var willRunSimpleAnimation = false; private set
         var insetsAnimation: WindowInsetsAnimationCompat? = null; private set
@@ -360,59 +389,96 @@ abstract class EditorAnimator : EditorVisibleListener<Editor> {
         }
     }
 
-    /**
-     * [InputView]编辑区的动画状态
-     */
-    protected interface AnimationState {
-        /**
-         * 动画起始[Editor]
-         */
-        val previous: Editor?
-
-        /**
-         * 动画结束[Editor]
-         */
-        val current: Editor?
-
-        /**
-         * 动画起始[Editor]的视图
-         */
-        val startView: View?
-
-        /**
-         * 动画结束[Editor]的视图
-         */
-        val endView: View?
-
-        /**
-         * 动画起始偏移值
-         */
-        val startOffset: Int
-
-        /**
-         * 动画结束偏移值
-         */
-        val endOffset: Int
-
-        /**
-         * 动画当前偏移值
-         */
-        val currentOffset: Int
-
-        /**
-         * 动画起始状态和结束状态之间的分数进度
-         */
-        @get:FloatRange(from = 0.0, to = 1.0)
-        val faction: Float
-            get() {
-                val diff = (currentOffset - startOffset).absoluteValue
-                return diff.toFloat() / (endOffset - startOffset).absoluteValue
-            }
-    }
-
     companion object {
         private const val NO_VALUE = -1
         private const val ANIMATION_DURATION = 250L
         private val ANIMATION_INTERPOLATOR = DecelerateInterpolator()
     }
+}
+
+/**
+ * [EditorAnimator]的动画状态
+ */
+interface AnimationState {
+    /**
+     * 动画起始[Editor]
+     */
+    val previous: Editor?
+
+    /**
+     * 动画结束[Editor]
+     */
+    val current: Editor?
+
+    /**
+     * 动画起始[Editor]的视图
+     */
+    val startView: View?
+
+    /**
+     * 动画结束[Editor]的视图
+     */
+    val endView: View?
+
+    /**
+     * 动画起始偏移值
+     */
+    @get:IntRange(from = 0)
+    val startOffset: Int
+
+    /**
+     * 动画结束偏移值
+     */
+    @get:IntRange(from = 0)
+    val endOffset: Int
+
+    /**
+     * 动画当前偏移值
+     */
+    @get:IntRange(from = 0)
+    val currentOffset: Int
+
+    /**
+     * 导航栏偏移，若不支持手势导航栏边到边，则该属性值为0
+     */
+    @get:IntRange(from = 0)
+    val navBarOffset: Int
+
+    /**
+     * 动画起始状态和结束状态之间的分数进度
+     */
+    @get:FloatRange(from = 0.0, to = 1.0)
+    val faction: Float
+        get() {
+            val diff = (currentOffset - startOffset).absoluteValue
+            return diff.toFloat() / (endOffset - startOffset).absoluteValue
+        }
+}
+
+/**
+ * [EditorAnimator]的动画回调
+ */
+interface AnimationCallback : EditorChangedListener<Editor> {
+    /**
+     * 动画开始
+     *
+     * @param state [InputView]编辑区的动画状态
+     */
+    fun onAnimationStart(state: AnimationState) = Unit
+
+    /**
+     * 动画更新
+     *
+     * @param state [InputView]编辑区的动画状态
+     */
+    fun onAnimationUpdate(state: AnimationState) = Unit
+
+    /**
+     * 动画结束
+     *
+     * **注意**：动画结束时，应当将`state.startView`和`state.endView`恢复为初始状态。
+     *
+     * @param state [InputView]编辑区的动画状态
+     */
+    fun onAnimationEnd(state: AnimationState) = Unit
 }

@@ -30,7 +30,7 @@ import android.view.ViewGroup
  * @date 2023/1/8
  */
 abstract class EditorAdapter<T : Editor> {
-    private var listeners = ArrayList<EditorVisibleListener<T>>(2)
+    private var listeners = ArrayList<EditorChangedListener<T>>(2)
     internal var inputView: InputView? = null
         private set
     internal var editorView: EditorView? = null
@@ -64,18 +64,18 @@ abstract class EditorAdapter<T : Editor> {
     protected open fun onDetachFromInputView(inputView: InputView) = Unit
 
     /**
-     * 添加[EditorVisibleListener]
+     * 添加[EditorChangedListener]
      *
-     * 在[EditorVisibleListener.onVisibleChanged]可以调用[removeEditorVisibleListener]。
+     * 在[EditorChangedListener.onEditorChanged]可以调用[removeEditorChangedListener]。
      */
-    fun addEditorVisibleListener(listener: EditorVisibleListener<T>) {
+    fun addEditorChangedListener(listener: EditorChangedListener<T>) {
         if (!listeners.contains(listener)) listeners.add(listener)
     }
 
     /**
-     * 移除[EditorVisibleListener]
+     * 移除[EditorChangedListener]
      */
-    fun removeEditorVisibleListener(listener: EditorVisibleListener<T>) {
+    fun removeEditorChangedListener(listener: EditorChangedListener<T>) {
         listeners.remove(listener)
     }
 
@@ -93,9 +93,9 @@ abstract class EditorAdapter<T : Editor> {
         onDetachFromInputView(inputView)
     }
 
-    internal fun onVisibleChanged(previous: T?, current: T?) {
+    internal fun onEditorChanged(previous: T?, current: T?) {
         for (index in listeners.indices.reversed()) {
-            listeners[index].onVisibleChanged(previous, current)
+            listeners[index].onEditorChanged(previous, current)
         }
     }
 }
@@ -115,7 +115,7 @@ interface Editor
 /**
  * [InputView]编辑区显示的[Editor]更改监听
  */
-fun interface EditorVisibleListener<in T : Editor> {
+fun interface EditorChangedListener<in T : Editor> {
 
     /**
      * 显示的[Editor]已更改
@@ -123,5 +123,5 @@ fun interface EditorVisibleListener<in T : Editor> {
      * @param previous 之前显示的[Editor]，`null`表示之前没有显示[Editor]
      * @param current  当前显示的[Editor]，`null`表示当前没有显示[Editor]
      */
-    fun onVisibleChanged(previous: T?, current: T?)
+    fun onEditorChanged(previous: T?, current: T?)
 }

@@ -94,7 +94,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         }
         current = editor
         changeRecord = ChangeRecord(previousChild, currentChild)
-        adapter.onVisibleChanged(previous, current)
+        adapter.onEditorChanged(previous, current)
     }
 
     fun hideChecked(editor: Editor) {
@@ -105,7 +105,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
             if (editor === ime) controlIme(isShow = false)
             current = null
             changeRecord = ChangeRecord(previousChild, currentChild = null)
-            adapter.onVisibleChanged(editor, current)
+            adapter.onEditorChanged(editor, current)
         }
     }
 
