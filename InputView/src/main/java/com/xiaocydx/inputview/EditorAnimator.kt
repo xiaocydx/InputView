@@ -443,7 +443,7 @@ interface AnimationState {
      * 动画起始状态和结束状态之间的分数进度
      */
     @get:FloatRange(from = 0.0, to = 1.0)
-    val faction: Float
+    val fraction: Float
         get() {
             val diff = (currentOffset - startOffset).absoluteValue
             return diff.toFloat() / (endOffset - startOffset).absoluteValue

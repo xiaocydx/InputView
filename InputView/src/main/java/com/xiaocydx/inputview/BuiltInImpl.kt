@@ -38,7 +38,7 @@ class ImeAdapter : EditorAdapter<Ime>() {
  */
 open class FadeEditorAnimator : EditorAnimator() {
     @FloatRange(from = 0.0, to = 0.5)
-    protected open val thresholdFaction = 0.4f
+    protected open val thresholdFraction = 0.4f
 
     override fun onAnimationStart(state: AnimationState): Unit = with(state) {
         startView?.alpha = 1f
@@ -56,13 +56,13 @@ open class FadeEditorAnimator : EditorAnimator() {
             current = start + diff
         }
 
-        val threshold = (end - start) * thresholdFaction
+        val threshold = (end - start) * thresholdFraction
         when {
             startView == null && endView != null -> {
-                endView!!.alpha = faction
+                endView!!.alpha = fraction
             }
             startView != null && endView == null -> {
-                startView!!.alpha = 1 - faction
+                startView!!.alpha = 1 - fraction
             }
             current >= 0 && current <= start + threshold -> {
                 val fraction = (current - start) / threshold
