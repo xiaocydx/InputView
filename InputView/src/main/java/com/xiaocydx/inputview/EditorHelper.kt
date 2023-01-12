@@ -24,7 +24,7 @@ interface EditorHelper {
      * // layoutParams.height是固定高度
      * val initialHeight = recyclerView.layoutParams.height
      *
-     * recyclerView.doOnApplyWindowInsetsCompat { _, insets, initialState ->
+     * recyclerView.doOnApplyWindowInsets { _, insets, initialState ->
      *     val supportGestureNavBarEdgeToEdge = recyclerView.supportGestureNavBarEdgeToEdge(insets)
      *     val navigationBarHeight = insets.getNavigationBarHeight()
      *
@@ -50,7 +50,7 @@ interface EditorHelper {
      * }
      * ```
      */
-    fun View.doOnApplyWindowInsetsCompat(
+    fun View.doOnApplyWindowInsets(
         block: (view: View, insets: WindowInsetsCompat, initialState: ViewState) -> Unit
     ) {
         val initialState = ViewState(this)

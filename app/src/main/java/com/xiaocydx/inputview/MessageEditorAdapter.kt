@@ -73,7 +73,7 @@ private class GestureNavBarEdgeToEdgeRecyclerView(context: Context) : RecyclerVi
         // layoutParams.height是350.dp固定高度
         val initialHeight = layoutParams.height
 
-        doOnApplyWindowInsetsCompat { view, insets, initialState ->
+        doOnApplyWindowInsets { view, insets, initialState ->
             val supportGestureNavBarEdgeToEdge = view.supportGestureNavBarEdgeToEdge(insets)
             val navigationBarHeight = insets.getNavigationBarHeight()
 
