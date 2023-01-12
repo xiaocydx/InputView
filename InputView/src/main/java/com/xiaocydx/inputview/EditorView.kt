@@ -66,9 +66,9 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         require(imeCount == 1) { "editors包含${imeCount}个表示IME的Editor" }
     }
 
-    fun showChecked(editor: Editor) {
+    fun showChecked(editor: Editor): Boolean {
         val adapter = checkedAdapter()
-        if (adapter == null || current === editor) return
+        if (adapter == null || current === editor) return false
         val currentChild: View?
         val previous = current
         val previousChild = views[previous]
@@ -91,9 +91,10 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         current = editor
         changeRecord = ChangeRecord(previousChild, currentChild)
         adapter.onEditorChanged(previous, current)
+        return true
     }
 
-    fun hideChecked(editor: Editor) {
+    fun hideChecked(editor: Editor): Boolean {
         val adapter = checkedAdapter()
         if (adapter != null && current === editor) {
             val previousChild = views[editor]
@@ -102,14 +103,17 @@ internal class EditorView(context: Context) : FrameLayout(context) {
             current = null
             changeRecord = ChangeRecord(previousChild, currentChild = null)
             adapter.onEditorChanged(editor, current)
+            return true
         }
+        return false
     }
 
-    fun dispatchIme(isShow: Boolean) {
-        val ime = ime ?: return
-        when {
+    fun dispatchIme(isShow: Boolean): Boolean {
+        val ime = ime ?: return false
+        return when {
             current !== ime && isShow -> showChecked(ime)
             current === ime && !isShow -> hideChecked(ime)
+            else -> false
         }
     }
 

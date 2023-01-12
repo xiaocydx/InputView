@@ -95,15 +95,6 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
     protected open fun getAnimationInterpolator(state: AnimationState): Interpolator = ANIMATION_INTERPOLATOR
 
     /**
-     * 更新编辑区的偏移值
-     *
-     * **注意**：只能在[onAnimationStart]、[onAnimationUpdate]、[onAnimationEnd]调用该函数。
-     */
-    protected fun updateEditorOffset(offset: Int) {
-        inputView?.updateEditorOffset(offset, resizeInNextLayout = canRunAnimation)
-    }
-
-    /**
      * 当前[EditorAnimator]添加到[adapter]
      */
     protected open fun onAttachToEditorAdapter(adapter: EditorAdapter<*>) = Unit
@@ -183,6 +174,7 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
     private fun dispatchAnimationUpdate(record: AnimationRecord, currentOffset: Int) {
         if (!record.checkOffset()) return
         record.setAnimationOffset(currentOffset = currentOffset)
+        inputView?.updateEditorOffset(record.currentOffset, canRunAnimation)
         onAnimationUpdate(record)
         dispatchAnimationCallback { onAnimationUpdate(record) }
     }
@@ -241,7 +233,8 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
                 return bounds
             }
             typeMask = animation.typeMask
-            editorView?.dispatchIme(isShow = window.getImeHeight(insets) > 0)
+            // 更改Editor后，会在onEditorChanged()对animationRecord赋值
+            inputView?.dispatchIme(isShow = window.getImeHeight(insets) > 0, canRunAnimation)
 
             val record = animationRecord?.takeIf { it.willRunInsetsAnimation } ?: return bounds
             val isIme = record.isIme(record.current)

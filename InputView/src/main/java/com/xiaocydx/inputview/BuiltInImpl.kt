@@ -46,8 +46,6 @@ open class FadeEditorAnimator : EditorAnimator() {
     }
 
     override fun onAnimationUpdate(state: AnimationState): Unit = with(state) {
-        updateEditorOffset(currentOffset)
-
         var start = startOffset
         var end = endOffset
         var current = currentOffset
@@ -100,8 +98,4 @@ open class FadeEditorAnimator : EditorAnimator() {
  */
 class NopEditorAnimator : EditorAnimator() {
     override val canRunAnimation: Boolean = false
-
-    override fun onAnimationUpdate(state: AnimationState) {
-        updateEditorOffset(state.currentOffset)
-    }
 }

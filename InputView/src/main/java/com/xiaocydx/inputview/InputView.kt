@@ -135,23 +135,27 @@ class InputView @JvmOverloads constructor(
      * [contentView]和[editorView]之间会有一个[navBarOffset]区域，
      * 当支持手势导航栏边到边时，[navBarOffset]等于导航栏的高度，此时显示[Editor]，
      * 在[editorOffset]超过[navBarOffset]后，才会更新[contentView]的尺寸或位置。
-     *
-     * 不能在[WindowInsetsAnimationCompat.Callback.onStart]判断IME显示情况，
-     * 原因是`onStart()`的执行时机是`doOnPreDraw`，此时已完成measure和layout，
-     * 观察更改[Editor]的逻辑可能会申请重新布局，若在`onStart()`更改[Editor]，
-     * 则重新布局要在下一帧进行，当前帧draw绘制的是旧内容，对于不需要运行动画的场景，
-     * 看起来像是“闪烁”了一下。
-     *
-     * 当前帧WindowInsets的分发[dispatchApplyWindowInsets]一般早于measure、layout、draw，
-     * 因此在[onApplyWindowInsets]判断IME显示情况并更改[Editor]，确保draw之前尺寸和位置正确。
      */
     override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
         val insetsCompat = WindowInsetsCompat.toWindowInsetsCompat(insets)
         navBarOffset = window?.getNavigationOffset(insetsCompat) ?: 0
-        val imeHeight = window?.getImeHeight(insetsCompat) ?: 0
-        // FIXME: 整理好执行时序，再做处理
-        // editorView.dispatchIme(isShow = imeHeight > 0)
         return super.onApplyWindowInsets(insets)
+    }
+
+    /**
+     * 分发IME的显示情况，该函数仅由[EditorAnimator]调用
+     *
+     * [EditorAnimator]在当前帧[ViewTreeObserver.OnDrawListener.onDraw]分发IME的显示情况，
+     * [EditorView]更改[Editor]后，可能会申请重新布局，由于当前帧已完成measure和layout，
+     * 因此需要在下一帧重新布局，对于不需要运行动画的场景，重新measure和layout，
+     * 确保[contentView]和[editorView]的尺寸和位置在当前帧draw之前是正确的。
+     */
+    internal fun dispatchIme(isShow: Boolean, canRunAnimation: Boolean) {
+        val changed = editorView.dispatchIme(isShow)
+        if (changed && isLaidOut && isLayoutRequested && !canRunAnimation) {
+            measure(measuredWidth.toExactlyMeasureSpec(), measuredHeight.toExactlyMeasureSpec())
+            layout(left, top, right, bottom)
+        }
     }
 
     /**
@@ -161,12 +165,12 @@ class InputView @JvmOverloads constructor(
      * 获取当前[Editor]的偏移（包括IME的偏移），此时已完成[editorView]和[contentView]的measure和layout。
      *
      * 若[editorMode]为[EditorMode.ADJUST_PAN]，则偏移[editorView]和[contentView]即可，
-     * 若[editorMode]为[EditorMode.ADJUST_RESIZE]，并且[resizeInNextLayout]不为true，
+     * 若[editorMode]为[EditorMode.ADJUST_RESIZE]，并且是不需要运行动画的场景，
      * 则对[contentView]重新measure和layout，确保[contentView]的尺寸和位置在当前帧draw之前是正确的，
      * measure有测量缓存，layout有边界对比，对[contentView]重新measure和layout不一定会产生性能损耗。
      */
     @Suppress("KotlinConstantConditions", "ConvertTwoComparisonsToRangeCheck")
-    internal fun updateEditorOffset(offset: Int, resizeInNextLayout: Boolean) {
+    internal fun updateEditorOffset(offset: Int, canRunAnimation: Boolean) {
         val current = offset.coerceAtLeast(0)
         if (editorOffset == current) return
         val previous = editorOffset
@@ -188,7 +192,7 @@ class InputView @JvmOverloads constructor(
                     contentView.offsetTopAndBottom(contentDiff)
                 }
             }
-            EditorMode.ADJUST_RESIZE -> if (!resizeInNextLayout) {
+            EditorMode.ADJUST_RESIZE -> if (!canRunAnimation) {
                 editorView.offsetTopAndBottom(editorDiff)
                 measureContentView(contentView)
                 layoutContentView(contentView)
