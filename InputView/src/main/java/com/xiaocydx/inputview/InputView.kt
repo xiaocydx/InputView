@@ -46,10 +46,7 @@ class InputView @JvmOverloads constructor(
      */
     @get:IntRange(from = 0)
     internal var navBarOffset = 0
-        private set(value) {
-            if (field != value) requestLayout()
-            field = value
-        }
+        private set
 
     /**
      * 用于兼容Android各版本显示和隐藏IME的[EditText]
@@ -138,7 +135,12 @@ class InputView @JvmOverloads constructor(
      */
     override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
         val insetsCompat = WindowInsetsCompat.toWindowInsetsCompat(insets)
-        navBarOffset = window?.getNavigationOffset(insetsCompat) ?: 0
+        val offset = window?.getNavigationBarOffset(insetsCompat) ?: 0
+        if (navBarOffset != offset) {
+            navBarOffset = offset
+            editorAnimator.endAnimation()
+            requestLayout()
+        }
         return super.onApplyWindowInsets(insets)
     }
 
@@ -212,7 +214,6 @@ class InputView @JvmOverloads constructor(
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         val contentView = contentView ?: return
-        layoutFixEditorOffset()
         // 基于inputView底部向下布局editorView，
         // 通过editorOffset向上偏移editorView。
         editorView.let {
@@ -225,10 +226,22 @@ class InputView @JvmOverloads constructor(
 
         // 基于editorView顶部向上布局contentView
         layoutContentView(contentView)
-    }
 
-    // TODO: 修复editorOffset未同步的情况
-    private fun layoutFixEditorOffset() = Unit
+        if (!editorAnimator.isRunning) {
+            // 修复editorOffset，例如导航栏高度改变（导航栏模式改变），
+            // editorView的子View处理手势导航栏边到边，可能会修改尺寸，
+            // 此时未同步editorOffset，导致布局位置不正确。
+            val ime = editorView.ime
+            val current = editorView.current
+            val offset = editorView.height
+            if (current !== ime && editorOffset != offset) {
+                val diff = editorOffset - offset
+                editorOffset = offset
+                editorView.offsetTopAndBottom(diff)
+                contentView.offsetTopAndBottom(diff)
+            }
+        }
+    }
 
     private fun Int.toExactlyMeasureSpec() = makeMeasureSpec(this, EXACTLY)
 

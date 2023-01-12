@@ -196,6 +196,10 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
         for (index in callbacks.indices.reversed()) callbacks[index].apply(action)
     }
 
+    internal fun endAnimation() {
+        animationRecord?.endAnimation()
+    }
+
     internal fun attach(adapter: EditorAdapter<*>) {
         editorAdapter = adapter
         insetsHandler.reset()
@@ -206,7 +210,7 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
 
     internal fun detach(adapter: EditorAdapter<*>) {
         assert(editorAdapter === adapter) { "EditorAdapter不相同" }
-        animationRecord?.endAnimation()
+        endAnimation()
         editorView?.let { ViewCompat.setWindowInsetsAnimationCallback(it, null) }
         editorAdapter = null
         adapter.removeEditorChangedListener(this)

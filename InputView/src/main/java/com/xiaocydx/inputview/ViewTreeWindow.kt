@@ -157,7 +157,7 @@ internal class ViewTreeWindow(
         return (imeHeight - navBarHeight).coerceAtLeast(0)
     }
 
-    fun getNavigationOffset(insets: WindowInsetsCompat): Int = when {
+    fun getNavigationBarOffset(insets: WindowInsetsCompat): Int = when {
         !supportGestureNavBarEdgeToEdge(insets) -> 0
         else -> getNavigationBarHeight(insets)
     }
