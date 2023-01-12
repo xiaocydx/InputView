@@ -21,12 +21,12 @@ class MessageListAdapter(itemCount: Int) : RecyclerView.Adapter<MessageHolder>()
         val binding = ItemMessageBinding.inflate(
             LayoutInflater.from(parent.context), parent, false
         )
-        return MessageHolder(binding.apply {
-            ivAvatar.onClick {
-                // list.removeAt(holder.bindingAdapterPosition)
-                // notifyItemRemoved(holder.bindingAdapterPosition)
-            }
-        })
+        val holder = MessageHolder(binding)
+        binding.ivAvatar.onClick {
+            // list.removeAt(holder.bindingAdapterPosition)
+            // notifyItemRemoved(holder.bindingAdapterPosition)
+        }
+        return holder
     }
 
     @SuppressLint("SetTextI18n")

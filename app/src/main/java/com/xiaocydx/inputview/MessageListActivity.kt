@@ -32,6 +32,15 @@ class MessageListActivity : AppCompatActivity() {
         setContentView(ActivityMessageListBinding.inflate(layoutInflater).init().root)
     }
 
+    /**
+     * 由于内容区域包含[RecyclerView]，因此使用[EditorMode.ADJUST_PAN]，显示编辑器区域时平移内容区域，
+     * 不使用[EditorMode.ADJUST_RESIZE]，原因是更改内容区域尺寸会让[RecyclerView]重新measure和layout，
+     * 这在性能表现上不如[EditorMode.ADJUST_PAN]。
+     *
+     * 示例代码反转了[RecyclerView]的布局，并从顶部开始填充子View，此时使用[EditorMode.ADJUST_PAN]，
+     * 需要对[RecyclerView]处理编辑器区域的动画偏移，[handleScroll]演示了如何处理动画偏移，
+     * 可以调小[MessageListAdapter]的`itemCount`，观察处理后的效果。
+     */
     private fun ActivityMessageListBinding.init() = apply {
         // 2. 初始化InputView的属性
         val editorAdapter = MessageEditorAdapter()
@@ -62,8 +71,7 @@ class MessageListActivity : AppCompatActivity() {
     /**
      * 1. 更改`etMessage`的高度，`rvMessage`滚动到首位。
      * 2. 更改显示的[MessageEditor]，`rvMessage`滚动到首位。
-     * 3. 处理`rvMessage`可视区域未铺满时的动画偏移，`rvMessage`从顶部开始填充子View，
-     * 可以在[init]调小[MessageListAdapter]的`itemCount`，观察处理后的动画效果。
+     * 3. 处理`rvMessage`可视区域未铺满时的动画偏移。
      */
     private fun ActivityMessageListBinding.handleScroll() {
         val scrollToFirstIfNecessary = fun() {
@@ -91,7 +99,8 @@ class MessageListActivity : AppCompatActivity() {
 
             //region 处理rvMessage可视区域未铺满时的动画偏移
             override fun onAnimationStart(state: AnimationState) {
-                if (state.startOffset == 0 && state.endOffset != 0 && calculateScrollRangeDiff() < 0) {
+                if (state.startOffset == 0 && state.endOffset != 0
+                        && calculateScrollRangeDiff() < 0) {
                     inputBar.background = ColorDrawable(0xFFF2F2F2.toInt())
                 }
             }
