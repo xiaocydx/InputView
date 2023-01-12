@@ -10,6 +10,7 @@ import android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
  * @date 2023/1/10
  */
 enum class EditorMode {
+
     /**
      * 显示[Editor]时平移`contentView`，类似[SOFT_INPUT_ADJUST_PAN]
      */

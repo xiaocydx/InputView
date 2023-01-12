@@ -18,14 +18,10 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     private val views = mutableMapOf<Editor, View?>()
     private var editTextRef: WeakReference<EditText>? = null
     private var controller: WindowInsetsControllerCompat? = null
-    var ime: Editor? = null
-        private set
-    var current: Editor? = null
-        private set
-    var adapter: EditorAdapter<*>? = null
-        private set
-    var changeRecord = ChangeRecord()
-        private set
+    var ime: Editor? = null; private set
+    var current: Editor? = null; private set
+    var adapter: EditorAdapter<*>? = null; private set
+    var changeRecord = ChangeRecord(); private set
 
     var editText: EditText?
         get() = editTextRef?.get()

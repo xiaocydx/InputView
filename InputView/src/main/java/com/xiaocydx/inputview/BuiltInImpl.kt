@@ -12,7 +12,18 @@ import androidx.annotation.FloatRange
 object Ime : Editor
 
 /**
- * 支持只需要IME的场景
+ * 用于只需要IME的场景
+ *
+ * ```
+ * val adapter = ImeAdapter()
+ * inputView.editorAdapter = adapter
+ *
+ * // 显示IME
+ * adapter.notifyShowIme()
+ *
+ * // 隐藏IME
+ * adapter.notifyHideIme()
+ * ```
  */
 class ImeAdapter : EditorAdapter<Ime>() {
     override val editors: List<Ime> = listOf(Ime)

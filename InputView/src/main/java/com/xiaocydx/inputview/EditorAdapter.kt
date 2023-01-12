@@ -4,7 +4,7 @@ import android.view.View
 import android.view.ViewGroup
 
 /**
- * [InputView]编辑区的编辑器适配器，负责创建和通知显示[Editor]的视图
+ * [InputView]编辑区的[Editor]适配器，负责创建和通知显示[Editor]的视图
  *
  * ```
  * enum class MessageEditor : Editor {
@@ -37,7 +37,7 @@ abstract class EditorAdapter<T : Editor> {
         private set
 
     /**
-     * [InputView]编辑区的编辑器集合
+     * [InputView]编辑区的[Editor]集合
      */
     abstract val editors: List<T>
 
@@ -103,25 +103,28 @@ abstract class EditorAdapter<T : Editor> {
 /**
  * [InputView]编辑区的编辑器
  *
- * 推荐用`enum class`或者`sealed class `实现[Editor]，例如：
+ * 推荐用`enum class`或`sealed class`实现[Editor]，例如：
  * ```
  * enum class MessageEditor : Editor {
  *     IME, VOICE, EMOJI
  * }
  * ```
+ *
+ * 用`enum class`或`sealed class`能更好的进行模式匹配，
+ * 也正是因为如此，IME没有作为内部实现，而是开放了出来。
  */
 interface Editor
 
 /**
- * [InputView]编辑区显示的[Editor]更改监听
+ * [InputView]编辑区更改[Editor]的监听
  */
 fun interface EditorChangedListener<in T : Editor> {
 
     /**
      * 显示的[Editor]已更改
      *
-     * @param previous 之前显示的[Editor]，`null`表示之前没有显示[Editor]
-     * @param current  当前显示的[Editor]，`null`表示当前没有显示[Editor]
+     * @param previous 之前的[Editor]，`null`表示之前没有[Editor]
+     * @param current  当前的[Editor]，`null`表示当前没有[Editor]
      */
     fun onEditorChanged(previous: T?, current: T?)
 }

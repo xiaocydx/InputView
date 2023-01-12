@@ -400,6 +400,7 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
  * [EditorAnimator]的动画状态
  */
 interface AnimationState {
+
     /**
      * 动画起始[Editor]
      */
@@ -459,6 +460,7 @@ interface AnimationState {
  * [EditorAnimator]的动画回调
  */
 interface AnimationCallback : EditorChangedListener<Editor> {
+
     /**
      * 动画开始
      *

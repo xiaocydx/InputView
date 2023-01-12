@@ -35,18 +35,21 @@ class InputView @JvmOverloads constructor(
     private var window: ViewTreeWindow? = null
 
     /**
-     * 导航栏的偏移值，可作为[EditorAnimator]动画的计算参数
-     */
-    @get:IntRange(from = 0)
-    internal var navBarOffset = 0
-        private set
-
-    /**
      * 编辑区的偏移值，可作为[EditorAnimator]动画的起始值
      */
     @get:IntRange(from = 0)
     internal var editorOffset = 0
         private set
+
+    /**
+     * 导航栏的偏移值，可作为[EditorAnimator]动画的计算参数
+     */
+    @get:IntRange(from = 0)
+    internal var navBarOffset = 0
+        private set(value) {
+            if (field != value) requestLayout()
+            field = value
+        }
 
     /**
      * 用于兼容Android各版本显示和隐藏IME的[EditText]
@@ -76,6 +79,12 @@ class InputView @JvmOverloads constructor(
 
     /**
      * [editorAdapter]默认为[ImeAdapter]
+     *
+     * [ImeAdapter]用于只需要IME的场景，若需要显示多种[Editor]，
+     * 则继承并实现[EditorAdapter]，其注释介绍了如何实现以及注意点。
+     *
+     * [EditorAdapter.onCreateView]创建的视图可能需要处理手势导航栏边到边，
+     * [EditorHelper]提供了辅助函数，这些函数能够帮助处理手势导航栏边到边。
      */
     var editorAdapter: EditorAdapter<*>
         get() = requireNotNull(editorView.adapter) { "未初始化EditorAdapter" }
@@ -93,6 +102,9 @@ class InputView @JvmOverloads constructor(
 
     /**
      * [editorAnimator]默认为[FadeEditorAnimator]
+     *
+     * 若需要调整动画的参数，则可以继承[FadeEditorAnimator]进行修改，
+     * 或者参考[FadeEditorAnimator]，继承[EditorAnimator]实现动画。
      */
     var editorAnimator: EditorAnimator = FadeEditorAnimator()
         set(value) {
@@ -123,6 +135,15 @@ class InputView @JvmOverloads constructor(
      * [contentView]和[editorView]之间会有一个[navBarOffset]区域，
      * 当支持手势导航栏边到边时，[navBarOffset]等于导航栏的高度，此时显示[Editor]，
      * 在[editorOffset]超过[navBarOffset]后，才会更新[contentView]的尺寸或位置。
+     *
+     * 不能在[WindowInsetsAnimationCompat.Callback.onStart]判断IME显示情况，
+     * 原因是`onStart()`的执行时机是`doOnPreDraw`，此时已完成measure和layout，
+     * 观察更改[Editor]的逻辑可能会申请重新布局，若在`onStart()`更改[Editor]，
+     * 则重新布局要在下一帧进行，当前帧draw绘制的是旧内容，对于不需要运行动画的场景，
+     * 看起来像是“闪烁”了一下。
+     *
+     * 当前帧WindowInsets的分发[dispatchApplyWindowInsets]一般早于measure、layout、draw，
+     * 因此在[onApplyWindowInsets]判断IME显示情况并更改[Editor]，确保draw之前尺寸和位置正确。
      */
     override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
         val insetsCompat = WindowInsetsCompat.toWindowInsetsCompat(insets)
@@ -136,7 +157,8 @@ class InputView @JvmOverloads constructor(
      * 更新编辑区的偏移值，该函数仅由[EditorAnimator]调用
      *
      * [EditorView]更改[Editor]后，[EditorAnimator]在下一帧[ViewTreeObserver.OnDrawListener.onDraw]，
-     * 获取当前[Editor]的偏移（包括IME的偏移），此时已完成[editorView]和[contentView]的measure和layout，
+     * 获取当前[Editor]的偏移（包括IME的偏移），此时已完成[editorView]和[contentView]的measure和layout。
+     *
      * 若[editorMode]为[EditorMode.ADJUST_PAN]，则偏移[editorView]和[contentView]即可，
      * 若[editorMode]为[EditorMode.ADJUST_RESIZE]，并且[resizeInNextLayout]不为true，
      * 则对[contentView]重新measure和layout，确保[contentView]的尺寸和位置在当前帧draw之前是正确的，
