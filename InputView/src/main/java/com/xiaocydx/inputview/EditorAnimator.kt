@@ -241,6 +241,7 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
                 return bounds
             }
             typeMask = animation.typeMask
+            editorView?.dispatchIme(isShow = window.getImeHeight(insets) > 0)
 
             val record = animationRecord?.takeIf { it.willRunInsetsAnimation } ?: return bounds
             val isIme = record.isIme(record.current)

@@ -149,7 +149,8 @@ class InputView @JvmOverloads constructor(
         val insetsCompat = WindowInsetsCompat.toWindowInsetsCompat(insets)
         navBarOffset = window?.getNavigationOffset(insetsCompat) ?: 0
         val imeHeight = window?.getImeHeight(insetsCompat) ?: 0
-        editorView.dispatchIme(isShow = imeHeight > 0)
+        // FIXME: 整理好执行时序，再做处理
+        // editorView.dispatchIme(isShow = imeHeight > 0)
         return super.onApplyWindowInsets(insets)
     }
 
@@ -207,6 +208,7 @@ class InputView @JvmOverloads constructor(
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         val contentView = contentView ?: return
+        layoutFixEditorOffset()
         // 基于inputView底部向下布局editorView，
         // 通过editorOffset向上偏移editorView。
         editorView.let {
@@ -220,6 +222,9 @@ class InputView @JvmOverloads constructor(
         // 基于editorView顶部向上布局contentView
         layoutContentView(contentView)
     }
+
+    // TODO: 修复editorOffset未同步的情况
+    private fun layoutFixEditorOffset() = Unit
 
     private fun Int.toExactlyMeasureSpec() = makeMeasureSpec(this, EXACTLY)
 
