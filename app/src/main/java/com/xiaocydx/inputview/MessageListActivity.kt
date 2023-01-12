@@ -1,6 +1,7 @@
 package com.xiaocydx.inputview
 
 import android.annotation.SuppressLint
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.MotionEvent
 import android.view.MotionEvent.ACTION_DOWN
@@ -11,10 +12,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.RecyclerView.VERTICAL
 import com.xiaocydx.inputview.MessageEditor.*
 import com.xiaocydx.inputview.databinding.ActivityMessageListBinding
 import com.xiaocydx.sample.onClick
+import kotlin.math.absoluteValue
 
 /**
  * [InputView]的消息列表示例代码
@@ -38,15 +39,16 @@ class MessageListActivity : AppCompatActivity() {
             editText = etMessage
             editorMode = EditorMode.ADJUST_PAN
             this.editorAdapter = editorAdapter
-            // 不运行Editor的过渡动画
+            // 不运行Editor的过渡动画，仅记录动画状态，分发动画回调
             // editorAnimator = NopEditorAnimator()
         }
 
         // 3. 初始化RecyclerView的属性
         rvMessage.apply {
-            layoutManager = LinearLayoutManager(
-                context, VERTICAL, /* reverseLayout */true
-            )
+            layoutManager = LinearLayoutManager(context).apply {
+                stackFromEnd = true
+                reverseLayout = true
+            }
             adapter = MessageListAdapter(itemCount = 20)
             scrollToPosition(0)
         }
@@ -58,8 +60,10 @@ class MessageListActivity : AppCompatActivity() {
     }
 
     /**
-     * 1. `etMessage`的高度更改，`rvMessage`滚动到首位。
-     * 2. 显示的[MessageEditor]更改，`rvMessage`滚动到首位。
+     * 1. 更改`etMessage`的高度，`rvMessage`滚动到首位。
+     * 2. 更改显示的[MessageEditor]，`rvMessage`滚动到首位。
+     * 3. 处理`rvMessage`可视区域未铺满时的动画偏移，`rvMessage`从顶部开始填充子View，
+     * 可以在[init]调小[MessageListAdapter]的`itemCount`，观察处理后的动画效果。
      */
     private fun ActivityMessageListBinding.handleScroll() {
         val scrollToFirstIfNecessary = fun() {
@@ -68,6 +72,7 @@ class MessageListActivity : AppCompatActivity() {
             rvMessage.scrollToPosition(0)
         }
 
+        //region 更改etMessage的高度，rvMessage滚动到首位
         etMessage.addOnLayoutChangeListener listener@{ _, left, top, right, bottom,
                                                        _, oldTop, _, oldBottom ->
             if (right - left == 0) return@listener
@@ -75,8 +80,41 @@ class MessageListActivity : AppCompatActivity() {
             val newHeight = bottom - top
             if (oldHeight != newHeight) scrollToFirstIfNecessary()
         }
+        //endregion
 
-        inputView.editorAdapter.addEditorVisibleListener { _, _ -> scrollToFirstIfNecessary() }
+        inputView.editorAnimator.addAnimationCallback(object : AnimationCallback {
+            //region 更改显示的MessageEditor，rvMessage滚动到首位
+            override fun onEditorChanged(previous: Editor?, current: Editor?) {
+                scrollToFirstIfNecessary()
+            }
+            //endregion
+
+            //region 处理rvMessage可视区域未铺满时的动画偏移
+            override fun onAnimationStart(state: AnimationState) {
+                if (state.startOffset == 0 && state.endOffset != 0 && calculateScrollRangeDiff() < 0) {
+                    inputBar.background = ColorDrawable(0xFFF2F2F2.toInt())
+                }
+            }
+
+            override fun onAnimationUpdate(state: AnimationState) {
+                // 以显示Editor为例，Editor区域的布局位置向上平移，
+                // rvMessage的内容向下平移，当两者相对平移至临界点时，
+                // rvMessage的内容跟着Editor向上平移。
+                var diff = calculateScrollRangeDiff()
+                diff = if (diff < 0) diff.absoluteValue else return
+                rvMessage.translationY = (state.currentOffset - state.navBarOffset)
+                    .coerceAtLeast(0).coerceAtMost(diff).toFloat()
+            }
+
+            override fun onAnimationEnd(state: AnimationState) {
+                if (state.endOffset == 0) inputBar.background = null
+            }
+
+            private fun calculateScrollRangeDiff(): Int {
+                return rvMessage.computeVerticalScrollRange() - rvMessage.height
+            }
+            //endregion
+        })
     }
 
     /**
@@ -85,6 +123,7 @@ class MessageListActivity : AppCompatActivity() {
      */
     @SuppressLint("ClickableViewAccessibility")
     private fun ActivityMessageListBinding.handleTouch() {
+        //region 在动画运行中决定是否拦截触摸事件
         val delegate = window.callback
         window.callback = object : Window.Callback by delegate {
             override fun dispatchTouchEvent(e: MotionEvent): Boolean {
@@ -93,7 +132,9 @@ class MessageListActivity : AppCompatActivity() {
                 return delegate.dispatchTouchEvent(e)
             }
         }
+        //endregion
 
+        //region 触摸RecyclerView隐藏当前MessageEditor
         rvMessage.addOnItemTouchListener(object : RecyclerView.OnItemTouchListener {
             override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
                 if (e.action == ACTION_DOWN && inputView.editorAdapter.current !== VOICE) {
@@ -106,6 +147,7 @@ class MessageListActivity : AppCompatActivity() {
 
             override fun onRequestDisallowInterceptTouchEvent(disallowIntercept: Boolean) = Unit
         })
+        //endregion
     }
 
     /**
@@ -121,7 +163,7 @@ class MessageListActivity : AppCompatActivity() {
         ivVoice.onClick { editorAdapter.notifyToggle(VOICE) }
         ivEmoji.onClick { editorAdapter.notifyToggle(EMOJI) }
         ivExtra.onClick { editorAdapter.notifyToggle(EXTRA) }
-        editorAdapter.addEditorVisibleListener { previous, current ->
+        editorAdapter.addEditorChangedListener { previous, current ->
             if (previous === VOICE) {
                 tvVoice.isVisible = false
                 etMessage.isVisible = true

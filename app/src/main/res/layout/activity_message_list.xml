@@ -45,6 +45,7 @@
                 android:background="#DBDBDB" />
 
             <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/inputBar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:paddingTop="6dp">
