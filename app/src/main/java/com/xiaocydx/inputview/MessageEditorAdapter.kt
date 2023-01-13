@@ -20,7 +20,7 @@ import com.xiaocydx.sample.withLayoutParams
  * @author xcc
  * @date 2023/1/8
  */
-class MessageEditorAdapter : EditorAdapter<MessageEditor>(), EditorHelper {
+class MessageEditorAdapter : EditorAdapter<MessageEditor>() {
     override val editors: List<MessageEditor> = listOf(IME, VOICE, EMOJI, EXTRA)
 
     override fun isIme(editor: MessageEditor): Boolean = editor === IME
@@ -70,17 +70,15 @@ private class GestureNavBarEdgeToEdgeRecyclerView(context: Context) : RecyclerVi
      * 处理手势导航栏边到边的过程
      */
     private fun setupWindowInsetsHandler() {
-        // layoutParams.height是350.dp固定高度
-        val initialHeight = layoutParams.height
-
+        // layoutParams.height初始高度是350.dp
         doOnApplyWindowInsets { view, insets, initialState ->
             val supportGestureNavBarEdgeToEdge = view.supportGestureNavBarEdgeToEdge(insets)
             val navigationBarHeight = insets.getNavigationBarHeight()
 
             // 1. 若支持手势导航栏边到边，则增加高度，否则保持初始高度
             val height = when {
-                !supportGestureNavBarEdgeToEdge -> initialHeight
-                else -> navigationBarHeight + initialHeight
+                !supportGestureNavBarEdgeToEdge -> initialState.params.height
+                else -> navigationBarHeight + initialState.params.height
             }
             if (view.layoutParams.height != height) {
                 view.updateLayoutParams { this.height = height }

@@ -1,11 +1,8 @@
 package com.xiaocydx.inputview
 
 import android.view.View
-import android.view.ViewGroup
 import androidx.annotation.Px
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.doOnAttach
+import androidx.core.view.*
 import androidx.recyclerview.widget.RecyclerView
 
 /**
@@ -81,47 +78,57 @@ interface EditorHelper {
     }
 }
 
-private val View.paddingDimensions: ViewDimensions
-    get() = ViewDimensions(paddingLeft, paddingTop, paddingRight, paddingBottom)
-
-private val View.marginDimensions: ViewDimensions
-    get() = when (val params: ViewGroup.LayoutParams? = layoutParams) {
-        is ViewGroup.MarginLayoutParams -> params.run {
-            ViewDimensions(leftMargin, topMargin, rightMargin, bottomMargin)
-        }
-        else -> ViewDimensions.EMPTY
-    }
-
 /**
  * 视图的初始状态
  */
 data class ViewState(
     /**
-     * 视图的初始paddings
+     * 视图的初始params
      */
-    val paddings: ViewDimensions = ViewDimensions.EMPTY,
+    val params: ViewParams,
 
     /**
-     * 视图的初始margins
+     * 视图的初始paddings
      */
-    val margins: ViewDimensions = ViewDimensions.EMPTY
+    val paddings: ViewPaddings,
+) {
+    constructor(view: View) : this(ViewParams(view), ViewPaddings(view))
+}
+
+/**
+ * 视图的初始params
+ */
+data class ViewParams(
+    @Px val width: Int,
+    @Px val height: Int,
+    @Px val marginLeft: Int,
+    @Px val marginTop: Int,
+    @Px val marginRight: Int,
+    @Px val marginBottom: Int
 ) {
     constructor(view: View) : this(
-        paddings = view.paddingDimensions,
-        margins = view.marginDimensions
+        width = view.layoutParams?.width ?: 0,
+        height = view.layoutParams?.height ?: 0,
+        marginLeft = view.marginLeft,
+        marginTop = view.marginTop,
+        marginRight = view.marginRight,
+        marginBottom = view.marginBottom
     )
 }
 
 /**
- * 视图的初始参数
+ * 视图的初始paddings
  */
-data class ViewDimensions(
+data class ViewPaddings(
     @Px val left: Int,
     @Px val top: Int,
     @Px val right: Int,
     @Px val bottom: Int
 ) {
-    companion object {
-        val EMPTY = ViewDimensions(0, 0, 0, 0)
-    }
+    constructor(view: View) : this(
+        left = view.paddingLeft,
+        top = view.paddingTop,
+        right = view.paddingRight,
+        bottom = view.paddingBottom
+    )
 }
