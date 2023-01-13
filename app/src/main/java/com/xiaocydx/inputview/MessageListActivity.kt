@@ -1,7 +1,6 @@
 package com.xiaocydx.inputview
 
 import android.annotation.SuppressLint
-import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.MotionEvent
 import android.view.MotionEvent.ACTION_DOWN
@@ -15,7 +14,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.xiaocydx.inputview.MessageEditor.*
 import com.xiaocydx.inputview.databinding.ActivityMessageListBinding
 import com.xiaocydx.sample.onClick
-import kotlin.math.absoluteValue
 
 /**
  * [InputView]的消息列表示例代码
@@ -74,10 +72,10 @@ class MessageListActivity : AppCompatActivity() {
      * 3. 处理`rvMessage`可视区域未铺满时的动画偏移。
      */
     private fun ActivityMessageListBinding.handleScroll() {
-        val scrollToFirstIfNecessary = fun() {
-            val lm = rvMessage.layoutManager as? LinearLayoutManager ?: return
-            if (lm.findFirstCompletelyVisibleItemPosition() == 0) return
-            rvMessage.scrollToPosition(0)
+        val scrollToFirst = { rvMessage.scrollToPosition(0) }
+        val scrollToFirstIfNecessary = {
+            val lm = rvMessage.layoutManager as? LinearLayoutManager
+            if (lm != null && lm.findFirstCompletelyVisibleItemPosition() != 0) scrollToFirst()
         }
 
         //region 更改etMessage的高度，rvMessage滚动到首位
@@ -100,26 +98,23 @@ class MessageListActivity : AppCompatActivity() {
             //region 处理rvMessage可视区域未铺满时的动画偏移
             override fun onAnimationStart(state: AnimationState) {
                 if (state.startOffset == 0 && state.endOffset != 0
-                        && calculateScrollRangeDiff() < 0) {
-                    inputBar.background = ColorDrawable(0xFFF2F2F2.toInt())
+                        && calculateVerticalScrollRangeDiff() < 0) {
+                    // 将editorMode动态调整为EditorMode.ADJUST_RESIZE相比于其它处理方式,
+                    // 能确保EditorAnimator动画运行中、结束后，添加消息的item动画正常运行。
+                    inputView.editorMode = EditorMode.ADJUST_RESIZE
                 }
             }
 
             override fun onAnimationUpdate(state: AnimationState) {
-                // 以显示Editor为例，Editor区域的布局位置向上平移，
-                // rvMessage的内容向下平移，当两者相对平移至临界点时，
-                // rvMessage的内容跟着Editor向上平移。
-                var diff = calculateScrollRangeDiff()
-                diff = if (diff < 0) diff.absoluteValue else return
-                rvMessage.translationY = (state.currentOffset - state.navBarOffset)
-                    .coerceAtLeast(0).coerceAtMost(diff).toFloat()
+                // 确保LayoutManager及时计算锚点信息，因此不用scrollToFirstIfNecessary()
+                if (inputView.editorMode === EditorMode.ADJUST_RESIZE) scrollToFirst()
             }
 
             override fun onAnimationEnd(state: AnimationState) {
-                if (state.endOffset == 0) inputBar.background = null
+                if (state.endOffset == 0) inputView.editorMode = EditorMode.ADJUST_PAN
             }
 
-            private fun calculateScrollRangeDiff(): Int {
+            private fun calculateVerticalScrollRangeDiff(): Int {
                 return rvMessage.computeVerticalScrollRange() - rvMessage.height
             }
             //endregion
