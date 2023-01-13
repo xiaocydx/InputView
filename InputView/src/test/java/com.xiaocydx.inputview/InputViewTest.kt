@@ -87,33 +87,10 @@ class InputViewTest {
             assertThat(inputView.navBarOffset).isEqualTo(0)
 
             val offset = 10
-            inputView.updateEditorOffset(offset, canRunAnimation = false)
+            inputView.updateEditorOffset(offset)
             assertThat(inputView.editorOffset).isEqualTo(offset)
             assertThat(editorView.top).isEqualTo(inputView.height - offset)
             assertThat(contentView!!.top).isEqualTo(-offset)
-        }
-    }
-
-    @Test
-    fun adjustResize_UpdateEditorOffset_Success() {
-        scenario.onActivity { activity ->
-            val inputView = activity.inputView
-            inputView.editorMode = EditorMode.ADJUST_RESIZE
-            val editorView = inputView.getEditorView()
-            val contentView = inputView.getContentView()
-            assertThat(contentView).isNotNull()
-
-            val insets = WindowInsetsCompat.Builder().build().toWindowInsets()
-            assertThat(insets).isNotNull()
-            inputView.onApplyWindowInsets(insets!!)
-            assertThat(inputView.navBarOffset).isEqualTo(0)
-
-            val offset = 10
-            inputView.updateEditorOffset(offset, canRunAnimation = false)
-            assertThat(inputView.editorOffset).isEqualTo(offset)
-            assertThat(editorView.top).isEqualTo(inputView.height - offset)
-            assertThat(contentView!!.top).isEqualTo(0)
-            assertThat(contentView.height).isEqualTo(inputView.height - offset)
         }
     }
 }

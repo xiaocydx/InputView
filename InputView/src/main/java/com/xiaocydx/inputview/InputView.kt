@@ -150,38 +150,35 @@ class InputView @JvmOverloads constructor(
      * 分发IME的显示情况，该函数仅由[EditorAnimator]调用
      *
      * [EditorAnimator]在当前帧[ViewTreeObserver.OnDrawListener.onDraw]分发IME的显示情况，
-     * [EditorView]更改[Editor]后，可能会申请重新布局，由于当前帧已完成measure和layout，
-     * 因此需要在下一帧重新布局，对不需要运行动画的场景，重新measure和layout，
-     * 确保[contentView]和[editorView]的尺寸和位置在当前帧draw之前是正确的。
+     * 在[EditorView]更改[Editor]时，可能会申请重新布局，由于当前帧已完成measure和layout，
+     * 因此需要在下一帧进行measure和layout。
      */
-    internal fun dispatchIme(isShow: Boolean, canRunAnimation: Boolean) {
-        val changed = editorView.dispatchIme(isShow)
-        if (changed && isLaidOut && isLayoutRequested && !canRunAnimation) {
-            measure(measuredWidth.toExactlyMeasureSpec(), measuredHeight.toExactlyMeasureSpec())
-            layout(left, top, right, bottom)
-        }
+    internal fun dispatchIme(isShow: Boolean) {
+        editorView.dispatchIme(isShow)
     }
 
     /**
      * 更新编辑区的偏移值，该函数仅由[EditorAnimator]调用
      *
-     * [EditorView]更改[Editor]后，[EditorAnimator]在下一帧[ViewTreeObserver.OnDrawListener.onDraw]，
-     * 获取当前[Editor]的偏移（包括IME的偏移），此时已完成[editorView]和[contentView]的measure和layout。
-     *
-     * 若[editorMode]为[EditorMode.ADJUST_PAN]，则偏移[editorView]和[contentView]即可，
-     * 若[editorMode]为[EditorMode.ADJUST_RESIZE]，并且是不需要运行动画的场景，
-     * 则对[contentView]重新measure和layout，确保[contentView]的尺寸和位置在当前帧draw之前是正确的，
-     * measure有测量缓存，layout有边界对比，对[contentView]重新measure和layout不一定会产生性能损耗。
+     * 若调用该函数之前，已申请重新布局，例如[dispatchIme]的分发过程，
+     * 则不处理[editorView]和[contentView]的尺寸和位置，否则：
+     * 1. 若[editorMode]为[EditorMode.ADJUST_PAN]，则偏移[editorView]和[contentView]。
+     * 2. 若[editorMode]为[EditorMode.ADJUST_RESIZE]，则申请重新measure和layout。
      */
     @Suppress("KotlinConstantConditions", "ConvertTwoComparisonsToRangeCheck")
-    internal fun updateEditorOffset(offset: Int, canRunAnimation: Boolean) {
+    internal fun updateEditorOffset(offset: Int) {
         val current = offset.coerceAtLeast(0)
         if (editorOffset == current) return
         val previous = editorOffset
         val editorDiff = previous - current
         editorOffset = current
 
-        val contentView = contentView ?: return
+        val contentView = contentView
+        if (contentView == null || isLayoutRequested) {
+            // isLayoutRequested = true，已经申请重新布局
+            return
+        }
+
         when (editorMode) {
             EditorMode.ADJUST_PAN -> {
                 editorView.offsetTopAndBottom(editorDiff)
@@ -196,13 +193,7 @@ class InputView @JvmOverloads constructor(
                     contentView.offsetTopAndBottom(contentDiff)
                 }
             }
-            EditorMode.ADJUST_RESIZE -> if (!canRunAnimation) {
-                editorView.offsetTopAndBottom(editorDiff)
-                measureContentView(contentView)
-                layoutContentView(contentView)
-            } else {
-                requestLayout()
-            }
+            EditorMode.ADJUST_RESIZE -> requestLayout()
         }
     }
 
@@ -210,55 +201,20 @@ class InputView @JvmOverloads constructor(
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         checkContentView()
         val contentView = contentView ?: return
-        measureContentView(contentView)
+
         editorView.measure(widthMeasureSpec, measuredHeight.toAtMostMeasureSpec())
-    }
-
-    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
-        val contentView = contentView ?: return
-        // 基于inputView底部向下布局editorView，
-        // 通过editorOffset向上偏移editorView。
-        editorView.let {
-            val left = 0
-            val top = measuredHeight - editorOffset
-            val right = left + it.measuredWidth
-            val bottom = top + it.measuredHeight
-            it.layout(left, top, right, bottom)
-        }
-
-        // 基于editorView顶部向上布局contentView
-        layoutContentView(contentView)
-
-        if (!editorAnimator.isRunning) {
+        if (!editorAnimator.canRunAnimation || !editorAnimator.isRunning) {
             // 修复editorOffset，例如导航栏高度改变（导航栏模式改变），
             // editorView的子View处理手势导航栏边到边，可能会修改尺寸，
             // 此时未同步editorOffset，导致布局位置不正确。
             val ime = editorView.ime
             val current = editorView.current
-            val offset = editorView.height
+            val offset = editorView.measuredHeight
             if (current !== ime && editorOffset != offset) {
-                val diff = editorOffset - offset
                 editorOffset = offset
-                editorView.offsetTopAndBottom(diff)
-                contentView.offsetTopAndBottom(diff)
             }
         }
-    }
 
-    private fun Int.toExactlyMeasureSpec() = makeMeasureSpec(this, EXACTLY)
-
-    private fun Int.toAtMostMeasureSpec() = makeMeasureSpec(this, AT_MOST)
-
-    private fun checkContentView() {
-        if (childCount == 0) return
-        if (contentView == null) {
-            require(childCount == 1) { "InputView初始化时只能有一个子View" }
-            contentView = getChildAt(0)
-            addView(editorView, MATCH_PARENT, WRAP_CONTENT)
-        }
-    }
-
-    private fun measureContentView(contentView: View) {
         val horizontalMargin = contentView.let { it.marginLeft + it.marginRight }
         val verticalMargin = contentView.let { it.marginTop + it.marginBottom }
         val maxContentWidth = measuredWidth - horizontalMargin
@@ -276,13 +232,38 @@ class InputView @JvmOverloads constructor(
         )
     }
 
-    private fun layoutContentView(contentView: View) {
+    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+        val contentView = contentView ?: return
+        // 基于inputView底部向下布局editorView，
+        // 通过editorOffset向上偏移editorView。
+        editorView.let {
+            val left = 0
+            val top = measuredHeight - editorOffset
+            val right = left + it.measuredWidth
+            val bottom = top + it.measuredHeight
+            it.layout(left, top, right, bottom)
+        }
+
+        // 基于editorView顶部向上布局contentView
         contentView.let {
             val left = (measuredWidth - it.measuredWidth) / 2
             val bottom = height - it.marginBottom - navBarOffset - getLayoutOffset()
             val right = left + it.measuredWidth
             val top = bottom - it.measuredHeight
             it.layout(left, top, right, bottom)
+        }
+    }
+
+    private fun Int.toExactlyMeasureSpec() = makeMeasureSpec(this, EXACTLY)
+
+    private fun Int.toAtMostMeasureSpec() = makeMeasureSpec(this, AT_MOST)
+
+    private fun checkContentView() {
+        if (childCount == 0) return
+        if (contentView == null) {
+            require(childCount == 1) { "InputView初始化时只能有一个子View" }
+            contentView = getChildAt(0)
+            addView(editorView, MATCH_PARENT, WRAP_CONTENT)
         }
     }
 

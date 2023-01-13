@@ -115,7 +115,7 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
     final override fun onEditorChanged(previous: Editor?, current: Editor?) {
         val inputView = inputView ?: return
         // 若还未到下一帧运行动画，则不会置空animationRecord，而是更新记录的属性
-        animationRecord?.endAnimation()
+        endAnimation()
         if (animationRecord == null) {
             animationRecord = AnimationRecord()
             inputView.doOnPreDraw {
@@ -132,7 +132,6 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
             updateStartViewAndEndView()
             updateRunAnimationType(previous, current)
         }
-        dispatchAnimationCallback { onEditorChanged(previous, current) }
     }
 
     private fun getEditorEndOffset(): Int {
@@ -174,7 +173,7 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
     private fun dispatchAnimationUpdate(record: AnimationRecord, currentOffset: Int) {
         if (!record.checkOffset()) return
         record.setAnimationOffset(currentOffset = currentOffset)
-        inputView?.updateEditorOffset(record.currentOffset, canRunAnimation)
+        inputView?.updateEditorOffset(record.currentOffset)
         onAnimationUpdate(record)
         dispatchAnimationCallback { onAnimationUpdate(record) }
     }
@@ -238,7 +237,7 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
             }
             typeMask = animation.typeMask
             // 更改Editor后，会在onEditorChanged()对animationRecord赋值
-            inputView?.dispatchIme(isShow = window.getImeHeight(insets) > 0, canRunAnimation)
+            inputView?.dispatchIme(isShow = window.getImeHeight(insets) > 0)
 
             val record = animationRecord?.takeIf { it.willRunInsetsAnimation } ?: return bounds
             val isIme = record.isIme(record.current)
@@ -457,15 +456,7 @@ interface AnimationState {
 /**
  * [EditorAnimator]的动画回调
  */
-interface AnimationCallback : EditorChangedListener<Editor> {
-
-    /**
-     * 显示的[Editor]已更改
-     *
-     * @param previous 之前的[Editor]，`null`表示之前没有[Editor]
-     * @param current  当前的[Editor]，`null`表示当前没有[Editor]
-     */
-    override fun onEditorChanged(previous: Editor?, current: Editor?) = Unit
+interface AnimationCallback {
 
     /**
      * 动画开始
