@@ -31,9 +31,9 @@ class MessageListActivity : AppCompatActivity() {
     }
 
     /**
-     * 由于内容区域包含[RecyclerView]，因此使用[EditorMode.ADJUST_PAN]，显示编辑器区域时平移内容区域，
-     * 不使用[EditorMode.ADJUST_RESIZE]，原因是更改内容区域尺寸会让[RecyclerView]重新measure和layout，
-     * 这在性能表现上不如[EditorMode.ADJUST_PAN]。
+     * 内容区域包含[RecyclerView]，建议使用[EditorMode.ADJUST_PAN]，显示编辑器区域时平移内容区域，
+     * 使用[EditorMode.ADJUST_RESIZE]，更改内容区域尺寸时会让[RecyclerView]重新measure和layout，
+     * 在性能表现上不如[EditorMode.ADJUST_PAN]。
      *
      * 示例代码反转了[RecyclerView]的布局，并从顶部开始填充子View，此时使用[EditorMode.ADJUST_PAN]，
      * 需要对[RecyclerView]处理编辑器区域的动画偏移，[handleScroll]演示了如何处理动画偏移，
@@ -73,10 +73,6 @@ class MessageListActivity : AppCompatActivity() {
      */
     private fun ActivityMessageListBinding.handleScroll() {
         val scrollToFirst = { rvMessage.scrollToPosition(0) }
-        val scrollToFirstIfNecessary = {
-            val lm = rvMessage.layoutManager as? LinearLayoutManager
-            if (lm != null && lm.findFirstCompletelyVisibleItemPosition() != 0) scrollToFirst()
-        }
 
         //region 更改etMessage的高度，rvMessage滚动到首位
         etMessage.addOnLayoutChangeListener listener@{ _, left, top, right, bottom,
@@ -84,20 +80,20 @@ class MessageListActivity : AppCompatActivity() {
             if (right - left == 0) return@listener
             val oldHeight = oldBottom - oldTop
             val newHeight = bottom - top
-            if (oldHeight != newHeight) scrollToFirstIfNecessary()
+            if (oldHeight != newHeight) scrollToFirst()
         }
         //endregion
 
-        inputView.editorAnimator.addAnimationCallback(object : AnimationCallback {
-            //region 更改显示的MessageEditor，rvMessage滚动到首位
-            override fun onEditorChanged(previous: Editor?, current: Editor?) {
-                scrollToFirstIfNecessary()
-            }
-            //endregion
+        //region 更改显示的MessageEditor，rvMessage滚动到首位
+        inputView.editorAdapter.addEditorChangedListener { _, _ -> scrollToFirst() }
+        //endregion
 
-            //region 处理rvMessage可视区域未铺满时的动画偏移
+        //region 处理rvMessage可视区域未铺满时的动画偏移
+        val initialMode = inputView.editorMode
+        inputView.editorAnimator.addAnimationCallback(object : AnimationCallback {
             override fun onAnimationStart(state: AnimationState) {
                 if (state.startOffset == 0 && state.endOffset != 0
+                        && initialMode !== EditorMode.ADJUST_RESIZE
                         && calculateVerticalScrollRangeDiff() < 0) {
                     // 将editorMode动态调整为EditorMode.ADJUST_RESIZE相比于其它处理方式,
                     // 能确保EditorAnimator动画运行中、结束后，添加消息的item动画正常运行。
@@ -106,19 +102,18 @@ class MessageListActivity : AppCompatActivity() {
             }
 
             override fun onAnimationUpdate(state: AnimationState) {
-                // 确保LayoutManager及时计算锚点信息，因此不用scrollToFirstIfNecessary()
                 if (inputView.editorMode === EditorMode.ADJUST_RESIZE) scrollToFirst()
             }
 
             override fun onAnimationEnd(state: AnimationState) {
-                if (state.endOffset == 0) inputView.editorMode = EditorMode.ADJUST_PAN
+                if (state.endOffset == 0) inputView.editorMode = initialMode
             }
 
             private fun calculateVerticalScrollRangeDiff(): Int {
                 return rvMessage.computeVerticalScrollRange() - rvMessage.height
             }
-            //endregion
         })
+        //endregion
     }
 
     /**
