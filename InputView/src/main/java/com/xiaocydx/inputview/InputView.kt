@@ -9,6 +9,8 @@ import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.EditText
 import androidx.annotation.IntRange
+import androidx.annotation.VisibleForTesting
+import androidx.annotation.VisibleForTesting.PRIVATE
 import androidx.core.view.*
 
 /**
@@ -287,6 +289,12 @@ class InputView @JvmOverloads constructor(
     private fun getLayoutOffset(): Int {
         return (editorOffset - navBarOffset).coerceAtLeast(0)
     }
+
+    @VisibleForTesting(otherwise = PRIVATE)
+    internal fun getEditorView() = editorView
+
+    @VisibleForTesting(otherwise = PRIVATE)
+    internal fun getContentView() = contentView
 
     companion object
 }
