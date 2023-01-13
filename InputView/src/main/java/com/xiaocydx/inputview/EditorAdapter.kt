@@ -30,11 +30,9 @@ import android.view.ViewGroup
  * @date 2023/1/8
  */
 abstract class EditorAdapter<T : Editor> {
-    private var listeners = ArrayList<EditorChangedListener<T>>(2)
-    internal var inputView: InputView? = null
-        private set
-    internal var editorView: EditorView? = null
-        private set
+    private val listeners = ArrayList<EditorChangedListener<T>>(2)
+    internal var inputView: InputView? = null; private set
+    internal var editorView: EditorView? = null; private set
 
     /**
      * [InputView]编辑区的[Editor]集合

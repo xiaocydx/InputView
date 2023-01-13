@@ -149,7 +149,7 @@ class InputView @JvmOverloads constructor(
      *
      * [EditorAnimator]在当前帧[ViewTreeObserver.OnDrawListener.onDraw]分发IME的显示情况，
      * [EditorView]更改[Editor]后，可能会申请重新布局，由于当前帧已完成measure和layout，
-     * 因此需要在下一帧重新布局，对于不需要运行动画的场景，重新measure和layout，
+     * 因此需要在下一帧重新布局，对不需要运行动画的场景，重新measure和layout，
      * 确保[contentView]和[editorView]的尺寸和位置在当前帧draw之前是正确的。
      */
     internal fun dispatchIme(isShow: Boolean, canRunAnimation: Boolean) {
