@@ -18,8 +18,7 @@ interface EditorHelper {
      *
      * 以处理[RecyclerView]的手势导航栏边到边为例：
      * ```
-     * // layoutParams.height是固定高度
-     * val initialHeight = recyclerView.layoutParams.height
+     * // recyclerView.layoutParams.height的初始高度是固定值
      *
      * recyclerView.doOnApplyWindowInsets { _, insets, initialState ->
      *     val supportGestureNavBarEdgeToEdge = recyclerView.supportGestureNavBarEdgeToEdge(insets)
@@ -27,8 +26,8 @@ interface EditorHelper {
      *
      *     // 1. 若支持手势导航栏边到边，则增加高度，否则保持初始高度
      *     val height = when {
-     *         !supportGestureNavBarEdgeToEdge -> initialHeight
-     *         else -> navigationBarHeight + initialHeight
+     *         !supportGestureNavBarEdgeToEdge -> initialState.params.height
+     *         else -> navigationBarHeight + initialState.params.height
      *     }
      *     if (recyclerView.layoutParams.height != height) {
      *         recyclerView.updateLayoutParams { this.height = height }

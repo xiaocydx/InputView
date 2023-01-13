@@ -26,6 +26,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     var editText: EditText?
         get() = editTextRef?.get()
         set(value) {
+            controller = null
             editTextRef = value?.let(::WeakReference)
             if (value != null && isAttachedToWindow) {
                 controller = findViewTreeWindow()?.createWindowInsetsController(value)
