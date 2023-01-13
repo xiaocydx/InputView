@@ -460,6 +460,14 @@ interface AnimationState {
 interface AnimationCallback : EditorChangedListener<Editor> {
 
     /**
+     * 显示的[Editor]已更改
+     *
+     * @param previous 之前的[Editor]，`null`表示之前没有[Editor]
+     * @param current  当前的[Editor]，`null`表示当前没有[Editor]
+     */
+    override fun onEditorChanged(previous: Editor?, current: Editor?) = Unit
+
+    /**
      * 动画开始
      *
      * @param state [InputView]编辑区的动画状态

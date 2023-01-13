@@ -36,9 +36,10 @@ class ImeAdapter : EditorAdapter<Ime>() {
 /**
  * [Editor]的淡入淡出动画
  */
-open class FadeEditorAnimator : EditorAnimator() {
+open class FadeEditorAnimator(
     @FloatRange(from = 0.0, to = 0.5)
-    protected open val thresholdFraction = 0.4f
+    private val thresholdFraction: Float = 0.4f
+) : EditorAnimator() {
 
     override fun onAnimationStart(state: AnimationState): Unit = with(state) {
         startView?.alpha = 1f
