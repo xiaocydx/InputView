@@ -114,7 +114,7 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
      */
     final override fun onEditorChanged(previous: Editor?, current: Editor?) {
         val inputView = inputView ?: return
-        // 若还未到下一帧运行动画，则不会置空animationRecord，而是更新记录的属性
+        // 在运行动画之前，不会置空animationRecord，而是更新记录的属性
         endAnimation()
         if (animationRecord == null) {
             animationRecord = AnimationRecord()
@@ -128,7 +128,7 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
             }
         }
         animationRecord!!.apply {
-            // 在下一帧运行动画之前，更新记录的属性
+            // 在运行动画之前，更新记录的属性
             updateStartViewAndEndView()
             updateRunAnimationType(previous, current)
         }
@@ -201,7 +201,6 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
 
     internal fun attach(adapter: EditorAdapter<*>) {
         editorAdapter = adapter
-        insetsHandler.reset()
         editorView?.let { ViewCompat.setWindowInsetsAnimationCallback(it, insetsHandler) }
         adapter.addEditorChangedListener(this)
         onAttachToEditorAdapter(adapter)
@@ -210,6 +209,7 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
     internal fun detach(adapter: EditorAdapter<*>) {
         assert(editorAdapter === adapter) { "EditorAdapter不相同" }
         endAnimation()
+        insetsHandler.reset()
         editorView?.let { ViewCompat.setWindowInsetsAnimationCallback(it, null) }
         editorAdapter = null
         adapter.removeEditorChangedListener(this)
@@ -228,21 +228,19 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
         override fun onStart(
             animation: WindowInsetsAnimationCompat,
             bounds: WindowInsetsAnimationCompat.BoundsCompat
-        ): WindowInsetsAnimationCompat.BoundsCompat {
-            val window = window
-            val insets = window?.getRootWindowInsets()
-            if (window == null || insets == null || typeMask != NO_VALUE
-                    || !window.containsImeType(animation.typeMask)) {
+        ): WindowInsetsAnimationCompat.BoundsCompat = window?.run {
+            val insets = getRootWindowInsets()
+            if (insets == null || typeMask != NO_VALUE || !animation.containsImeType()) {
                 return bounds
             }
             typeMask = animation.typeMask
-            // 更改Editor后，会在onEditorChanged()对animationRecord赋值
-            inputView?.dispatchIme(isShow = window.getImeHeight(insets) > 0)
+            // 更改Editor时，会在onEditorChanged()对animationRecord赋值
+            inputView?.dispatchIme(isShow = insets.imeHeight > 0)
 
             val record = animationRecord?.takeIf { it.willRunInsetsAnimation } ?: return bounds
-            val isIme = record.isIme(record.current)
+            val isCurrentIme = record.isIme(record.current)
             val startOffset = inputView?.editorOffset ?: NO_VALUE
-            val endOffset = if (isIme) window.getImeOffset(insets) else getEditorEndOffset()
+            val endOffset = if (isCurrentIme) insets.imeOffset else getEditorEndOffset()
             record.setAnimationOffset(startOffset, endOffset, startOffset)
             record.setInsetsAnimation(animation)
             when {
@@ -260,19 +258,18 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
                 }
                 else -> dispatchAnimationStart(record)
             }
-            return bounds
-        }
+            bounds
+        } ?: bounds
 
         override fun onProgress(
             insets: WindowInsetsCompat,
-            runningAnimations: MutableList<WindowInsetsAnimationCompat>
-        ): WindowInsetsCompat {
-            val window = window ?: return insets
+            runningAnimations: List<WindowInsetsAnimationCompat>
+        ): WindowInsetsCompat = window?.run {
             val animation = runningAnimations.firstOrNull { it.typeMask == typeMask }
             animationRecord?.takeIf { animation != null && it.handleInsetsAnimation(animation) }
-                ?.let { dispatchAnimationUpdate(it, currentOffset = window.getImeOffset(insets)) }
-            return insets
-        }
+                ?.let { dispatchAnimationUpdate(it, currentOffset = insets.imeOffset) }
+            insets
+        } ?: insets
 
         override fun onEnd(animation: WindowInsetsAnimationCompat) {
             animationRecord?.takeIf { animation.typeMask == typeMask }

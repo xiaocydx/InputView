@@ -73,14 +73,14 @@ interface EditorHelper {
      */
     fun View.supportGestureNavBarEdgeToEdge(insets: WindowInsetsCompat): Boolean {
         val window = getViewTreeWindow() ?: findViewTreeWindow()?.also(::setViewTreeWindow)
-        return window?.supportGestureNavBarEdgeToEdge(insets) ?: false
+        return window?.run { insets.supportGestureNavBarEdgeToEdge } ?: false
     }
 }
 
 /**
  * 视图的初始状态
  */
-data class ViewState(
+data class ViewState internal constructor(
     /**
      * 视图的初始params
      */
@@ -91,13 +91,13 @@ data class ViewState(
      */
     val paddings: ViewPaddings,
 ) {
-    constructor(view: View) : this(ViewParams(view), ViewPaddings(view))
+    internal constructor(view: View) : this(ViewParams(view), ViewPaddings(view))
 }
 
 /**
  * 视图的初始params
  */
-data class ViewParams(
+data class ViewParams internal constructor(
     @Px val width: Int,
     @Px val height: Int,
     @Px val marginLeft: Int,
@@ -105,7 +105,7 @@ data class ViewParams(
     @Px val marginRight: Int,
     @Px val marginBottom: Int
 ) {
-    constructor(view: View) : this(
+    internal constructor(view: View) : this(
         width = view.layoutParams?.width ?: 0,
         height = view.layoutParams?.height ?: 0,
         marginLeft = view.marginLeft,
@@ -118,13 +118,13 @@ data class ViewParams(
 /**
  * 视图的初始paddings
  */
-data class ViewPaddings(
+data class ViewPaddings internal constructor(
     @Px val left: Int,
     @Px val top: Int,
     @Px val right: Int,
     @Px val bottom: Int
 ) {
-    constructor(view: View) : this(
+    internal constructor(view: View) : this(
         left = view.paddingLeft,
         top = view.paddingTop,
         right = view.paddingRight,

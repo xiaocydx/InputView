@@ -72,8 +72,8 @@ internal class ViewTreeWindow(
         val content = window.decorView.findViewById<View>(android.R.id.content)
         ViewCompat.setOnApplyWindowInsetsListener(content) { _, insets ->
             content.updatePadding(
-                top = insets.contentPaddingTop(),
-                bottom = insets.contentPaddingBottom()
+                top = insets.contentPaddingTop,
+                bottom = insets.contentPaddingBottom
             )
             insets
         }
@@ -93,16 +93,16 @@ internal class ViewTreeWindow(
     private fun WindowInsetsCompat.decorWindowInsets(): WindowInsetsCompat {
         var outcome = this
         if (statusBarEdgeToEdge) {
-            outcome = outcome.consumeStatusBarrHeight()
+            outcome = outcome.consumeStatusBarHeight()
         }
-        if (supportGestureNavBarEdgeToEdge(outcome)) {
+        if (outcome.supportGestureNavBarEdgeToEdge) {
             outcome = outcome.consumeNavigationBarHeight()
         }
         return outcome
     }
 
     @CheckResult
-    private fun WindowInsetsCompat.consumeStatusBarrHeight(): WindowInsetsCompat {
+    private fun WindowInsetsCompat.consumeStatusBarHeight(): WindowInsetsCompat {
         val oldInsets = getInsets(statusBarType)
         val newInsets = Insets.of(oldInsets.left, 0, oldInsets.right, oldInsets.bottom)
         return WindowInsetsCompat.Builder(this).setInsets(statusBarType, newInsets).build()
@@ -115,58 +115,55 @@ internal class ViewTreeWindow(
         return WindowInsetsCompat.Builder(this).setInsets(navBarType, newInsets).build()
     }
 
-    private fun WindowInsetsCompat.contentPaddingTop(): Int = when {
-        statusBarEdgeToEdge -> 0
-        else -> getStatusBarHeight(this)
-    }
+    private val WindowInsetsCompat.contentPaddingTop: Int
+        get() = if (statusBarEdgeToEdge) 0 else statusBarHeight
 
-    private fun WindowInsetsCompat.contentPaddingBottom(): Int = when {
-        supportGestureNavBarEdgeToEdge(this) -> 0
-        else -> getNavigationBarHeight(this)
-    }
+    private val WindowInsetsCompat.contentPaddingBottom: Int
+        get() = if (supportGestureNavBarEdgeToEdge) 0 else navigationBarHeight
 
-    private fun WindowInsetsCompat.isGestureNavigationBar(): Boolean {
-        val threshold = (24 * window.decorView.resources.displayMetrics.density).toInt()
-        return getNavigationBarHeight(this) <= threshold.coerceAtLeast(66)
-    }
+    private val WindowInsetsCompat.isGestureNavigationBar: Boolean
+        get() {
+            val threshold = (24 * window.decorView.resources.displayMetrics.density).toInt()
+            return navigationBarHeight <= threshold.coerceAtLeast(66)
+        }
 
-    fun supportGestureNavBarEdgeToEdge(insets: WindowInsetsCompat): Boolean {
-        return gestureNavBarEdgeToEdge && insets.isGestureNavigationBar()
-    }
+    val WindowInsetsCompat.statusBarHeight: Int
+        get() = getInsets(statusBarType).top
+
+    val WindowInsetsCompat.navigationBarHeight: Int
+        get() = getInsets(navBarType).bottom
+
+    val WindowInsetsCompat.imeHeight
+        get() = getInsets(imeType).bottom
+
+    val WindowInsetsCompat.imeOffset: Int
+        get() {
+            if (supportGestureNavBarEdgeToEdge) return imeHeight
+            return (imeHeight - navigationBarHeight).coerceAtLeast(0)
+        }
+
+    val WindowInsetsCompat.navigationBarOffset: Int
+        get() = if (supportGestureNavBarEdgeToEdge) navigationBarHeight else 0
+
+    val WindowInsetsCompat.supportGestureNavBarEdgeToEdge: Boolean
+        get() = gestureNavBarEdgeToEdge && isGestureNavigationBar
 
     fun getRootWindowInsets(): WindowInsetsCompat? {
         return ViewCompat.getRootWindowInsets(window.decorView)
     }
 
-    fun getStatusBarHeight(insets: WindowInsetsCompat): Int {
-        return insets.getInsets(statusBarType).top
-    }
-
-    fun getNavigationBarHeight(insets: WindowInsetsCompat): Int {
-        return insets.getInsets(navBarType).bottom
-    }
-
-    fun getImeHeight(insets: WindowInsetsCompat): Int {
-        return insets.getInsets(imeType).bottom
-    }
-
-    fun getImeOffset(insets: WindowInsetsCompat): Int {
-        val imeHeight = getImeHeight(insets)
-        if (supportGestureNavBarEdgeToEdge(insets)) return imeHeight
-        val navBarHeight = getNavigationBarHeight(insets)
-        return (imeHeight - navBarHeight).coerceAtLeast(0)
-    }
-
-    fun getNavigationBarOffset(insets: WindowInsetsCompat): Int = when {
-        !supportGestureNavBarEdgeToEdge(insets) -> 0
-        else -> getNavigationBarHeight(insets)
-    }
-
-    fun containsImeType(typeMask: Int): Boolean {
-        return typeMask and imeType == imeType
-    }
-
     fun createWindowInsetsController(editText: View): WindowInsetsControllerCompat {
         return WindowInsetsControllerCompat(window, editText)
+    }
+
+    /**
+     * 传入[view]是为了确保转换出的[WindowInsetsCompat]是正确的结果
+     */
+    fun WindowInsets.toCompat(view: View): WindowInsetsCompat {
+        return WindowInsetsCompat.toWindowInsetsCompat(this, view)
+    }
+
+    fun WindowInsetsAnimationCompat.containsImeType(): Boolean {
+        return typeMask and imeType == imeType
     }
 }

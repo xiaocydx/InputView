@@ -11,7 +11,10 @@ import android.widget.EditText
 import androidx.annotation.IntRange
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.PRIVATE
-import androidx.core.view.*
+import androidx.core.view.marginBottom
+import androidx.core.view.marginLeft
+import androidx.core.view.marginRight
+import androidx.core.view.marginTop
 
 /**
  * 输入控件
@@ -135,15 +138,17 @@ class InputView @JvmOverloads constructor(
      * 当支持手势导航栏边到边时，[navBarOffset]等于导航栏的高度，此时显示[Editor]，
      * 在[editorOffset]超过[navBarOffset]后，才会更新[contentView]的尺寸或位置。
      */
-    override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
-        val insetsCompat = WindowInsetsCompat.toWindowInsetsCompat(insets)
-        val offset = window?.getNavigationBarOffset(insetsCompat) ?: 0
+    override fun dispatchApplyWindowInsets(insets: WindowInsets): WindowInsets {
+        val applyInsets = super.dispatchApplyWindowInsets(insets)
+        val offset = window?.run {
+            applyInsets.toCompat(this@InputView).navigationBarOffset
+        } ?: 0
         if (navBarOffset != offset) {
             navBarOffset = offset
             editorAnimator.endAnimation()
             requestLayout()
         }
-        return super.onApplyWindowInsets(insets)
+        return applyInsets
     }
 
     /**
