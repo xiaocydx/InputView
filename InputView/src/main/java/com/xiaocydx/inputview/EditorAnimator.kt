@@ -8,10 +8,7 @@ import android.view.animation.Interpolator
 import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
 import androidx.core.animation.addListener
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsAnimationCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.doOnPreDraw
+import androidx.core.view.*
 import kotlin.math.absoluteValue
 
 /**
@@ -20,15 +17,14 @@ import kotlin.math.absoluteValue
  * @author xcc
  * @date 2023/1/8
  */
-abstract class EditorAnimator : EditorChangedListener<Editor> {
+abstract class EditorAnimator {
+    private var inputView: InputView? = null
+    private var editorView: EditorView? = null
     private var animationRecord: AnimationRecord? = null
-    private var editorAdapter: EditorAdapter<*>? = null
-    private val insetsHandler = InsetsHandler()
+    private val animationDispatcher = AnimationDispatcher()
     private val callbacks = ArrayList<AnimationCallback>(2)
-    private val editorView: EditorView?
-        get() = editorAdapter?.editorView
-    private val inputView: InputView?
-        get() = editorAdapter?.inputView
+    private var window: ViewTreeWindow? = null
+        get() = field ?: inputView?.findViewTreeWindow()?.also { field = it }
     internal open val canRunAnimation: Boolean = true
 
     /**
@@ -79,7 +75,7 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
     /**
      * 获取动画时长，单位：ms
      *
-     * **注意**：显示或隐藏IME时，内部实现会配合Insets动画，因此不会调用该函数。
+     * **注意**：内部实现配合Insets动画显示或隐藏IME时，不会调用该函数。
      *
      * @param state [InputView]编辑区的动画状态
      */
@@ -88,7 +84,7 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
     /**
      * 获取动画时长，单位：ms
      *
-     * **注意**：显示或隐藏IME时，内部实现会配合Insets动画，因此不会调用该函数。
+     * **注意**：内部实现配合Insets动画显示或隐藏IME时，不会调用该函数。
      *
      * @param state [InputView]编辑区的动画状态
      */
@@ -104,39 +100,10 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
      */
     protected open fun onDetachFromEditorAdapter(adapter: EditorAdapter<*>) = Unit
 
-    /**
-     * 1. [EditorView]更改[Editor]时会先移除全部子View，再添加当前[Editor]的子View，
-     * 运行动画之前调用[AnimationRecord.addStartViewIfNecessary]将移除的子View重新添加回来，
-     * 参与动画更新过程，动画结束时调用[AnimationRecord.removeStartViewIfNecessary]移除子View。
-     *
-     * 2. 若[previous]和[current]不是IME，则调用[runSimpleAnimationIfNecessary]运行简单动画，
-     * 若[previous]和[current]其中一个是IME，则运行Insets动画，在[InsetsHandler]做进一步处理。
-     */
-    final override fun onEditorChanged(previous: Editor?, current: Editor?) {
-        val inputView = inputView ?: return
-        // 在运行动画之前，不会置空animationRecord，而是更新记录的属性
+    private fun resetAnimationRecord(record: AnimationRecord) {
         endAnimation()
-        if (animationRecord == null) {
-            animationRecord = AnimationRecord()
-            inputView.doOnPreDraw {
-                val record = animationRecord
-                if (record == null || record.willRunInsetsAnimation) return@doOnPreDraw
-                val startOffset = inputView.editorOffset
-                val endOffset = getEditorEndOffset()
-                record.setAnimationOffset(startOffset, endOffset, startOffset)
-                runSimpleAnimationIfNecessary(record)
-            }
-        }
-        animationRecord!!.apply {
-            // 在运行动画之前，更新记录的属性
-            updateStartViewAndEndView()
-            updateRunAnimationType(previous, current)
-        }
-    }
-
-    private fun getEditorEndOffset(): Int {
-        val editorView = editorView ?: return NO_VALUE
-        return editorView.changeRecord.currentChild?.height ?: 0
+        assert(animationRecord == null) { "animationRecord未被置空" }
+        animationRecord = record
     }
 
     private inline fun runSimpleAnimationIfNecessary(
@@ -165,13 +132,13 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
     }
 
     private fun dispatchAnimationStart(record: AnimationRecord) {
-        if (!record.checkOffset()) return
+        if (!record.checkAnimationOffset()) return
         onAnimationStart(record)
         dispatchAnimationCallback { onAnimationStart(record) }
     }
 
     private fun dispatchAnimationUpdate(record: AnimationRecord, currentOffset: Int) {
-        if (!record.checkOffset()) return
+        if (!record.checkAnimationOffset()) return
         record.setAnimationOffset(currentOffset = currentOffset)
         inputView?.updateEditorOffset(record.currentOffset)
         onAnimationUpdate(record)
@@ -179,7 +146,7 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
     }
 
     private fun dispatchAnimationEnd(record: AnimationRecord) {
-        if (record.checkOffset()) {
+        if (record.checkAnimationOffset()) {
             record.setAnimationOffset(currentOffset = record.endOffset)
             if (inputView != null && inputView!!.editorOffset != record.endOffset) {
                 dispatchAnimationUpdate(record, record.endOffset)
@@ -188,6 +155,7 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
             dispatchAnimationCallback { onAnimationEnd(record) }
         }
         record.removeStartViewIfNecessary()
+        record.removePreDrawRunSimpleAnimation()
         animationRecord = null
     }
 
@@ -200,49 +168,119 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
     }
 
     internal fun attach(adapter: EditorAdapter<*>) {
-        editorAdapter = adapter
-        editorView?.let { ViewCompat.setWindowInsetsAnimationCallback(it, insetsHandler) }
-        adapter.addEditorChangedListener(this)
+        inputView = adapter.inputView
+        editorView = adapter.editorView
+        animationDispatcher.attach(editorView!!, adapter)
         onAttachToEditorAdapter(adapter)
     }
 
     internal fun detach(adapter: EditorAdapter<*>) {
-        assert(editorAdapter === adapter) { "EditorAdapter不相同" }
+        assert(inputView === adapter.inputView) { "InputView不相同" }
+        assert(editorView === adapter.editorView) { "EditorView不相同" }
         endAnimation()
-        insetsHandler.reset()
-        editorView?.let { ViewCompat.setWindowInsetsAnimationCallback(it, null) }
-        editorAdapter = null
-        adapter.removeEditorChangedListener(this)
+        animationDispatcher.detach(editorView!!, adapter)
+        inputView = null
+        editorView = null
         onDetachFromEditorAdapter(adapter)
     }
 
-    private inner class InsetsHandler : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_STOP) {
-        private var typeMask = NO_VALUE
-        private var window: ViewTreeWindow? = null
-            get() = field ?: editorView?.findViewTreeWindow()?.also { field = it }
+    private inner class AnimationDispatcher :
+            EditorChangedListener<Editor>, OnApplyWindowInsetsListener,
+            WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_STOP) {
+        private var imeHeight = 0
 
-        fun reset() {
-            typeMask = NO_VALUE
+        fun attach(view: EditorView, adapter: EditorAdapter<*>) {
+            ViewCompat.setOnApplyWindowInsetsListener(view, this)
+            ViewCompat.setWindowInsetsAnimationCallback(view, this)
+            adapter.addEditorChangedListener(this)
+        }
+
+        fun detach(view: EditorView, adapter: EditorAdapter<*>) {
+            ViewCompat.setOnApplyWindowInsetsListener(view, null)
+            ViewCompat.setWindowInsetsAnimationCallback(view, null)
+            adapter.removeEditorChangedListener(this)
+        }
+
+        /**
+         * 1. [EditorView]更改[Editor]时会先移除全部子View，再添加当前[Editor]的子View，
+         * 运行动画之前调用[AnimationRecord.addStartViewIfNecessary]将移除的子View重新添加回来，
+         * 参与动画更新过程，动画结束时调用[AnimationRecord.removeStartViewIfNecessary]移除子View。
+         *
+         * 2. 若[previous]和[current]不是IME，则调用[runSimpleAnimationIfNecessary]运行简单动画，
+         * 若[previous]和[current]其中一个是IME，则运行Insets动画，在[AnimationDispatcher]做进一步处理。
+         */
+        override fun onEditorChanged(previous: Editor?, current: Editor?) {
+            val record = AnimationRecord(previous, current)
+            resetAnimationRecord(record)
+            record.setStartViewAndEndView()
+            // 由于insetsAnimation的回调可能不会执行（Android 8.0首次显示IME可复现），因此做以下处理：
+            // 1. 预测是否将要运行insetsAnimation。
+            // 2. 若不会运行insetsAnimation，则立即添加PreDrawRunSimpleAnimation。
+            // 3. 若将要运行insetsAnimation，则不立即添加PreDrawRunSimpleAnimation，
+            // 而是在onApplyWindowInsets()显示或隐藏IME时，才添加PreDrawRunSimpleAnimation，
+            // 这样做的目的是确保PreDrawRunSimpleAnimation在insetsAnimation的回调之后执行，
+            // 当执行PreDrawRunSimpleAnimation时，若没有insetsAnimation，则运行simpleAnimation。
+            record.setPreDrawRunSimpleAnimation action@{
+                if (record.insetsAnimation != null) return@action
+                record.setAnimationOffsetForCurrent()
+                runSimpleAnimationIfNecessary(record)
+            }
+            if (!record.willRunInsetsAnimation) {
+                record.addPreDrawRunSimpleAnimation()
+            } else {
+                // 将要运行insetsAnimation的执行时序：
+                // 1. EditorView.onApplyWindowInsets()
+                //    -> AnimationRecord.addPreDrawRunSimpleAnimation()
+                // 2. WindowInsetsAnimationCompat.Callback.onStart()
+                // 3. PreDrawRunSimpleAnimation.invoke()
+            }
+        }
+
+        /**
+         * 该函数被调用之前，可能已更改[Editor]，执行了[onEditorChanged]创建[animationRecord]
+         */
+        override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
+            window?.apply {
+                val newImeHeight = insets.imeHeight
+                when {
+                    imeHeight == 0 && newImeHeight > 0 -> {
+                        editorView?.dispatchIme(isShow = true)
+                        animationRecord?.addPreDrawRunSimpleAnimation()
+                    }
+                    imeHeight > 0 && newImeHeight == 0 -> {
+                        editorView?.dispatchIme(isShow = false)
+                        animationRecord?.addPreDrawRunSimpleAnimation()
+                    }
+                    imeHeight > 0 && newImeHeight > 0 && imeHeight != newImeHeight -> {
+                        // 调整IME高度后，运行simpleAnimation修正editorOffset
+                        runSimpleAnimationFixEditorOffset(endOffset = insets.imeOffset)
+                    }
+                }
+                imeHeight = newImeHeight
+            }
+            return insets
+        }
+
+        private fun runSimpleAnimationFixEditorOffset(endOffset: Int) {
+            val current = editorView?.current ?: return
+            resetAnimationRecord(record = AnimationRecord(current, current)
+                .apply { setAnimationOffsetForCurrent() }
+                .apply { setAnimationOffset(endOffset = endOffset) }
+                .also(::runSimpleAnimationIfNecessary)
+            )
         }
 
         override fun onStart(
             animation: WindowInsetsAnimationCompat,
             bounds: WindowInsetsAnimationCompat.BoundsCompat
         ): WindowInsetsAnimationCompat.BoundsCompat = window?.run {
-            val insets = getRootWindowInsets()
-            if (insets == null || typeMask != NO_VALUE || !animation.containsImeType()) {
-                return bounds
+            val record = animationRecord
+            if (record == null || !animation.containsImeType()) return bounds
+            record.apply {
+                setInsetsAnimation(animation)
+                setAnimationOffsetForCurrent()
+                removePreDrawRunSimpleAnimation()
             }
-            typeMask = animation.typeMask
-            // 更改Editor时，会在onEditorChanged()对animationRecord赋值
-            inputView?.dispatchIme(isShow = insets.imeHeight > 0)
-
-            val record = animationRecord?.takeIf { it.willRunInsetsAnimation } ?: return bounds
-            val isCurrentIme = record.isIme(record.current)
-            val startOffset = inputView?.editorOffset ?: NO_VALUE
-            val endOffset = if (isCurrentIme) insets.imeOffset else getEditorEndOffset()
-            record.setAnimationOffset(startOffset, endOffset, startOffset)
-            record.setInsetsAnimation(animation)
             when {
                 !canRunAnimation || (record.startOffset == record.endOffset)
                         || (record.imeToOther() || record.otherToIme()) -> {
@@ -265,23 +303,25 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
             insets: WindowInsetsCompat,
             runningAnimations: List<WindowInsetsAnimationCompat>
         ): WindowInsetsCompat = window?.run {
-            val animation = runningAnimations.firstOrNull { it.typeMask == typeMask }
-            animationRecord?.takeIf { animation != null && it.handleInsetsAnimation(animation) }
+            animationRecord?.takeIf { it.handleInsetsAnimation }
+                ?.takeIf { runningAnimations.contains(it.insetsAnimation) }
                 ?.let { dispatchAnimationUpdate(it, currentOffset = insets.imeOffset) }
             insets
         } ?: insets
 
         override fun onEnd(animation: WindowInsetsAnimationCompat) {
-            animationRecord?.takeIf { animation.typeMask == typeMask }
-                ?.takeIf { it.handleInsetsAnimation(animation) }
+            animationRecord?.takeIf { it.handleInsetsAnimation }
+                ?.takeIf { it.insetsAnimation === animation }
                 ?.let(::dispatchAnimationEnd)
-            typeMask = NO_VALUE
         }
     }
 
-    private inner class AnimationRecord : AnimationState {
-        override var previous: Editor? = null; private set
-        override var current: Editor? = null; private set
+    private inner class AnimationRecord(
+        override val previous: Editor? = null,
+        override val current: Editor? = null
+    ) : AnimationState {
+        private var preDrawAction: (() -> Unit)? = null
+        private var preDrawListener: OneShotPreDrawListener? = null
         override var startView: View? = null; private set
         override var endView: View? = null; private set
         override var startOffset: Int = NO_VALUE; private set
@@ -290,37 +330,30 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
         override val navBarOffset: Int
             get() = inputView?.navBarOffset ?: 0
 
-        var willRunInsetsAnimation = false; private set
-        var willRunSimpleAnimation = false; private set
+        val willRunInsetsAnimation = isIme(previous) || isIme(current)
         var insetsAnimation: WindowInsetsAnimationCompat? = null; private set
         var simpleAnimation: Animator? = null; private set
+        val handleInsetsAnimation: Boolean
+            get() = simpleAnimation == null && insetsAnimation != null
 
         fun imeToOther() = isIme(previous) && current != null && !isIme(current)
 
         fun otherToIme() = previous != null && !isIme(previous) && isIme(current)
 
-        fun isIme(editor: Editor?): Boolean {
+        private fun isIme(editor: Editor?): Boolean {
             return editor != null && editorView != null && editorView!!.ime === editor
         }
 
-        fun checkOffset(): Boolean {
+        fun checkAnimationOffset(): Boolean {
             return startOffset != NO_VALUE && endOffset != NO_VALUE && currentOffset != NO_VALUE
         }
 
-        fun updateStartViewAndEndView() {
+        fun setStartViewAndEndView() {
             addStartViewIfNecessary()
-            updateEndView()
+            endView = editorView?.changeRecord?.currentChild
         }
 
-        fun updateRunAnimationType(previous: Editor?, current: Editor?) {
-            this.previous = previous
-            this.current = current
-            // 存在逻辑缺陷，insetsAnimation不可结束
-            willRunInsetsAnimation = isIme(previous) || isIme(current)
-            willRunSimpleAnimation = !willRunInsetsAnimation
-        }
-
-        fun addStartViewIfNecessary() {
+        private fun addStartViewIfNecessary() {
             val editorView = editorView
             if (!canRunAnimation || editorView == null) return
             val record = editorView.changeRecord
@@ -345,10 +378,6 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
             startView = null
         }
 
-        fun updateEndView() {
-            endView = editorView?.changeRecord?.currentChild
-        }
-
         fun setAnimationOffset(
             startOffset: Int = this.startOffset,
             endOffset: Int = this.endOffset,
@@ -356,30 +385,60 @@ abstract class EditorAnimator : EditorChangedListener<Editor> {
         ) {
             this.startOffset = startOffset
             this.endOffset = endOffset
-            this.currentOffset = currentOffset
+            // 切换不同的IME时，insetsAnimation计算的currentOffset可能不在min..max
+            val min = startOffset.coerceAtMost(endOffset)
+            val max = startOffset.coerceAtLeast(endOffset)
+            this.currentOffset = currentOffset.coerceAtLeast(min).coerceAtMost(max)
+        }
+
+        fun setAnimationOffsetForCurrent() {
+            setAnimationOffset(NO_VALUE, NO_VALUE, NO_VALUE)
+            window?.run {
+                val startOffset = inputView?.editorOffset ?: NO_VALUE
+                val endOffset = when {
+                    editorView == null -> NO_VALUE
+                    isIme(current) -> getRootWindowInsets()?.imeOffset ?: NO_VALUE
+                    else -> editorView!!.changeRecord.currentChild?.height ?: 0
+                }
+                setAnimationOffset(startOffset, endOffset, startOffset)
+            }
         }
 
         fun setInsetsAnimation(animation: WindowInsetsAnimationCompat) {
             insetsAnimation = animation
-            willRunInsetsAnimation = true
         }
 
         fun setSimpleAnimation(animation: Animator) {
             simpleAnimation = animation
-            willRunSimpleAnimation = true
         }
 
-        fun handleInsetsAnimation(animation: WindowInsetsAnimationCompat): Boolean = when {
-            willRunSimpleAnimation && simpleAnimation != null -> false
-            willRunInsetsAnimation && insetsAnimation === animation -> true
-            else -> false
+        fun setPreDrawRunSimpleAnimation(action: () -> Unit) {
+            preDrawAction = action
+        }
+
+        fun addPreDrawRunSimpleAnimation() {
+            val view = editorView ?: return
+            val action = preDrawAction ?: return
+            preDrawAction = null
+            preDrawListener = OneShotPreDrawListener.add(view, action)
+        }
+
+        fun removePreDrawRunSimpleAnimation() {
+            preDrawListener?.removeListener()
+            preDrawListener = null
+            preDrawAction = null
         }
 
         fun endAnimation() {
-            // simpleAnimation.end()会置空insetsAnimation
-            simpleAnimation?.end()
-            // 存在逻辑缺陷，insetsAnimation不可结束，需要主动更新为结束值
-            if (insetsAnimation != null) dispatchAnimationEnd(this)
+            if (simpleAnimation != null) {
+                // simpleAnimation.end()会置空insetsAnimation
+                simpleAnimation!!.end()
+            } else {
+                // 该分支处理两种情况
+                // 1. simpleAnimation或insetsAnimation为null，需要重置准备工作.
+                // 2. 存在逻辑缺陷，insetsAnimation不可结束，需要更新为结束值.
+                dispatchAnimationEnd(this)
+            }
         }
     }
 

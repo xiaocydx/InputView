@@ -3,10 +3,13 @@ package com.xiaocydx.inputview
 import android.app.Activity
 import android.content.Context
 import android.util.AttributeSet
-import android.view.*
+import android.view.Gravity
+import android.view.View
 import android.view.View.MeasureSpec.*
+import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.view.WindowInsets
 import android.widget.EditText
 import androidx.annotation.IntRange
 import androidx.annotation.VisibleForTesting
@@ -40,7 +43,7 @@ class InputView @JvmOverloads constructor(
     private var window: ViewTreeWindow? = null
 
     /**
-     * 编辑区的偏移值，可作为[EditorAnimator]动画的起始值
+     * 编辑区的偏移值，可作为[EditorAnimator]动画的计算参数
      */
     @get:IntRange(from = 0)
     internal var editorOffset = 0
@@ -137,9 +140,11 @@ class InputView @JvmOverloads constructor(
      * [contentView]和[editorView]之间会有一个[navBarOffset]区域，
      * 当支持手势导航栏边到边时，[navBarOffset]等于导航栏的高度，此时显示[Editor]，
      * 在[editorOffset]超过[navBarOffset]后，才会更新[contentView]的尺寸或位置。
+     *
+     * **注意**：不重写[dispatchApplyWindowInsets]，是为了提供更多的[insets]修改可能性。
      */
-    override fun dispatchApplyWindowInsets(insets: WindowInsets): WindowInsets {
-        val applyInsets = super.dispatchApplyWindowInsets(insets)
+    override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
+        val applyInsets = super.onApplyWindowInsets(insets)
         val offset = window?.run {
             applyInsets.toCompat(this@InputView).navigationBarOffset
         } ?: 0
@@ -152,20 +157,9 @@ class InputView @JvmOverloads constructor(
     }
 
     /**
-     * 分发IME的显示情况，该函数仅由[EditorAnimator]调用
-     *
-     * [EditorAnimator]在当前帧[ViewTreeObserver.OnDrawListener.onDraw]分发IME的显示情况，
-     * 在[EditorView]更改[Editor]时，可能会申请重新布局，由于当前帧已完成measure和layout，
-     * 因此需要在下一帧进行measure和layout。
-     */
-    internal fun dispatchIme(isShow: Boolean) {
-        editorView.dispatchIme(isShow)
-    }
-
-    /**
      * 更新编辑区的偏移值，该函数仅由[EditorAnimator]调用
      *
-     * 若调用该函数之前，已申请重新布局，例如[dispatchIme]的分发过程，
+     * 若调用该函数之前，已申请重新布局，例如[EditorAdapter.onEditorChanged]的分发过程，
      * 则不处理[editorView]和[contentView]的尺寸和位置，否则：
      * 1. 若[editorMode]为[EditorMode.ADJUST_PAN]，则偏移[editorView]和[contentView]。
      * 2. 若[editorMode]为[EditorMode.ADJUST_RESIZE]，则申请重新measure和layout。
