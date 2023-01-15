@@ -54,9 +54,22 @@ interface EditorHelper {
             block(view, insets, initialState)
             insets
         }
-        // 此时可能已经错过分发，因此主动申请分发，
-        // 确保调用一次block，完成视图的初始化逻辑。
-        doOnAttach(ViewCompat::requestApplyInsets)
+
+        getTag(R.id.tag_view_request_apply_insets)
+            ?.let { it as? View.OnAttachStateChangeListener }
+            ?.let(::removeOnAttachStateChangeListener)
+
+        val listener = object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(view: View) {
+                // 当view首次或再次附加到Window时，可能错过WindowInsets分发,
+                // 因此主动申请WindowInsets分发，确保调用block完成视图初始化。
+                ViewCompat.requestApplyInsets(view)
+            }
+
+            override fun onViewDetachedFromWindow(v: View) = Unit
+        }
+        setTag(R.id.tag_view_request_apply_insets, listener)
+        addOnAttachStateChangeListener(listener)
     }
 
     /**
