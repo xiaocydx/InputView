@@ -67,15 +67,15 @@ class MessageListActivity : AppCompatActivity() {
     }
 
     /**
-     * 1. 更改`etMessage`的高度，`rvMessage`滚动到首位。
+     * 1. 更改`rvMessage`的高度，`rvMessage`滚动到首位。
      * 2. 更改显示的[MessageEditor]，`rvMessage`滚动到首位。
      * 3. 处理`rvMessage`可视区域未铺满时的动画偏移。
      */
     private fun ActivityMessageListBinding.handleScroll() {
         val scrollToFirst = { rvMessage.scrollToPosition(0) }
 
-        //region 更改etMessage的高度，rvMessage滚动到首位
-        etMessage.addOnLayoutChangeListener listener@{ _, left, top, right, bottom,
+        //region 更改rvMessage的高度，rvMessage滚动到首位
+        rvMessage.addOnLayoutChangeListener listener@{ _, left, top, right, bottom,
                                                        _, oldTop, _, oldBottom ->
             if (right - left == 0) return@listener
             val oldHeight = oldBottom - oldTop
@@ -85,7 +85,9 @@ class MessageListActivity : AppCompatActivity() {
         //endregion
 
         //region 更改显示的MessageEditor，rvMessage滚动到首位
-        inputView.editorAdapter.addEditorChangedListener { _, _ -> scrollToFirst() }
+        inputView.editorAdapter.addEditorChangedListener { _, _ ->
+            if (inputView.editorMode === EditorMode.ADJUST_PAN) scrollToFirst()
+        }
         //endregion
 
         //region 处理rvMessage可视区域未铺满时的动画偏移
@@ -99,10 +101,6 @@ class MessageListActivity : AppCompatActivity() {
                     // 能确保EditorAnimator动画运行中、结束后，添加消息的item动画正常运行。
                     inputView.editorMode = EditorMode.ADJUST_RESIZE
                 }
-            }
-
-            override fun onAnimationUpdate(state: AnimationState) {
-                if (inputView.editorMode === EditorMode.ADJUST_RESIZE) scrollToFirst()
             }
 
             override fun onAnimationEnd(state: AnimationState) {
