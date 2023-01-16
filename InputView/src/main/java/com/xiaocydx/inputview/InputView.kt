@@ -120,6 +120,8 @@ class InputView @JvmOverloads constructor(
         }
 
     init {
+        isFocusable = true
+        isFocusableInTouchMode = true
         editorAdapter = ImeAdapter()
     }
 

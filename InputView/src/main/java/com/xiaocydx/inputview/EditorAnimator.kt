@@ -190,24 +190,32 @@ abstract class EditorAnimator {
         private var imeHeight = 0
 
         fun attach(view: EditorView, adapter: EditorAdapter<*>) {
-            ViewCompat.setOnApplyWindowInsetsListener(view, this)
-            ViewCompat.setWindowInsetsAnimationCallback(view, this)
             adapter.addEditorChangedListener(this)
+            ViewCompat.setOnApplyWindowInsetsListener(view, this)
+            if (canRunAnimation) ViewCompat.setWindowInsetsAnimationCallback(view, this)
         }
 
         fun detach(view: EditorView, adapter: EditorAdapter<*>) {
-            ViewCompat.setOnApplyWindowInsetsListener(view, null)
-            ViewCompat.setWindowInsetsAnimationCallback(view, null)
             adapter.removeEditorChangedListener(this)
+            ViewCompat.setOnApplyWindowInsetsListener(view, null)
+            if (canRunAnimation) ViewCompat.setWindowInsetsAnimationCallback(view, null)
         }
 
         /**
-         * 1. [EditorView]更改[Editor]时会先移除全部子View，再添加当前[Editor]的子View，
-         * 运行动画之前调用[AnimationRecord.addStartViewIfNecessary]将移除的子View重新添加回来，
-         * 参与动画更新过程，动画结束时调用[AnimationRecord.removeStartViewIfNecessary]移除子View。
+         * ### StartView和EndView
+         * [EditorView]更改[Editor]时会先移除全部子View，再添加当前[Editor]的子View，
+         * 运行动画之前调用[AnimationRecord.addStartViewIfNecessary]将移除的子View添加回来，
+         * 参与动画更新过程，动画结束时调用[AnimationRecord.removeStartViewIfNecessary]移除子View，
+         * 添加回来的子View作为StartView，当前[Editor]的子View作为EndView。
          *
-         * 2. 若[previous]和[current]不是IME，则调用[runSimpleAnimationIfNecessary]运行简单动画，
-         * 若[previous]和[current]其中一个是IME，则运行Insets动画，在[AnimationDispatcher]做进一步处理。
+         * ### SimpleAnimation和InsetsAnimation
+         * 若[previous]和[current]不是IME，则调用[runSimpleAnimationIfNecessary]运行SimpleAnimation，
+         * 若[previous]和[current]其中一个是IME，则通过[AnimationDispatcher]运行InsetsAnimation。
+         *
+         * ### 主动更改和被动更改
+         * 直接调用[EditorView.showChecked]或[EditorView.hideChecked]更改[Editor]属于主动更改，
+         * 点击EditText显示IME、按返回键隐藏IME等操作，会在[onApplyWindowInsets]判断IME的显示情况，
+         * 然后调用[EditorView.dispatchImeShown]更改[Editor]，这属于被动更改。
          */
         override fun onEditorChanged(previous: Editor?, current: Editor?) {
             val record = AnimationRecord(previous, current)
@@ -218,7 +226,7 @@ abstract class EditorAnimator {
             // 2. 若不会运行insetsAnimation，则立即添加PreDrawRunSimpleAnimation。
             // 3. 若将要运行insetsAnimation，则不立即添加PreDrawRunSimpleAnimation，
             // 而是在onApplyWindowInsets()显示或隐藏IME时，才添加PreDrawRunSimpleAnimation，
-            // 这样做的目的是确保PreDrawRunSimpleAnimation在insetsAnimation的回调之后执行，
+            // 这样做的目的是确保PreDrawRunSimpleAnimation在insetsAnimation的onStart()之后执行，
             // 当执行PreDrawRunSimpleAnimation时，若没有insetsAnimation，则运行simpleAnimation。
             record.setPreDrawRunSimpleAnimation action@{
                 if (record.insetsAnimation != null) return@action
@@ -228,11 +236,14 @@ abstract class EditorAnimator {
             if (!record.willRunInsetsAnimation) {
                 record.addPreDrawRunSimpleAnimation()
             } else {
-                // 将要运行insetsAnimation的执行时序：
-                // 1. EditorView.onApplyWindowInsets()
+                // 将要运行insetsAnimation的一帧执行顺序：
+                // 1. WindowInsetsAnimationCompat.Callback.onPrepare()
+                // 2. AnimationDispatcher.onApplyWindowInsets()
                 //    -> AnimationRecord.addPreDrawRunSimpleAnimation()
-                // 2. WindowInsetsAnimationCompat.Callback.onStart()
-                // 3. PreDrawRunSimpleAnimation.invoke()
+                // 3. WindowInsetsAnimationCompat.Callback.onStart()
+                // 4. PreDrawRunSimpleAnimation.invoke()
+                // 若执行过程缺少第1、3步，则可能是insetsAnimation的内部逻辑出了问题，
+                // 第4步判断没有insetsAnimation，运行的simpleAnimation能修复这个问题。
             }
         }
 
@@ -244,11 +255,11 @@ abstract class EditorAnimator {
                 val lastImeHeight = insets.imeHeight
                 when {
                     imeHeight == 0 && lastImeHeight > 0 -> {
-                        editorView?.dispatchIme(isShow = true)
+                        editorView?.dispatchImeShown(shown = true)
                         animationRecord?.addPreDrawRunSimpleAnimation()
                     }
                     imeHeight > 0 && lastImeHeight == 0 -> {
-                        editorView?.dispatchIme(isShow = false)
+                        editorView?.dispatchImeShown(shown = false)
                         animationRecord?.addPreDrawRunSimpleAnimation()
                     }
                     imeHeight > 0 && lastImeHeight > 0 && imeHeight != lastImeHeight -> {
@@ -282,7 +293,7 @@ abstract class EditorAnimator {
                 removePreDrawRunSimpleAnimation()
             }
             when {
-                !canRunAnimation || (record.startOffset == record.endOffset)
+                (record.startOffset == record.endOffset)
                         || (record.imeToOther() || record.otherToIme()) -> {
                     // imeToOther的animation是0到imeEndOffset，
                     // otherToIme的animation是imeStartOffset到0，

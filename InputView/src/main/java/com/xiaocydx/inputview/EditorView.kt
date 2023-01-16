@@ -67,7 +67,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         require(imeCount == 1) { "editors包含${imeCount}个表示IME的Editor" }
     }
 
-    fun showChecked(editor: Editor): Boolean {
+    fun showChecked(editor: Editor, controlIme: Boolean = true): Boolean {
         val adapter = checkedAdapter()
         if (adapter == null || current === editor) return false
         val currentChild: View?
@@ -85,9 +85,9 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         removeAllViews()
         currentChild?.let(::addView)
         if (previous === ime) {
-            controlIme(isShow = false)
+            handleImeShown(shown = false, controlIme)
         } else if (editor === ime) {
-            controlIme(isShow = true)
+            handleImeShown(shown = true, controlIme)
         }
         current = editor
         changeRecord = ChangeRecord(previousChild, currentChild)
@@ -95,12 +95,12 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         return true
     }
 
-    fun hideChecked(editor: Editor): Boolean {
+    fun hideChecked(editor: Editor, controlIme: Boolean = true): Boolean {
         val adapter = checkedAdapter()
         if (adapter != null && current === editor) {
             val previousChild = views[editor]
             removeAllViews()
-            if (editor === ime) controlIme(isShow = false)
+            if (editor === ime) handleImeShown(shown = false, controlIme)
             current = null
             changeRecord = ChangeRecord(previousChild, currentChild = null)
             adapter.onEditorChanged(editor, current)
@@ -109,24 +109,24 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         return false
     }
 
-    fun dispatchIme(isShow: Boolean): Boolean {
+    fun dispatchImeShown(shown: Boolean): Boolean {
         val ime = ime ?: return false
         return when {
-            current !== ime && isShow -> showChecked(ime)
-            current === ime && !isShow -> hideChecked(ime)
+            current !== ime && shown -> showChecked(ime, controlIme = false)
+            current === ime && !shown -> hideChecked(ime, controlIme = false)
             else -> false
         }
     }
 
-    private fun controlIme(isShow: Boolean) {
+    private fun handleImeShown(shown: Boolean, controlIme: Boolean) {
         val type = WindowInsetsCompat.Type.ime()
         val editText = editTextRef?.get()
-        if (isShow) {
+        if (shown) {
             editText?.requestFocus()
-            controller?.show(type)
+            if (controlIme) controller?.show(type)
         } else {
             editText?.clearFocus()
-            controller?.hide(type)
+            if (controlIme) controller?.hide(type)
         }
     }
 
