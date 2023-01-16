@@ -145,11 +145,11 @@ class InputView @JvmOverloads constructor(
      */
     override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
         val applyInsets = super.onApplyWindowInsets(insets)
-        val offset = window?.run {
+        val lastNavBarOffset = window?.run {
             applyInsets.toCompat(this@InputView).navigationBarOffset
         } ?: 0
-        if (navBarOffset != offset) {
-            navBarOffset = offset
+        if (navBarOffset != lastNavBarOffset) {
+            navBarOffset = lastNavBarOffset
             editorAnimator.endAnimation()
             requestLayout()
         }

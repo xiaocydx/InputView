@@ -241,22 +241,22 @@ abstract class EditorAnimator {
          */
         override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
             window?.apply {
-                val newImeHeight = insets.imeHeight
+                val lastImeHeight = insets.imeHeight
                 when {
-                    imeHeight == 0 && newImeHeight > 0 -> {
+                    imeHeight == 0 && lastImeHeight > 0 -> {
                         editorView?.dispatchIme(isShow = true)
                         animationRecord?.addPreDrawRunSimpleAnimation()
                     }
-                    imeHeight > 0 && newImeHeight == 0 -> {
+                    imeHeight > 0 && lastImeHeight == 0 -> {
                         editorView?.dispatchIme(isShow = false)
                         animationRecord?.addPreDrawRunSimpleAnimation()
                     }
-                    imeHeight > 0 && newImeHeight > 0 && imeHeight != newImeHeight -> {
+                    imeHeight > 0 && lastImeHeight > 0 && imeHeight != lastImeHeight -> {
                         // 调整IME高度后，运行simpleAnimation修正editorOffset
                         runSimpleAnimationFixEditorOffset(endOffset = insets.imeOffset)
                     }
                 }
-                imeHeight = newImeHeight
+                imeHeight = lastImeHeight
             }
             return insets
         }

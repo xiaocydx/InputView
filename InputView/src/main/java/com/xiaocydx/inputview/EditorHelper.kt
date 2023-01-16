@@ -55,6 +55,10 @@ interface EditorHelper {
             insets
         }
 
+        if (isAttachedToWindow) {
+            ViewCompat.requestApplyInsets(this)
+        }
+
         getTag(R.id.tag_view_request_apply_insets)
             ?.let { it as? View.OnAttachStateChangeListener }
             ?.let(::removeOnAttachStateChangeListener)
@@ -66,7 +70,7 @@ interface EditorHelper {
                 ViewCompat.requestApplyInsets(view)
             }
 
-            override fun onViewDetachedFromWindow(v: View) = Unit
+            override fun onViewDetachedFromWindow(view: View) = Unit
         }
         setTag(R.id.tag_view_request_apply_insets, listener)
         addOnAttachStateChangeListener(listener)
