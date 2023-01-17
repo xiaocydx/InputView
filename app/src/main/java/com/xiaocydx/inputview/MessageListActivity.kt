@@ -115,7 +115,7 @@ class MessageListActivity : AppCompatActivity() {
     }
 
     /**
-     * 1. 在动画运行中决定是否拦截触摸事件。
+     * 1. 在动画运行时决定是否拦截触摸事件。
      * 2. 触摸RecyclerView隐藏当前[MessageEditor]。
      */
     @SuppressLint("ClickableViewAccessibility")
@@ -124,7 +124,7 @@ class MessageListActivity : AppCompatActivity() {
         val delegate = window.callback
         window.callback = object : Window.Callback by delegate {
             override fun dispatchTouchEvent(e: MotionEvent): Boolean {
-                // 实际场景可能需要在动画运行中拦截触摸事件，避免造成较差的交互体验
+                // 实际场景可能需要在动画运行时拦截触摸事件，避免造成较差的交互体验
                 // if (e.action == ACTION_DOWN && inputView.editorAnimator.isRunning) return false
                 return delegate.dispatchTouchEvent(e)
             }
