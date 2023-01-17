@@ -119,13 +119,17 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     }
 
     private fun handleImeShown(shown: Boolean, controlIme: Boolean) {
+        val editText = editText
+        if (editText == null) {
+            controller = null
+            return
+        }
         val type = WindowInsetsCompat.Type.ime()
-        val editText = editTextRef?.get()
         if (shown) {
-            editText?.requestFocus()
+            editText.requestFocus()
             if (controlIme) controller?.show(type)
         } else {
-            editText?.clearFocus()
+            editText.clearFocus()
             if (controlIme) controller?.hide(type)
         }
     }

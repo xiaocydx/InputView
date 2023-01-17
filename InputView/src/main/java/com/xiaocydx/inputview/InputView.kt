@@ -3,13 +3,10 @@ package com.xiaocydx.inputview
 import android.app.Activity
 import android.content.Context
 import android.util.AttributeSet
-import android.view.Gravity
-import android.view.View
+import android.view.*
 import android.view.View.MeasureSpec.*
-import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-import android.view.WindowInsets
 import android.widget.EditText
 import androidx.annotation.IntRange
 import androidx.annotation.VisibleForTesting
@@ -60,8 +57,19 @@ class InputView @JvmOverloads constructor(
      * 用于兼容Android各版本显示和隐藏IME的[EditText]
      *
      * 显示IME[editText]会获得焦点，隐藏IME会清除[editText]的焦点，
-     * 可以观察[EditorAdapter.addEditorChangedListener]的更改结果，
-     * 处理[editText]的焦点。
+     * 可以通过[EditorAnimator.addAnimationCallback]处理[editText]的焦点，例如：
+     * ```
+     * enum class MessageEditor : Editor {
+     *     IME, VOICE, EMOJI
+     * }
+     *
+     * inputView.editorAnimator.addAnimationCallback(object : AnimationCallback {
+     *     override fun onAnimationEnd(state: AnimationState) {
+     *         // 显示EMOJI的动画结束时，让editText获得焦点
+     *         if (state.current === EMOJI) inputView.editText?.requestFocus()
+     *     }
+     * })
+     * ```
      */
     var editText: EditText?
         get() = editorView.editText
@@ -136,6 +144,12 @@ class InputView @JvmOverloads constructor(
         if (window == null) {
             window = findViewTreeWindow()
         }
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        val consumed = super.dispatchTouchEvent(ev)
+        editorAnimator.dispatchTouchEvent(ev)
+        return consumed
     }
 
     /**

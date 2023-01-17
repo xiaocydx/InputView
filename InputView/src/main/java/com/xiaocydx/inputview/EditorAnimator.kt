@@ -2,9 +2,11 @@ package com.xiaocydx.inputview
 
 import android.animation.Animator
 import android.animation.ValueAnimator
+import android.view.MotionEvent
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.Interpolator
+import android.widget.EditText
 import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
 import androidx.core.animation.addListener
@@ -100,6 +102,42 @@ abstract class EditorAnimator {
      */
     protected open fun onDetachFromEditorAdapter(adapter: EditorAdapter<*>) = Unit
 
+    /**
+     * 点击[EditText]显示IME，需要隐藏[EditText.getTextSelectHandle]，避免动画运行中不断跨进程通信造成卡顿，
+     * 由于[EditText.getTextSelectHandle]是Android 10的属性，因此通过[EditText.setCursorVisible]实现隐藏，
+     * 在[dispatchAnimationEnd]会调用[EditText.setCursorVisible]设为`true`，重新显示[EditText]的光标。
+     *
+     * 选择在[InputView.dispatchTouchEvent]隐藏光标，是为了点击时彻底隐藏[EditText.getTextSelectHandle]，
+     * 在其他时机隐藏光标，会先显示[EditText.getTextSelectHandle]然后隐藏[EditText.getTextSelectHandle]。
+     *
+     * **注意**：[EditText.getTextSelectHandle]指的是[EditText]的水滴状指示器。
+     */
+    internal fun dispatchTouchEvent(ev: MotionEvent) {
+        val editText = inputView?.editText ?: return
+        val ime = editorView?.ime ?: return
+        val current = editorView?.current
+        if (ev.action == MotionEvent.ACTION_UP
+                && current !== ime && editText.hasFocus()
+                && editText.isCursorVisible
+                && editText.isTouched(ev.rawX, ev.rawY)) {
+            // FIXME: 显示IME还需要清除选中段的textSelectHandle
+            editText.isCursorVisible = false
+        }
+    }
+
+    private fun View.isTouched(rawX: Float, rawY: Float): Boolean {
+        if (!isVisible) return false
+        val location = IntArray(2)
+        this.getLocationOnScreen(location)
+        val left = location[0]
+        val top = location[1]
+        val right = left + this.width
+        val bottom = top + this.height
+        val isContainX = rawX in left.toFloat()..right.toFloat()
+        val isContainY = rawY in top.toFloat()..bottom.toFloat()
+        return isContainX && isContainY
+    }
+
     private fun resetAnimationRecord(record: AnimationRecord) {
         endAnimation()
         assert(animationRecord == null) { "animationRecord未被置空" }
@@ -132,6 +170,7 @@ abstract class EditorAnimator {
     }
 
     private fun dispatchAnimationStart(record: AnimationRecord) {
+        inputView?.editText?.isCursorVisible = false
         if (!record.checkAnimationOffset()) return
         onAnimationStart(record)
         dispatchAnimationCallback { onAnimationStart(record) }
@@ -146,6 +185,7 @@ abstract class EditorAnimator {
     }
 
     private fun dispatchAnimationEnd(record: AnimationRecord) {
+        inputView?.editText?.isCursorVisible = true
         if (record.checkAnimationOffset()) {
             record.setAnimationOffset(currentOffset = record.endOffset)
             if (inputView != null && inputView!!.editorOffset != record.endOffset) {
