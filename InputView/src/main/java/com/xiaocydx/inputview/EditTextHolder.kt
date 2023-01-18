@@ -93,8 +93,7 @@ internal class EditTextHolder(
     }
 
     fun hideTextSelectHandle(keepFocus: Boolean = true) {
-        val hasFocus = hasFocus()
-        if (!hasFocus) return
+        if (!hasFocus()) return
         clearFocus()
         if (keepFocus) requestFocus()
     }
