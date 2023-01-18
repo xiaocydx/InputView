@@ -37,7 +37,10 @@ class InputView @JvmOverloads constructor(
 ) : ViewGroup(context, attrs, defStyleAttr) {
     private val editorView = EditorView(context)
     private var contentView: View? = null
-    private var window: ViewTreeWindow? = null
+    internal var window: ViewTreeWindow? = null
+        private set
+    internal var editTextHolder: EditTextHolder? = null
+        private set
 
     /**
      * 编辑区的偏移值，可作为[EditorAnimator]动画的计算参数
@@ -56,6 +59,8 @@ class InputView @JvmOverloads constructor(
     /**
      * 用于兼容Android各版本显示和隐藏IME的[EditText]
      *
+     * **注意**：[editText]必须是[InputView]的子View或间接子View。
+     *
      * 显示IME[editText]会获得焦点，隐藏IME会清除[editText]的焦点，
      * 可以通过[EditorAnimator.addAnimationCallback]处理[editText]的焦点，例如：
      * ```
@@ -72,9 +77,11 @@ class InputView @JvmOverloads constructor(
      * ```
      */
     var editText: EditText?
-        get() = editorView.editText
+        get() = editTextHolder?.value as? EditText
         set(value) {
-            editorView.editText = value
+            editTextHolder = value
+                ?.let { EditTextHolder(it, window) }
+                .also(editorView::setEditText)
         }
 
     /**
@@ -143,12 +150,14 @@ class InputView @JvmOverloads constructor(
         super.onAttachedToWindow()
         if (window == null) {
             window = findViewTreeWindow()
+            window?.let { editTextHolder?.onAttachedToWindow(it) }
         }
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        editorAnimator.beforeDispatchTouchEvent(ev)
         val consumed = super.dispatchTouchEvent(ev)
-        editorAnimator.dispatchTouchEvent(ev)
+        editorAnimator.afterDispatchTouchEvent(ev)
         return consumed
     }
 

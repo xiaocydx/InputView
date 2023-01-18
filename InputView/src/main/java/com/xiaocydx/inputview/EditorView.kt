@@ -2,11 +2,7 @@ package com.xiaocydx.inputview
 
 import android.content.Context
 import android.view.View
-import android.widget.EditText
 import android.widget.FrameLayout
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
-import java.lang.ref.WeakReference
 
 /**
  * [InputView]的编辑区，负责管理[Editor]
@@ -16,30 +12,11 @@ import java.lang.ref.WeakReference
  */
 internal class EditorView(context: Context) : FrameLayout(context) {
     private val views = mutableMapOf<Editor, View?>()
-    private var editTextRef: WeakReference<EditText>? = null
-    private var controller: WindowInsetsControllerCompat? = null
+    private var editText: EditTextHolder? = null
     var ime: Editor? = null; private set
     var current: Editor? = null; private set
     var adapter: EditorAdapter<*>? = null; private set
     var changeRecord = ChangeRecord(); private set
-
-    var editText: EditText?
-        get() = editTextRef?.get()
-        set(value) {
-            controller = null
-            editTextRef = value?.let(::WeakReference)
-            if (value != null && isAttachedToWindow) {
-                controller = findViewTreeWindow()?.createWindowInsetsController(value)
-            }
-        }
-
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        val editText = editText
-        if (controller == null && editText != null) {
-            controller = findViewTreeWindow()?.createWindowInsetsController(editText)
-        }
-    }
 
     fun setAdapter(adapter: EditorAdapter<*>) {
         this.adapter = adapter
@@ -65,6 +42,10 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         }
         require(imeCount > 0) { "editors不包含表示IME的Editor" }
         require(imeCount == 1) { "editors包含${imeCount}个表示IME的Editor" }
+    }
+
+    fun setEditText(editText: EditTextHolder?) {
+        this.editText = editText
     }
 
     fun showChecked(editor: Editor, controlIme: Boolean = true): Boolean {
@@ -119,18 +100,13 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     }
 
     private fun handleImeShown(shown: Boolean, controlIme: Boolean) {
-        val editText = editText
-        if (editText == null) {
-            controller = null
-            return
-        }
-        val type = WindowInsetsCompat.Type.ime()
+        val editText = editText ?: return
         if (shown) {
             editText.requestFocus()
-            if (controlIme) controller?.show(type)
+            if (controlIme) editText.showIme()
         } else {
             editText.clearFocus()
-            if (controlIme) controller?.hide(type)
+            if (controlIme) editText.hideIme()
         }
     }
 

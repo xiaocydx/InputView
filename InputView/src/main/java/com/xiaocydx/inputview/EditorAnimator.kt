@@ -25,8 +25,6 @@ abstract class EditorAnimator {
     private var animationRecord: AnimationRecord? = null
     private val animationDispatcher = AnimationDispatcher()
     private val callbacks = ArrayList<AnimationCallback>(2)
-    private var window: ViewTreeWindow? = null
-        get() = field ?: inputView?.findViewTreeWindow()?.also { field = it }
     internal open val canRunAnimation: Boolean = true
 
     /**
@@ -103,36 +101,34 @@ abstract class EditorAnimator {
     protected open fun onDetachFromEditorAdapter(adapter: EditorAdapter<*>) = Unit
 
     /**
+     * 重置[afterDispatchTouchEvent]的处理
+     */
+    internal fun beforeDispatchTouchEvent(ev: MotionEvent) {
+        if (ev.action == MotionEvent.ACTION_DOWN) {
+            // 按下时，将EditText重置为获得焦点显示IME
+            inputView?.editTextHolder?.showSoftInputOnFocus = true
+        }
+    }
+
+    /**
      * 点击[EditText]显示IME，需要隐藏`textSelectHandle`，避免动画运行时不断跨进程通信，从而造成卡顿。
      * 由于`textSelectHandle`是Android 10的属性，因此先清除焦点再获得焦点，实现隐藏`textSelectHandle`。
      *
      * **注意**：`textSelectHandle`指的是[EditText.getTextSelectHandle]，即[EditText]的水滴状指示器。
      */
-    internal fun dispatchTouchEvent(ev: MotionEvent) {
-        val editText = inputView?.editText ?: return
+    internal fun afterDispatchTouchEvent(ev: MotionEvent) {
+        val editText = inputView?.editTextHolder ?: return
         val ime = editorView?.ime ?: return
         val current = editorView?.current
-        if (ev.action == MotionEvent.ACTION_UP
-                && current !== ime && editText.hasFocus()
-                && editText.isTouched(ev.rawX, ev.rawY)) {
-            editText.clearFocus()
-            editText.requestFocus()
-            // FIXME: 显示IME还需要清除选中段的textSelectHandle
-            // editText.showSoftInputOnFocus = editText.selectionStart == editText.selectionEnd
+        if (ev.action == MotionEvent.ACTION_UP && current !== ime
+                && editText.showSoftInputOnFocus && editText.isTouched(ev)) {
+            // 点击EditText显示IME，抬起时隐藏textSelectHandle
+            editText.hideTextSelectHandle()
         }
-    }
-
-    private fun View.isTouched(rawX: Float, rawY: Float): Boolean {
-        if (!isVisible) return false
-        val location = IntArray(2)
-        this.getLocationOnScreen(location)
-        val left = location[0]
-        val top = location[1]
-        val right = left + this.width
-        val bottom = top + this.height
-        val isContainX = rawX in left.toFloat()..right.toFloat()
-        val isContainY = rawY in top.toFloat()..bottom.toFloat()
-        return isContainX && isContainY
+        if (ev.action != MotionEvent.ACTION_DOWN) {
+            // 选中EditText的内容时，不显示IME
+            editText.showSoftInputOnFocus = !editText.hasTextSelectHandleLeftToRight
+        }
     }
 
     private fun resetAnimationRecord(record: AnimationRecord) {
@@ -167,6 +163,10 @@ abstract class EditorAnimator {
     }
 
     private fun dispatchAnimationStart(record: AnimationRecord) {
+        val editText = inputView?.editTextHolder
+        if (editText?.hasTextSelectHandleLeftToRight == true) {
+            editText.hideTextSelectHandle(keepFocus = record.isIme(record.current))
+        }
         if (!record.checkAnimationOffset()) return
         onAnimationStart(record)
         dispatchAnimationCallback { onAnimationStart(record) }
@@ -286,7 +286,7 @@ abstract class EditorAnimator {
          * 该函数被调用之前，可能已更改[Editor]，执行了[onEditorChanged]创建[animationRecord]
          */
         override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
-            window?.apply {
+            inputView?.window?.apply {
                 val lastImeHeight = insets.imeHeight
                 when {
                     imeHeight == 0 && lastImeHeight > 0 -> {
@@ -319,7 +319,7 @@ abstract class EditorAnimator {
         override fun onStart(
             animation: WindowInsetsAnimationCompat,
             bounds: WindowInsetsAnimationCompat.BoundsCompat
-        ): WindowInsetsAnimationCompat.BoundsCompat = window?.run {
+        ): WindowInsetsAnimationCompat.BoundsCompat = inputView?.window?.run {
             val record = animationRecord
             if (record == null || !animation.containsImeType()) return bounds
             record.apply {
@@ -348,7 +348,7 @@ abstract class EditorAnimator {
         override fun onProgress(
             insets: WindowInsetsCompat,
             runningAnimations: List<WindowInsetsAnimationCompat>
-        ): WindowInsetsCompat = window?.run {
+        ): WindowInsetsCompat = inputView?.window?.run {
             animationRecord?.takeIf { it.handleInsetsAnimation }
                 ?.takeIf { runningAnimations.contains(it.insetsAnimation) }
                 ?.let { dispatchAnimationUpdate(it, currentOffset = insets.imeOffset) }
@@ -386,7 +386,7 @@ abstract class EditorAnimator {
 
         fun otherToIme() = previous != null && !isIme(previous) && isIme(current)
 
-        private fun isIme(editor: Editor?): Boolean {
+        fun isIme(editor: Editor?): Boolean {
             return editor != null && editorView != null && editorView!!.ime === editor
         }
 
@@ -439,7 +439,7 @@ abstract class EditorAnimator {
 
         fun setAnimationOffsetForCurrent() {
             setAnimationOffset(NO_VALUE, NO_VALUE, NO_VALUE)
-            window?.run {
+            inputView?.window?.run {
                 val startOffset = inputView?.editorOffset ?: NO_VALUE
                 val endOffset = when {
                     editorView == null -> NO_VALUE
