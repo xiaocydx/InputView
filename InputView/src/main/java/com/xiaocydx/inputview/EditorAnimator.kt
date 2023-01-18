@@ -320,7 +320,7 @@ abstract class EditorAnimator {
             animation: WindowInsetsAnimationCompat,
             bounds: WindowInsetsAnimationCompat.BoundsCompat
         ): WindowInsetsAnimationCompat.BoundsCompat = inputView?.window?.run {
-            val record = animationRecord
+            val record = animationRecord?.takeIf { it.simpleAnimation == null }
             if (record == null || !animation.containsImeType()) return bounds
             record.apply {
                 setInsetsAnimation(animation)
