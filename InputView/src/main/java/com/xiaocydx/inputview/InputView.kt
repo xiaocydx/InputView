@@ -160,7 +160,8 @@ class InputView @JvmOverloads constructor(
         } ?: 0
         if (navBarOffset != lastNavBarOffset) {
             navBarOffset = lastNavBarOffset
-            editorAnimator.endAnimation()
+            // 首次布局完成之前，不执行清除操作，避免初始化操作无效
+            if (isLaidOut) editorAnimator.endAnimation()
             requestLayout()
         }
         return applyInsets
