@@ -48,10 +48,11 @@ class InputViewTest {
             inputView.editorAdapter = adapter1
             inputView.editorAdapter = adapter2
 
-            assertThat(inputView.editorOffset).isEqualTo(0)
-            verify(exactly = 1) { adapter1.attach(inputView, any()) }
-            verify(exactly = 1) { adapter1.detach(inputView, any()) }
-            verify(exactly = 1) { adapter2.attach(inputView, any()) }
+            val host = inputView.getEditorHost()
+            assertThat(host.editorOffset).isEqualTo(0)
+            verify(exactly = 1) { adapter1.onAttachToInputView(inputView) }
+            verify(exactly = 1) { adapter1.onDetachFromInputView(inputView) }
+            verify(exactly = 1) { adapter2.onAttachToInputView(inputView) }
         }
     }
 
@@ -65,10 +66,10 @@ class InputViewTest {
             inputView.editorAnimator = animator1
             inputView.editorAnimator = animator2
 
-            val adapter = inputView.editorAdapter
-            verify(exactly = 1) { animator1.attach(adapter) }
-            verify(exactly = 1) { animator1.detach(adapter) }
-            verify(exactly = 1) { animator2.attach(adapter) }
+            val host = inputView.getEditorHost()
+            verify(exactly = 1) { animator1.onAttachToEditorHost(host) }
+            verify(exactly = 1) { animator1.onDetachFromEditorHost(host) }
+            verify(exactly = 1) { animator2.onAttachToEditorHost(host) }
         }
     }
 
@@ -77,6 +78,7 @@ class InputViewTest {
         scenario.moveToState(State.RESUMED).onActivity { activity ->
             val inputView = activity.inputView
             inputView.editorMode = EditorMode.ADJUST_PAN
+            val host = inputView.getEditorHost()
             val editorView = inputView.getEditorView()
             val contentView = inputView.getContentView()
             assertThat(contentView).isNotNull()
@@ -84,11 +86,11 @@ class InputViewTest {
             val insets = WindowInsetsCompat.Builder().build().toWindowInsets()
             assertThat(insets).isNotNull()
             inputView.onApplyWindowInsets(insets!!)
-            assertThat(inputView.navBarOffset).isEqualTo(0)
+            assertThat(host.navBarOffset).isEqualTo(0)
 
             val offset = 10
-            inputView.updateEditorOffset(offset)
-            assertThat(inputView.editorOffset).isEqualTo(offset)
+            host.updateEditorOffset(offset)
+            assertThat(host.editorOffset).isEqualTo(offset)
             assertThat(editorView.top).isEqualTo(inputView.height - offset)
             assertThat(contentView!!.top).isEqualTo(-offset)
         }

@@ -5,7 +5,7 @@ package com.xiaocydx.inputview
  */
 @Suppress("UNCHECKED_CAST")
 val <T : Editor> EditorAdapter<T>.current: T?
-    get() = editorView?.current as? T
+    get() = host?.current as? T
 
 /**
  * 当前显示的[Editor]是否为[editor]
@@ -16,14 +16,14 @@ fun <T : Editor> EditorAdapter<T>.isShowing(editor: T): Boolean = current === ed
  * 通知显示[editor]，若未对[InputView]设置当前[EditorAdapter]，则调用无效
  */
 fun <T : Editor> EditorAdapter<T>.notifyShow(editor: T) {
-    editorView?.showChecked(editor)
+    host?.showChecked(editor)
 }
 
 /**
  * 通知隐藏[editor]，若未对[InputView]设置当前[EditorAdapter]，则调用无效
  */
 fun <T : Editor> EditorAdapter<T>.notifyHide(editor: T) {
-    editorView?.hideChecked(editor)
+    host?.hideChecked(editor)
 }
 
 /**
@@ -37,14 +37,14 @@ fun <T : Editor> EditorAdapter<T>.notifyHideCurrent() {
  * 通知显示IME，若未对[InputView]设置当前[EditorAdapter]，则调用无效
  */
 fun EditorAdapter<*>.notifyShowIme() {
-    editorView?.apply { ime?.let(::showChecked) }
+    host?.apply { ime?.let(::showChecked) }
 }
 
 /**
  * 通知隐藏IME，若未对[InputView]设置当前[EditorAdapter]，则调用无效
  */
 fun EditorAdapter<*>.notifyHideIme() {
-    editorView?.apply { ime?.let(::hideChecked) }
+    host?.apply { ime?.let(::hideChecked) }
 }
 
 /**

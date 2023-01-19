@@ -31,8 +31,7 @@ import android.view.ViewGroup
  */
 abstract class EditorAdapter<T : Editor> {
     private val listeners = ArrayList<EditorChangedListener<T>>(2)
-    internal var inputView: InputView? = null; private set
-    internal var editorView: EditorView? = null; private set
+    internal var host: EditorHost? = null
 
     /**
      * [InputView]编辑区的[Editor]集合
@@ -54,12 +53,12 @@ abstract class EditorAdapter<T : Editor> {
     /**
      * 当前[EditorAdapter]添加到[inputView]
      */
-    protected open fun onAttachToInputView(inputView: InputView) = Unit
+    open fun onAttachToInputView(inputView: InputView) = Unit
 
     /**
      * 当前[EditorAdapter]从[inputView]移除
      */
-    protected open fun onDetachFromInputView(inputView: InputView) = Unit
+    open fun onDetachFromInputView(inputView: InputView) = Unit
 
     /**
      * 添加[EditorChangedListener]
@@ -75,20 +74,6 @@ abstract class EditorAdapter<T : Editor> {
      */
     fun removeEditorChangedListener(listener: EditorChangedListener<T>) {
         listeners.remove(listener)
-    }
-
-    internal fun attach(inputView: InputView, editorView: EditorView) {
-        this.inputView = inputView
-        this.editorView = editorView
-        onAttachToInputView(inputView)
-    }
-
-    internal fun detach(inputView: InputView, editorView: EditorView) {
-        assert(this.inputView === inputView) { "InputView不相同" }
-        assert(this.editorView === editorView) { "EditorView不相同" }
-        this.inputView = null
-        this.editorView = null
-        onDetachFromInputView(inputView)
     }
 
     internal fun onEditorChanged(previous: T?, current: T?) {

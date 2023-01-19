@@ -8,13 +8,9 @@ import android.view.View.MeasureSpec.*
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.EditText
-import androidx.annotation.IntRange
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.PRIVATE
-import androidx.core.view.marginBottom
-import androidx.core.view.marginLeft
-import androidx.core.view.marginRight
-import androidx.core.view.marginTop
+import androidx.core.view.*
 
 /**
  * 输入控件
@@ -35,26 +31,13 @@ import androidx.core.view.marginTop
 class InputView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : ViewGroup(context, attrs, defStyleAttr) {
+    private val host = EditorHostImpl()
     private val editorView = EditorView(context)
     private var contentView: View? = null
-    internal var window: ViewTreeWindow? = null
-        private set
-    internal var editTextHolder: EditTextHolder? = null
-        private set
-
-    /**
-     * 编辑区的偏移值，可作为[EditorAnimator]动画的计算参数
-     */
-    @get:IntRange(from = 0)
-    internal var editorOffset = 0
-        private set
-
-    /**
-     * 导航栏的偏移值，可作为[EditorAnimator]动画的计算参数
-     */
-    @get:IntRange(from = 0)
-    internal var navBarOffset = 0
-        private set
+    private var window: ViewTreeWindow? = null
+    private var editTextHolder: EditTextHolder? = null
+    private var editorOffset = 0
+    private var navBarOffset = 0
 
     /**
      * 用于兼容Android各版本显示和隐藏IME的[EditText]
@@ -111,11 +94,13 @@ class InputView @JvmOverloads constructor(
         set(value) {
             val previous = editorView.adapter
             if (previous === value) return
-            previous?.let(editorAnimator::detach)
-            previous?.detach(this, editorView)
+            editorAnimator.onDetachFromEditorHost(host)
+            previous?.host = null
+            previous?.onDetachFromInputView(this)
             editorView.setAdapter(value)
-            value.attach(this, editorView)
-            value.let(editorAnimator::attach)
+            value.host = host
+            value.onAttachToInputView(this)
+            editorAnimator.onAttachToEditorHost(host)
             editorOffset = 0
             requestLayout()
         }
@@ -128,10 +113,10 @@ class InputView @JvmOverloads constructor(
      */
     var editorAnimator: EditorAnimator = FadeEditorAnimator()
         set(value) {
-            val adapter = editorView.adapter
-            adapter?.let(field::detach)
+            if (field === value) return
+            field.onDetachFromEditorHost(host)
             field = value
-            adapter?.let(field::attach)
+            field.onAttachToEditorHost(host)
         }
 
     init {
@@ -182,7 +167,7 @@ class InputView @JvmOverloads constructor(
     }
 
     /**
-     * 更新编辑区的偏移值，该函数仅由[EditorAnimator]调用
+     * 更新编辑区的偏移值
      *
      * 若调用该函数之前，已申请重新布局，例如[EditorAdapter.onEditorChanged]的分发过程，
      * 则不处理[editorView]和[contentView]的尺寸和位置，否则：
@@ -190,7 +175,7 @@ class InputView @JvmOverloads constructor(
      * 2. 若[editorMode]为[EditorMode.ADJUST_RESIZE]，则申请重新measure和layout。
      */
     @Suppress("KotlinConstantConditions", "ConvertTwoComparisonsToRangeCheck")
-    internal fun updateEditorOffset(offset: Int) {
+    private fun updateEditorOffset(offset: Int) {
         val current = offset.coerceAtLeast(0)
         if (editorOffset == current) return
         val previous = editorOffset
@@ -296,10 +281,76 @@ class InputView @JvmOverloads constructor(
     }
 
     @VisibleForTesting(otherwise = PRIVATE)
-    internal fun getEditorView() = editorView
+    internal fun getEditorView(): View = editorView
 
     @VisibleForTesting(otherwise = PRIVATE)
-    internal fun getContentView() = contentView
+    internal fun getContentView(): View? = contentView
+
+    @VisibleForTesting(otherwise = PRIVATE)
+    internal fun getEditorHost(): EditorHost = host
+
+    private inner class EditorHostImpl : EditorHost {
+        override val window: ViewTreeWindow?
+            get() = this@InputView.window
+        override val editText: EditTextHolder?
+            get() = this@InputView.editTextHolder
+        override val editorOffset: Int
+            get() = this@InputView.editorOffset
+        override val navBarOffset: Int
+            get() = this@InputView.navBarOffset
+        override val ime: Editor?
+            get() = editorView.ime
+        override val current: Editor?
+            get() = editorView.current
+        override val previousView: View?
+            get() = editorView.changeRecord.previousChild
+        override val currentView: View?
+            get() = editorView.changeRecord.currentChild
+
+        override fun addView(view: View) {
+            editorView.addView(view)
+        }
+
+        override fun removeView(view: View) {
+            editorView.removeView(view)
+        }
+
+        override fun updateEditorOffset(offset: Int) {
+            this@InputView.updateEditorOffset(offset)
+        }
+
+        override fun dispatchImeShown(shown: Boolean) {
+            editorView.dispatchImeShown(shown)
+        }
+
+        override fun showChecked(editor: Editor) {
+            editorView.showChecked(editor)
+        }
+
+        override fun hideChecked(editor: Editor) {
+            editorView.hideChecked(editor)
+        }
+
+        override fun addEditorChangedListener(listener: EditorChangedListener<Editor>) {
+            editorView.adapter?.addEditorChangedListener(listener)
+        }
+
+        override fun removeEditorChangedListener(listener: EditorChangedListener<Editor>) {
+            editorView.adapter?.removeEditorChangedListener(listener)
+        }
+
+        override fun addPreDrawAction(action: () -> Unit): OneShotPreDrawListener {
+            return OneShotPreDrawListener.add(editorView, action)
+        }
+
+        override fun setOnApplyWindowInsetsListener(listener: OnApplyWindowInsetsListenerCompat?) {
+            ViewCompat.setOnApplyWindowInsetsListener(editorView, listener)
+        }
+
+        override fun setWindowInsetsAnimationCallback(callback: WindowInsetsAnimationCompat.Callback?) {
+            ViewCompat.setWindowInsetsAnimationCallback(editorView, callback)
+        }
+    }
 
     companion object
 }
