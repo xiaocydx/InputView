@@ -197,14 +197,18 @@ abstract class EditorAnimator {
         this.host = host
         host.addEditorChangedListener(animationDispatcher)
         host.setOnApplyWindowInsetsListener(animationDispatcher)
-        if (canRunAnimation) host.setWindowInsetsAnimationCallback(animationDispatcher)
+        host.takeIf { canRunAnimation }?.setWindowInsetsAnimationCallback(
+            ANIMATION_DURATION, ANIMATION_INTERPOLATOR, animationDispatcher
+        )
     }
 
     internal fun onDetachFromEditorHost(host: EditorHost) {
         endAnimation()
         host.removeEditorChangedListener(animationDispatcher)
         host.setOnApplyWindowInsetsListener(null)
-        if (canRunAnimation) host.setWindowInsetsAnimationCallback(null)
+        host.takeIf { canRunAnimation }?.setWindowInsetsAnimationCallback(
+            ANIMATION_DURATION, ANIMATION_INTERPOLATOR, callback = null
+        )
         this.host = null
     }
 
@@ -466,7 +470,7 @@ abstract class EditorAnimator {
 
     companion object {
         private const val NO_VALUE = -1
-        private const val ANIMATION_DURATION = 250L
+        private const val ANIMATION_DURATION = 200L
         private val ANIMATION_INTERPOLATOR = DecelerateInterpolator()
     }
 }

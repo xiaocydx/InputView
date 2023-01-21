@@ -7,6 +7,7 @@ import android.view.*
 import android.view.View.MeasureSpec.*
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.view.animation.Interpolator
 import android.widget.EditText
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.PRIVATE
@@ -348,8 +349,12 @@ class InputView @JvmOverloads constructor(
             ViewCompat.setOnApplyWindowInsetsListener(editorView, listener)
         }
 
-        override fun setWindowInsetsAnimationCallback(callback: WindowInsetsAnimationCompat.Callback?) {
-            ViewCompat.setWindowInsetsAnimationCallback(editorView, callback)
+        override fun setWindowInsetsAnimationCallback(
+            durationMillis: Long,
+            interpolator: Interpolator,
+            callback: WindowInsetsAnimationCompat.Callback?
+        ) {
+            editorView.setWindowInsetAnimationCallbackCompat(durationMillis, interpolator, callback)
         }
     }
 

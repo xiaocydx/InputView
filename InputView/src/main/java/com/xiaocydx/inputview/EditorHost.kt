@@ -1,6 +1,7 @@
 package com.xiaocydx.inputview
 
 import android.view.View
+import android.view.animation.Interpolator
 import android.widget.EditText
 import androidx.annotation.IntRange
 import androidx.core.view.OneShotPreDrawListener
@@ -109,7 +110,11 @@ internal interface EditorHost {
     /**
      * 添加[WindowInsetsAnimationCompat.Callback]，`null`表示移除
      */
-    fun setWindowInsetsAnimationCallback(callback: WindowInsetsAnimationCompat.Callback?)
+    fun setWindowInsetsAnimationCallback(
+        durationMillis: Long,
+        interpolator: Interpolator,
+        callback: WindowInsetsAnimationCompat.Callback?
+    )
 }
 
 internal typealias OnApplyWindowInsetsListenerCompat = androidx.core.view.OnApplyWindowInsetsListener
