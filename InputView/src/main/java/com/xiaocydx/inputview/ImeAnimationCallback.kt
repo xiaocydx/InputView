@@ -402,6 +402,7 @@ private class FieldCache(private val field: Field?) {
  * }
  * ```
  */
+@RequiresApi(30)
 private class WindowInsetsAnimationCache(
     val mInterpolatorField: FieldCache,
     val mDurationMillisField: FieldCache
@@ -438,6 +439,7 @@ private class WindowInsetsAnimationCompatCache(
  * }
  * ```
  */
+@RequiresApi(30)
 private class InsetsControllerCache(
     val syncImeInterpolator: FieldCache,
     val mRunningAnimationsField: FieldCache,
@@ -454,6 +456,7 @@ private class InsetsControllerCache(
  * }
  * ```
  */
+@RequiresApi(30)
 private class InsetsAnimationControlImplCache(
     val mListenerField: FieldCache,
     val mAnimationField: FieldCache
@@ -477,4 +480,5 @@ private class InsetsAnimationControlImplCache(
  * }
  * ```
  */
+@RequiresApi(30)
 private class InternalAnimationControlListenerCache(val mDurationMsField: FieldCache)
