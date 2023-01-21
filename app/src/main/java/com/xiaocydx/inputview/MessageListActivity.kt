@@ -8,6 +8,8 @@ import android.view.Window
 import android.widget.ImageView
 import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -17,6 +19,9 @@ import com.xiaocydx.sample.onClick
 
 /**
  * [InputView]的消息列表示例代码
+ *
+ * **注意**：需要确保`androidx.appcompat`的版本足够高，因为高版本修复了[WindowInsetsCompat]常见的问题，
+ * 例如高版本修复了应用退至后台，再重新显示，调用[WindowInsetsControllerCompat.show]显示IME无效的问题。
  *
  * @author xcc
  * @date 2023/1/8
