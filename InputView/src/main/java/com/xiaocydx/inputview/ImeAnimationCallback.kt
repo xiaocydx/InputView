@@ -11,34 +11,72 @@ import org.lsposed.hiddenapibypass.HiddenApiBypass
 import java.lang.reflect.Field
 
 /**
- * 设置[WindowInsetsAnimationCompat.Callback]
+ * 设置IME动画的[WindowInsetsAnimationCompat.Callback]
  *
- * **注意**：仅支持修改Android 11及以上的[durationMillis]和[interpolator]，当修改属性失败时，
- * 会在[WindowInsetsAnimationCompat.Callback.onPrepare]之后恢复`durationMillis`和`interpolator`，
- * 修改属性成功或失败，会按[TAG]打印日志。
+ * **注意**：仅支持修改Android 11及以上IME动画的`durationMillis`和`interpolator`，当修改失败时，
+ * 会在[WindowInsetsAnimationCompat.Callback.onStart]之前恢复`durationMillis`和`interpolator`，
+ * 修改成功或失败，会按[TAG]打印日志。
  *
  * 当[WindowInsetsAnimationCompat]的初始`durationMillis`小于等于0时，不修改`durationMillis`和`interpolator`，
  * 目的是兼容[WindowInsetsControllerCompat.controlWindowInsetsAnimation]的`durationMillis`小于等于0的场景，
- * 例如通过[WindowInsetsAnimationControlListenerCompat.onReady]获取[WindowInsetsAnimationController]，
- * 调用[WindowInsetsAnimationController.setInsetsAndAlpha]实现手势拖动显示IME。
+ * 例如通过[WindowInsetsAnimationControlListenerCompat.onReady]获取[WindowInsetsAnimationControllerCompat]，
+ * 调用[WindowInsetsAnimationControllerCompat.setInsetsAndAlpha]实现手势拖动显示IME。
  *
- * @param durationMillis 默认值[NO_VALUE]表示不修改`durationMillis`
- * @param interpolator   默认值`null`表示不修改`interpolator`
+ * @param durationMillis 修改后的`durationMillis`，默认值[NO_VALUE]表示不修改。
+ * @param interpolator   修改后的`interpolator`，默认值`null`表示不修改。
+ * @param callback       当[WindowInsetsAnimationCompat.getTypeMask]包含IME类型时，才调用回调函数。
  */
-internal fun View.setWindowInsetAnimationCallbackCompat(
+internal fun View.setImeAnimationCallbackCompat(
     durationMillis: Long = NO_VALUE,
     interpolator: Interpolator? = null,
     callback: WindowInsetsAnimationCompat.Callback?
 ) {
-    var finalCallback = callback
-    if (callback != null && Build.VERSION.SDK_INT >= 30) {
-        finalCallback = WindowInsetAnimationCallback(this, callback, durationMillis, interpolator)
+    val finalCallback = when {
+        callback == null -> null
+        Build.VERSION.SDK_INT < 30 -> ImeAnimationCallback(callback)
+        else -> ImeAnimationCallback30(this, durationMillis, interpolator, callback)
     }
     ViewCompat.setWindowInsetsAnimationCallback(this, finalCallback)
 }
 
 /**
- * 修改Android 11及以上的[durationMillis]和[interpolator]
+ * 当[WindowInsetsAnimationCompat.getTypeMask]包含IME类型时，才调用回调函数
+ */
+private open class ImeAnimationCallback(
+    private val delegate: WindowInsetsAnimationCompat.Callback
+) : WindowInsetsAnimationCompat.Callback(delegate.dispatchMode) {
+
+    override fun onPrepare(animation: WindowInsetsAnimationCompat) {
+        if (animation.containsImeType()) delegate.onPrepare(animation)
+    }
+
+    override fun onStart(
+        animation: WindowInsetsAnimationCompat,
+        bounds: WindowInsetsAnimationCompat.BoundsCompat
+    ): WindowInsetsAnimationCompat.BoundsCompat {
+        return if (animation.containsImeType()) delegate.onStart(animation, bounds) else bounds
+    }
+
+    override fun onProgress(
+        insets: WindowInsetsCompat,
+        runningAnimations: List<WindowInsetsAnimationCompat>
+    ): WindowInsetsCompat {
+        val animations = runningAnimations.filter { it.containsImeType() }
+        return if (animations.isNotEmpty()) delegate.onProgress(insets, animations) else insets
+    }
+
+    override fun onEnd(animation: WindowInsetsAnimationCompat) {
+        if (animation.containsImeType()) delegate.onEnd(animation)
+    }
+
+    protected fun WindowInsetsAnimationCompat.containsImeType(): Boolean {
+        val imeType = WindowInsetsCompat.Type.ime()
+        return typeMask and imeType == imeType
+    }
+}
+
+/**
+ * 修改Android 11及以上IME动画的`durationMillis`和`interpolator`
  *
  * `InsetsController.show()`或`InsetsController.hide()`的执行顺序：
  * 1. 构建`InsetsController.InternalAnimationControlListener`。
@@ -59,12 +97,12 @@ internal fun View.setWindowInsetAnimationCallbackCompat(
  * [onPrepare]修改第4步的[WindowInsetsAnimation]，[onStart]修改第6步构建的属性动画。
  */
 @RequiresApi(30)
-private class WindowInsetAnimationCallback(
+private class ImeAnimationCallback30(
     private val view: View,
-    private val delegate: WindowInsetsAnimationCompat.Callback,
-    private val durationMillis: Long = NO_VALUE,
-    private val interpolator: Interpolator? = null
-) : WindowInsetsAnimationCompat.Callback(delegate.dispatchMode) {
+    private val durationMillis: Long,
+    private val interpolator: Interpolator?,
+    delegate: WindowInsetsAnimationCompat.Callback
+) : ImeAnimationCallback(delegate) {
     private val cache: InsetsReflectCache
         get() = cacheThreadLocal.get()!!
     private val trackers = mutableMapOf<WindowInsetsAnimationCompat, Tracker>()
@@ -84,7 +122,7 @@ private class WindowInsetAnimationCallback(
             }
             tracker.checkOnPrepare(wrapped)
         }
-        delegate.onPrepare(animation)
+        super.onPrepare(animation)
     }
 
     /**
@@ -146,19 +184,12 @@ private class WindowInsetAnimationCallback(
 
             tracker.checkOnStart(wrapped, listener)
         }
-        return delegate.onStart(animation, bounds)
-    }
-
-    override fun onProgress(
-        insets: WindowInsetsCompat,
-        runningAnimations: MutableList<WindowInsetsAnimationCompat>
-    ): WindowInsetsCompat {
-        return delegate.onProgress(insets, runningAnimations)
+        return super.onStart(animation, bounds)
     }
 
     override fun onEnd(animation: WindowInsetsAnimationCompat) {
         removeTracker(animation)
-        delegate.onEnd(animation)
+        super.onEnd(animation)
     }
 
     private fun getTracker(animation: WindowInsetsAnimationCompat): Tracker {
@@ -196,12 +227,16 @@ private class WindowInsetAnimationCallback(
     private inner class Tracker(private val animation: WindowInsetsAnimationCompat) {
         private val initialInterpolator = animation.interpolator
         private val initialDurationMillis = animation.durationMillis
-        var step: Step = if (initialDurationMillis <= 0) Step.COMPLETED else Step.ON_PREPARE
+        var step: Step = Step.COMPLETED
             private set
 
         init {
-            if (step === Step.COMPLETED) {
+            if (!animation.containsImeType()) {
+                Log.d(TAG, "WindowInsetsAnimationCompat不包含IME类型，不做修改")
+            } else if (initialDurationMillis <= 0) {
                 Log.d(TAG, "兼容initialDurationMillis小于等于0的场景，不做修改")
+            } else {
+                step = Step.ON_PREPARE
             }
         }
 
@@ -260,7 +295,7 @@ private class WindowInsetAnimationCallback(
     }
 }
 
-internal const val TAG = "WindowInsetsAnimation"
+internal const val TAG = "ImeAnimationCallback"
 
 private const val NO_VALUE = -1L
 

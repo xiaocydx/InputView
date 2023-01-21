@@ -349,12 +349,12 @@ class InputView @JvmOverloads constructor(
             ViewCompat.setOnApplyWindowInsetsListener(editorView, listener)
         }
 
-        override fun setWindowInsetsAnimationCallback(
+        override fun setImeAnimationCallbackCompat(
             durationMillis: Long,
             interpolator: Interpolator,
             callback: WindowInsetsAnimationCompat.Callback?
         ) {
-            editorView.setWindowInsetAnimationCallbackCompat(durationMillis, interpolator, callback)
+            editorView.setImeAnimationCallbackCompat(durationMillis, interpolator, callback)
         }
     }
 

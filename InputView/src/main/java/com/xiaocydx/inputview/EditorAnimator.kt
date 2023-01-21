@@ -197,7 +197,7 @@ abstract class EditorAnimator {
         this.host = host
         host.addEditorChangedListener(animationDispatcher)
         host.setOnApplyWindowInsetsListener(animationDispatcher)
-        host.takeIf { canRunAnimation }?.setWindowInsetsAnimationCallback(
+        host.takeIf { canRunAnimation }?.setImeAnimationCallbackCompat(
             ANIMATION_DURATION, ANIMATION_INTERPOLATOR, animationDispatcher
         )
     }
@@ -206,7 +206,7 @@ abstract class EditorAnimator {
         endAnimation()
         host.removeEditorChangedListener(animationDispatcher)
         host.setOnApplyWindowInsetsListener(null)
-        host.takeIf { canRunAnimation }?.setWindowInsetsAnimationCallback(
+        host.takeIf { canRunAnimation }?.setImeAnimationCallbackCompat(
             ANIMATION_DURATION, ANIMATION_INTERPOLATOR, callback = null
         )
         this.host = null

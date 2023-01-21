@@ -98,7 +98,7 @@ internal interface EditorHost {
     fun removeEditorChangedListener(listener: EditorChangedListener<Editor>)
 
     /**
-     * 添加绘制帧draw之前的任务
+     * 添加绘制帧draw之前的任务，[OneShotPreDrawListener.removeListener]移除任务
      */
     fun addPreDrawAction(action: () -> Unit): OneShotPreDrawListener
 
@@ -108,9 +108,9 @@ internal interface EditorHost {
     fun setOnApplyWindowInsetsListener(listener: OnApplyWindowInsetsListenerCompat?)
 
     /**
-     * 添加[WindowInsetsAnimationCompat.Callback]，`null`表示移除
+     * 添加IME动画的[WindowInsetsAnimationCompat.Callback]，`null`表示移除
      */
-    fun setWindowInsetsAnimationCallback(
+    fun setImeAnimationCallbackCompat(
         durationMillis: Long,
         interpolator: Interpolator,
         callback: WindowInsetsAnimationCompat.Callback?
