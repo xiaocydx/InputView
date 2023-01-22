@@ -22,21 +22,23 @@ import androidx.core.view.WindowInsetsCompat
  */
 abstract class EditorAnimator(
     /**
-     * 动画时长，IME动画指的是显示或隐藏IME的过渡动画
+     * 动画时长
      *
-     * 1. Android 11以下的IME动画时长，不会修改为[durationMillis]。
-     * 2. Android 11及以上的IME动画时长，会尝试修改为[durationMillis]。
-     * 动画的实际时长，以[AnimationState.durationMillis]为准。
+     * 显示或隐藏IME运行的动画：
+     * 1. Android 11以下，内部实现不会将IME动画的时长修改为[durationMillis]。
+     * 2. Android 11及以上，内部实现会尝试将IME动画的时长修改为[durationMillis]。
+     * 实际动画时长以[AnimationState.durationMillis]为准。
      */
     @IntRange(from = 0)
     private val durationMillis: Long = ANIMATION_DURATION_MILLIS,
 
     /**
-     * 偏移值插值器，IME动画指的是显示或隐藏IME的过渡动画
+     * 动画偏移值插值器
      *
-     * 1. Android 11以下的IME动画插值器，不会修改为[offsetInterpolator]。
-     * 2. Android 11及以上的IME动画插值器，会尝试修改为[offsetInterpolator]。
-     * 偏移值的实际插值器，以[AnimationState.offsetInterpolator]为准。
+     * 显示或隐藏IME运行的动画：
+     * 1. Android 11以下，内部实现不会将IME动画的插值器修改为[offsetInterpolator]。
+     * 2. Android 11及以上，内部实现会尝试将IME动画的插值器修改为[offsetInterpolator]。
+     * 实际动画偏移值插值器以[AnimationState.offsetInterpolator]为准。
      */
     private val offsetInterpolator: Interpolator = ANIMATION_OFFSET_INTERPOLATOR
 ) {
