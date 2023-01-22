@@ -40,7 +40,7 @@ open class FadeEditorAnimator(
      * 淡入淡入的原始分数进度阈值
      *
      * 以`thresholdFraction = 0.4f`、`startView != null`、`endView != null`为例：
-     * 1. [AnimationState.animatedFraction]在`[0f，0.4f]`，
+     * 1. [AnimationState.animatedFraction]在`[0f, 0.4f]`，
      * `startView.alpha`从`1f`变化到`0f`，`endView.alpha`保持为`0f`。
      *
      * 2. [AnimationState.animatedFraction]在`[0.4f, 0.6f]`，
