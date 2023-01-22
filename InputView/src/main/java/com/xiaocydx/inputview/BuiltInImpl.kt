@@ -3,7 +3,6 @@ package com.xiaocydx.inputview
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.Interpolator
-import android.view.animation.LinearInterpolator
 import androidx.annotation.FloatRange
 
 /**
@@ -37,60 +36,101 @@ class ImeAdapter : EditorAdapter<Ime>() {
  * [Editor]的淡入淡出动画
  */
 open class FadeEditorAnimator(
+    /**
+     * 淡入淡入的原始分数进度阈值
+     *
+     * 以`thresholdFraction = 0.4f`、`startView != null`、`endView != null`为例：
+     * 1. [AnimationState.animatedFraction]在`[0f..0.4f]`，
+     * `startView.alpha`从`1f`变化到`0f`，`endView.alpha`保持为`0f`。
+     *
+     * 2. [AnimationState.animatedFraction]在`[0.4f, 0.6f]`，
+     * `startView.alpha`和`endView.alpha`保持为`0f`。
+     *
+     * 3. [AnimationState.animatedFraction]在`[0.6f, 1f]`，
+     * `startView.alpha`保持为`0f`，`endView.alpha`从`0f`变化到`1f`。
+     */
     @FloatRange(from = 0.0, to = 0.5)
-    private val thresholdFraction: Float = 0.4f
-) : EditorAnimator() {
+    private val thresholdFraction: Float = 0.4f,
 
-    override fun onAnimationStart(state: AnimationState): Unit = with(state) {
-        startView?.alpha = 1f
-        endView?.alpha = 0f
+    /**
+     * 动画时长，IME动画指的是显示或隐藏IME的过渡动画
+     *
+     * 1. Android 11以下的IME动画时长，不会修改为[durationMillis]。
+     * 2. Android 11及以上的IME动画时长，会尝试修改为[durationMillis]。
+     * 实际时长以[AnimationState.durationMillis]为准。
+     */
+    durationMillis: Long = ANIMATION_DURATION_MILLIS,
+
+    /**
+     * 偏移值插值器，IME动画指的是显示或隐藏IME的过渡动画
+     *
+     * 1. Android 11以下的IME动画插值器，不会修改为[offsetInterpolator]。
+     * 2. Android 11及以上的IME动画插值器，会尝试修改为[offsetInterpolator]。
+     * 实际插值器以[AnimationState.offsetInterpolator]为准。
+     */
+    interpolator: Interpolator = ANIMATION_OFFSET_INTERPOLATOR
+) : EditorAnimator(durationMillis, interpolator) {
+
+    init {
+        addAnimationCallback(EditorOffsetAndAlphaUpdater())
     }
 
-    override fun onAnimationUpdate(state: AnimationState): Unit = with(state) {
-        var start = startOffset
-        var end = endOffset
-        var current = currentOffset
-        if (start > end) {
-            // 反转start到end的过程，只按start < end计算alpha
-            val diff = start - current
-            start = end.also { end = start }
-            current = start + diff
+    private inner class EditorOffsetAndAlphaUpdater : AnimationCallback {
+
+        override fun onAnimationStart(state: AnimationState) {
+            state.startView?.alpha = 1f
+            state.endView?.alpha = 0f
         }
 
-        val threshold = (end - start) * thresholdFraction
-        when {
-            startView == null && endView != null -> {
-                endView!!.alpha = fraction
+        override fun onAnimationUpdate(state: AnimationState): Unit = with(state) {
+            var start = startOffset
+            var end = endOffset
+            var offset = (start + (end - start) * animatedFraction).toInt()
+
+            if (!isIme(previous) && !isIme(current)
+                    && startView != null && endView != null) {
+                // 两个非IME的Editor切换，调整为匀速动画
+                updateEditorOffset(currentOffset = offset)
+            } else {
+                updateEditorOffset(currentOffset)
             }
-            startView != null && endView == null -> {
-                startView!!.alpha = 1 - fraction
+
+            if (start > end) {
+                // 反转start到end的过程，只按start < end计算alpha
+                val diff = start - offset
+                start = end.also { end = start }
+                offset = start + diff
             }
-            current >= 0 && current <= start + threshold -> {
-                val fraction = (current - start) / threshold
-                startView?.alpha = 1 - fraction
-                endView?.alpha = 0f
-            }
-            current >= end - threshold && current <= end -> {
-                val fraction = (current - (end - threshold)) / threshold
-                startView?.alpha = 0f
-                endView?.alpha = fraction
-            }
-            else -> {
-                startView?.alpha = 0f
-                endView?.alpha = 0f
+
+            val threshold = (end - start) * thresholdFraction
+            when {
+                startView == null && endView != null -> {
+                    endView!!.alpha = animatedFraction
+                }
+                startView != null && endView == null -> {
+                    startView!!.alpha = 1 - animatedFraction
+                }
+                offset >= 0 && offset <= start + threshold -> {
+                    val fraction = (offset - start) / threshold
+                    startView?.alpha = 1 - fraction
+                    endView?.alpha = 0f
+                }
+                offset >= end - threshold && offset <= end -> {
+                    val fraction = (offset - (end - threshold)) / threshold
+                    startView?.alpha = 0f
+                    endView?.alpha = fraction
+                }
+                else -> {
+                    startView?.alpha = 0f
+                    endView?.alpha = 0f
+                }
             }
         }
-    }
 
-    override fun onAnimationEnd(state: AnimationState): Unit = with(state) {
-        startView?.alpha = 1f
-        endView?.alpha = 1f
-    }
-
-    override fun getAnimationInterpolator(state: AnimationState): Interpolator = state.run {
-        // 两个非IME的Editor切换，匀速的动画效果更流畅
-        if (startView != null && endView != null) return LinearInterpolator()
-        super.getAnimationInterpolator(state)
+        override fun onAnimationEnd(state: AnimationState) {
+            state.startView?.alpha = 1f
+            state.endView?.alpha = 1f
+        }
     }
 }
 
@@ -99,4 +139,14 @@ open class FadeEditorAnimator(
  */
 class NopEditorAnimator : EditorAnimator() {
     override val canRunAnimation: Boolean = false
+
+    init {
+        addAnimationCallback(EditorOffsetUpdater())
+    }
+
+    private inner class EditorOffsetUpdater : AnimationCallback {
+        override fun onAnimationUpdate(state: AnimationState) {
+            updateEditorOffset(state.currentOffset)
+        }
+    }
 }

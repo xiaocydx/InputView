@@ -51,6 +51,8 @@ class MessageListActivity : AppCompatActivity() {
             editText = etMessage
             editorMode = EditorMode.ADJUST_PAN
             this.editorAdapter = editorAdapter
+            // 调整Editor的过渡动画时长，需要看durationMillis的注释说明
+            // editorAnimator = FadeEditorAnimator(durationMillis = 500)
             // 不运行Editor的过渡动画，仅记录动画状态，分发动画回调
             // editorAnimator = NopEditorAnimator()
         }

@@ -1,11 +1,11 @@
 package com.xiaocydx.inputview
 
-import android.animation.Animator
 import android.animation.ValueAnimator
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.Interpolator
+import android.view.animation.LinearInterpolator
 import android.widget.EditText
 import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
@@ -13,7 +13,6 @@ import androidx.core.animation.addListener
 import androidx.core.view.OneShotPreDrawListener
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
-import kotlin.math.absoluteValue
 
 /**
  * [InputView]编辑区的[Editor]过渡动画
@@ -21,7 +20,26 @@ import kotlin.math.absoluteValue
  * @author xcc
  * @date 2023/1/8
  */
-abstract class EditorAnimator {
+abstract class EditorAnimator(
+    /**
+     * 动画时长，IME动画指的是显示或隐藏IME的过渡动画
+     *
+     * 1. Android 11以下的IME动画时长，不会修改为[durationMillis]。
+     * 2. Android 11及以上的IME动画时长，会尝试修改为[durationMillis]。
+     * 动画的实际时长，以[AnimationState.durationMillis]为准。
+     */
+    @IntRange(from = 0)
+    private val durationMillis: Long = ANIMATION_DURATION_MILLIS,
+
+    /**
+     * 偏移值插值器，IME动画指的是显示或隐藏IME的过渡动画
+     *
+     * 1. Android 11以下的IME动画插值器，不会修改为[offsetInterpolator]。
+     * 2. Android 11及以上的IME动画插值器，会尝试修改为[offsetInterpolator]。
+     * 偏移值的实际插值器，以[AnimationState.offsetInterpolator]为准。
+     */
+    private val offsetInterpolator: Interpolator = ANIMATION_OFFSET_INTERPOLATOR
+) {
     private var host: EditorHost? = null
     private var animationRecord: AnimationRecord? = null
     private val animationDispatcher = AnimationDispatcher()
@@ -51,45 +69,14 @@ abstract class EditorAnimator {
     }
 
     /**
-     * 动画开始
+     * 更新编辑区的偏移值
      *
-     * @param state 编辑区的动画状态
+     * **注意**：该函数只能在[AnimationCallback]的函数中调用，并确保[currentOffset]
+     * 在[AnimationState.startOffset]到[AnimationState.endOffset]的范围内。
      */
-    protected open fun onAnimationStart(state: AnimationState) = Unit
-
-    /**
-     * 动画更新
-     *
-     * @param state 编辑区的动画状态
-     */
-    protected open fun onAnimationUpdate(state: AnimationState) = Unit
-
-    /**
-     * 动画结束
-     *
-     * **注意**：动画结束时，应当将`state.startView`和`state.endView`恢复为初始状态。
-     *
-     * @param state 编辑区的动画状态
-     */
-    protected open fun onAnimationEnd(state: AnimationState) = Unit
-
-    /**
-     * 获取动画时长，单位：ms
-     *
-     * **注意**：内部实现配合Insets动画显示或隐藏IME时，不会调用该函数。
-     *
-     * @param state 编辑区的动画状态
-     */
-    protected open fun getAnimationDuration(state: AnimationState): Long = ANIMATION_DURATION
-
-    /**
-     * 获取动画时长，单位：ms
-     *
-     * **注意**：内部实现配合Insets动画显示或隐藏IME时，不会调用该函数。
-     *
-     * @param state 编辑区的动画状态
-     */
-    protected open fun getAnimationInterpolator(state: AnimationState): Interpolator = ANIMATION_INTERPOLATOR
+    protected fun updateEditorOffset(@IntRange(from = 0) currentOffset: Int) {
+        host?.updateEditorOffset(currentOffset)
+    }
 
     /**
      * 重置[afterDispatchTouchEvent]的处理
@@ -138,19 +125,20 @@ abstract class EditorAnimator {
             return
         }
 
-        ValueAnimator.ofInt(record.startOffset, record.endOffset).apply {
+        ValueAnimator.ofFloat(0f, 1f).apply {
             addListener(
                 onStart = { dispatchAnimationStart(record) },
                 onCancel = { dispatchAnimationEnd(record) },
                 onEnd = { dispatchAnimationEnd(record) }
             )
-            addUpdateListener { dispatchAnimationUpdate(record, it.animatedValue as Int) }
+            addUpdateListener { dispatchAnimationUpdate(record) }
             if (block(this)) return@apply start()
 
-            duration = getAnimationDuration(record)
-            interpolator = getAnimationInterpolator(record)
+            duration = durationMillis
+            interpolator = LinearInterpolator()
+            record.setSimpleAnimation(this)
             start()
-        }.also(record::setSimpleAnimation)
+        }
     }
 
     private fun dispatchAnimationStart(record: AnimationRecord) {
@@ -159,25 +147,21 @@ abstract class EditorAnimator {
             editText.hideTextSelectHandle(keepFocus = record.isIme(record.current))
         }
         if (!record.checkAnimationOffset()) return
-        onAnimationStart(record)
         dispatchAnimationCallback { onAnimationStart(record) }
     }
 
-    private fun dispatchAnimationUpdate(record: AnimationRecord, currentOffset: Int) {
+    private fun dispatchAnimationUpdate(record: AnimationRecord) {
         if (!record.checkAnimationOffset()) return
-        record.setAnimationOffset(currentOffset = currentOffset)
-        host?.updateEditorOffset(record.currentOffset)
-        onAnimationUpdate(record)
+        record.updateAnimationCurrent()
         dispatchAnimationCallback { onAnimationUpdate(record) }
     }
 
     private fun dispatchAnimationEnd(record: AnimationRecord) {
         if (record.checkAnimationOffset()) {
-            record.setAnimationOffset(currentOffset = record.endOffset)
+            record.updateAnimationToEnd()
             if (host != null && host!!.editorOffset != record.endOffset) {
-                dispatchAnimationUpdate(record, record.endOffset)
+                dispatchAnimationUpdate(record)
             }
-            onAnimationEnd(record)
             dispatchAnimationCallback { onAnimationEnd(record) }
         }
         record.removeStartViewIfNecessary()
@@ -198,7 +182,7 @@ abstract class EditorAnimator {
         host.addEditorChangedListener(animationDispatcher)
         host.setOnApplyWindowInsetsListener(animationDispatcher)
         host.takeIf { canRunAnimation }?.setWindowInsetsAnimationCallback(
-            ANIMATION_DURATION, ANIMATION_INTERPOLATOR, animationDispatcher
+            durationMillis, offsetInterpolator, animationDispatcher
         )
     }
 
@@ -207,7 +191,7 @@ abstract class EditorAnimator {
         host.removeEditorChangedListener(animationDispatcher)
         host.setOnApplyWindowInsetsListener(null)
         host.takeIf { canRunAnimation }?.setWindowInsetsAnimationCallback(
-            ANIMATION_DURATION, ANIMATION_INTERPOLATOR, callback = null
+            durationMillis, offsetInterpolator, callback = null
         )
         this.host = null
     }
@@ -308,20 +292,9 @@ abstract class EditorAnimator {
                 setAnimationOffsetForCurrent()
                 removePreDrawRunSimpleAnimation()
             }
-            when {
-                (record.startOffset == record.endOffset)
-                        || (record.imeToOther() || record.otherToIme()) -> {
-                    // imeToOther的animation是0到imeEndOffset，
-                    // otherToIme的animation是imeStartOffset到0，
-                    // 这两种情况依靠animation进行更新，实现的动画效果并不理想，
-                    // 因此用animation的duration和interpolator运行动画进行更新。
-                    runSimpleAnimationIfNecessary(record) {
-                        duration = animation.durationMillis
-                        interpolator = animation.interpolator ?: ANIMATION_INTERPOLATOR
-                        true
-                    }
-                }
-                else -> dispatchAnimationStart(record)
+            dispatchAnimationStart(record)
+            if (record.startOffset == record.endOffset) {
+                dispatchAnimationEnd(record)
             }
             bounds
         } ?: bounds
@@ -332,7 +305,7 @@ abstract class EditorAnimator {
         ): WindowInsetsCompat = host?.window?.run {
             animationRecord?.takeIf { it.handleInsetsAnimation }
                 ?.takeIf { runningAnimations.contains(it.insetsAnimation) }
-                ?.let { dispatchAnimationUpdate(it, currentOffset = insets.imeOffset) }
+                ?.let(::dispatchAnimationUpdate)
             insets
         } ?: insets
 
@@ -344,8 +317,8 @@ abstract class EditorAnimator {
     }
 
     private inner class AnimationRecord(
-        override val previous: Editor? = null,
-        override val current: Editor? = null
+        override val previous: Editor?,
+        override val current: Editor?
     ) : AnimationState {
         private var preDrawAction: (() -> Unit)? = null
         private var preDrawListener: OneShotPreDrawListener? = null
@@ -354,20 +327,23 @@ abstract class EditorAnimator {
         override var startOffset: Int = NO_VALUE; private set
         override var endOffset: Int = NO_VALUE; private set
         override var currentOffset: Int = NO_VALUE; private set
-        override val navBarOffset: Int
-            get() = host?.navBarOffset ?: 0
+        override val navBarOffset: Int get() = host?.navBarOffset ?: 0
+        override var animatedFraction: Float = 0f; private set
+        override var durationMillis: Long = 0; private set
+        override lateinit var offsetInterpolator: Interpolator; private set
 
         val willRunInsetsAnimation = isIme(previous) || isIme(current)
         var insetsAnimation: WindowInsetsAnimationCompat? = null; private set
-        var simpleAnimation: Animator? = null; private set
+        var simpleAnimation: ValueAnimator? = null; private set
         val handleInsetsAnimation: Boolean
             get() = simpleAnimation == null && insetsAnimation != null
 
-        fun imeToOther() = isIme(previous) && current != null && !isIme(current)
+        init {
+            durationMillis = this@EditorAnimator.durationMillis
+            offsetInterpolator = this@EditorAnimator.offsetInterpolator
+        }
 
-        fun otherToIme() = previous != null && !isIme(previous) && isIme(current)
-
-        fun isIme(editor: Editor?): Boolean {
+        override fun isIme(editor: Editor?): Boolean {
             return editor != null && host != null && host!!.ime === editor
         }
 
@@ -411,7 +387,6 @@ abstract class EditorAnimator {
         ) {
             this.startOffset = startOffset
             this.endOffset = endOffset
-            // 切换不同的IME时，insetsAnimation计算的currentOffset可能不在min..max
             val min = startOffset.coerceAtMost(endOffset)
             val max = startOffset.coerceAtLeast(endOffset)
             this.currentOffset = currentOffset.coerceAtLeast(min).coerceAtMost(max)
@@ -431,15 +406,34 @@ abstract class EditorAnimator {
             }
         }
 
-        fun setInsetsAnimation(animation: WindowInsetsAnimationCompat) {
-            insetsAnimation = animation
+        fun updateAnimationCurrent() {
+            if (animatedFraction < 1f) {
+                animatedFraction = simpleAnimation?.animatedFraction
+                        ?: insetsAnimation?.fraction ?: 0f
+            }
+            val currentOffset = startOffset + (endOffset - startOffset) * offsetFraction
+            setAnimationOffset(currentOffset = currentOffset.toInt())
         }
 
-        fun setSimpleAnimation(animation: Animator) {
+        fun updateAnimationToEnd() {
+            animatedFraction = 1f
+            updateAnimationCurrent()
+        }
+
+        fun setInsetsAnimation(animation: WindowInsetsAnimationCompat) {
+            insetsAnimation = animation
+            durationMillis = animation.durationMillis
+            animation.interpolator?.let { offsetInterpolator = it }
+        }
+
+        fun setSimpleAnimation(animation: ValueAnimator) {
             simpleAnimation = animation
+            durationMillis = animation.duration
+            offsetInterpolator = this@EditorAnimator.offsetInterpolator
         }
 
         fun setPreDrawRunSimpleAnimation(action: () -> Unit) {
+            removePreDrawRunSimpleAnimation()
             preDrawAction = action
         }
 
@@ -470,8 +464,8 @@ abstract class EditorAnimator {
 
     companion object {
         private const val NO_VALUE = -1
-        private const val ANIMATION_DURATION = 200L
-        private val ANIMATION_INTERPOLATOR = DecelerateInterpolator()
+        internal const val ANIMATION_DURATION_MILLIS = 200L
+        internal val ANIMATION_OFFSET_INTERPOLATOR = DecelerateInterpolator()
     }
 }
 
@@ -513,7 +507,7 @@ interface AnimationState {
     val endOffset: Int
 
     /**
-     * 动画当前偏移值
+     * 基于[offsetInterpolator]计算的动画当前偏移值
      */
     @get:IntRange(from = 0)
     val currentOffset: Int
@@ -525,14 +519,33 @@ interface AnimationState {
     val navBarOffset: Int
 
     /**
-     * 动画起始状态和结束状态之间的分数进度
+     * 动画时长
+     */
+    @get:IntRange(from = 0)
+    val durationMillis: Long
+
+    /**
+     * 计算[currentOffset]的插值器
+     */
+    val offsetInterpolator: Interpolator
+
+    /**
+     * 动画起始状态和结束状态之间的原始分数进度
      */
     @get:FloatRange(from = 0.0, to = 1.0)
-    val fraction: Float
-        get() {
-            val diff = (currentOffset - startOffset).absoluteValue
-            return diff.toFloat() / (endOffset - startOffset).absoluteValue
-        }
+    val animatedFraction: Float
+
+    /**
+     * [startOffset]和[endOffset]之间的分数进度
+     */
+    @get:FloatRange(from = 0.0, to = 1.0)
+    val offsetFraction: Float
+        get() = offsetInterpolator.getInterpolation(animatedFraction)
+
+    /**
+     * [editor]是否为IME
+     */
+    fun isIme(editor: Editor?): Boolean
 }
 
 /**
