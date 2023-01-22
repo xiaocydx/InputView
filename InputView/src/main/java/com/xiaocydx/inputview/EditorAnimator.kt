@@ -117,10 +117,7 @@ abstract class EditorAnimator(
         animationRecord = record
     }
 
-    private inline fun runSimpleAnimationIfNecessary(
-        record: AnimationRecord,
-        block: ValueAnimator.() -> Boolean = { false }
-    ) {
+    private fun runSimpleAnimationIfNecessary(record: AnimationRecord) {
         if (!canRunAnimation || record.startOffset == record.endOffset) {
             dispatchAnimationStart(record)
             dispatchAnimationEnd(record)
@@ -134,8 +131,6 @@ abstract class EditorAnimator(
                 onEnd = { dispatchAnimationEnd(record) }
             )
             addUpdateListener { dispatchAnimationUpdate(record) }
-            if (block(this)) return@apply start()
-
             duration = durationMillis
             interpolator = LinearInterpolator()
             record.setSimpleAnimation(this)
