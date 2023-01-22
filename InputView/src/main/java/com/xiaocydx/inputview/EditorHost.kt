@@ -108,9 +108,12 @@ internal interface EditorHost {
     fun setOnApplyWindowInsetsListener(listener: OnApplyWindowInsetsListenerCompat?)
 
     /**
-     * 添加IME动画的[WindowInsetsAnimationCompat.Callback]，`null`表示移除
+     * 添加[WindowInsetsAnimationCompat.Callback]，`null`表示移除
+     *
+     * @param durationMillis Android 11及以上IME动画的时长
+     * @param interpolator   Android 11及以上IME动画的插值器
      */
-    fun setImeAnimationCallbackCompat(
+    fun setWindowInsetsAnimationCallback(
         durationMillis: Long,
         interpolator: Interpolator,
         callback: WindowInsetsAnimationCompat.Callback?

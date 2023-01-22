@@ -136,7 +136,8 @@ class InputView @JvmOverloads constructor(
         super.onAttachedToWindow()
         if (window == null) {
             window = findViewTreeWindow()
-            window?.let { editTextHolder?.onAttachedToWindow(it) }
+            window?.also(host::onAttachedToWindow)
+            window?.also { editTextHolder?.onAttachedToWindow(it) }
         }
     }
 
@@ -292,6 +293,7 @@ class InputView @JvmOverloads constructor(
     internal fun getEditorHost(): EditorHost = host
 
     private inner class EditorHostImpl : EditorHost {
+        private var pending: PendingInsetsAnimationCallback? = null
         override val window: ViewTreeWindow?
             get() = this@InputView.window
         override val editText: EditTextHolder?
@@ -308,6 +310,10 @@ class InputView @JvmOverloads constructor(
             get() = editorView.changeRecord.previousChild
         override val currentView: View?
             get() = editorView.changeRecord.currentChild
+
+        fun onAttachedToWindow(window: ViewTreeWindow) {
+            pending?.apply { setWindowInsetsAnimationCallback(durationMillis, interpolator, callback) }
+        }
 
         override fun addView(view: View) {
             editorView.addView(view)
@@ -349,14 +355,32 @@ class InputView @JvmOverloads constructor(
             ViewCompat.setOnApplyWindowInsetsListener(editorView, listener)
         }
 
-        override fun setImeAnimationCallbackCompat(
+        override fun setWindowInsetsAnimationCallback(
             durationMillis: Long,
             interpolator: Interpolator,
             callback: WindowInsetsAnimationCompat.Callback?
         ) {
-            editorView.setImeAnimationCallbackCompat(durationMillis, interpolator, callback)
+            val window = window
+            pending = when {
+                window != null || callback == null -> null
+                else -> PendingInsetsAnimationCallback(durationMillis, interpolator, callback)
+            }
+            if (pending == null && window != null) {
+                if (callback == null) {
+                    window.restoreImeAnimation()
+                } else {
+                    window.modifyImeAnimation(durationMillis, interpolator)
+                }
+                ViewCompat.setWindowInsetsAnimationCallback(editorView, callback)
+            }
         }
     }
+
+    private class PendingInsetsAnimationCallback(
+        val durationMillis: Long,
+        val interpolator: Interpolator,
+        val callback: WindowInsetsAnimationCompat.Callback
+    )
 
     companion object
 }

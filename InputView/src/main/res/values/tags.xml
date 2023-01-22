@@ -2,4 +2,6 @@
 <resources>
     <item name="tag_view_tree_window" type="id" />
     <item name="tag_view_request_apply_insets" type="id" />
+    <item name="tag_decor_view_ime_animation_callback" type="id" />
+    <item name="tag_decor_view_insets_animation_callback" type="id" />
 </resources>

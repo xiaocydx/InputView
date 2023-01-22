@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Dialog
 import android.graphics.Color
 import android.view.*
+import android.view.animation.Interpolator
 import androidx.annotation.CheckResult
 import androidx.core.graphics.Insets
 import androidx.core.view.*
@@ -148,14 +149,6 @@ internal class ViewTreeWindow(
     val WindowInsetsCompat.supportGestureNavBarEdgeToEdge: Boolean
         get() = gestureNavBarEdgeToEdge && isGestureNavigationBar
 
-    fun getRootWindowInsets(): WindowInsetsCompat? {
-        return ViewCompat.getRootWindowInsets(window.decorView)
-    }
-
-    fun createWindowInsetsController(editText: View): WindowInsetsControllerCompat {
-        return WindowInsetsControllerCompat(window, editText)
-    }
-
     /**
      * 传入[view]是为了确保转换出的[WindowInsetsCompat]是正确的结果
      */
@@ -165,5 +158,21 @@ internal class ViewTreeWindow(
 
     fun WindowInsetsAnimationCompat.containsImeType(): Boolean {
         return typeMask and imeType == imeType
+    }
+
+    fun getRootWindowInsets(): WindowInsetsCompat? {
+        return ViewCompat.getRootWindowInsets(window.decorView)
+    }
+
+    fun createWindowInsetsController(editText: View): WindowInsetsControllerCompat {
+        return WindowInsetsControllerCompat(window, editText)
+    }
+
+    fun modifyImeAnimation(durationMillis: Long, interpolator: Interpolator) {
+        window.modifyImeAnimationCompat(durationMillis, interpolator)
+    }
+
+    fun restoreImeAnimation() {
+        window.restoreImeAnimationCompat()
     }
 }
