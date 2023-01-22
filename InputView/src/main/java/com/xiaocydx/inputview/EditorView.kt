@@ -65,13 +65,13 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         }
         removeAllViews()
         currentChild?.let(::addView)
+        current = editor
+        changeRecord = ChangeRecord(previousChild, currentChild)
         if (previous === ime) {
             handleImeShown(shown = false, controlIme)
         } else if (editor === ime) {
             handleImeShown(shown = true, controlIme)
         }
-        current = editor
-        changeRecord = ChangeRecord(previousChild, currentChild)
         adapter.onEditorChanged(previous, current)
         return true
     }
@@ -81,9 +81,9 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         if (adapter != null && current === editor) {
             val previousChild = views[editor]
             removeAllViews()
-            if (editor === ime) handleImeShown(shown = false, controlIme)
             current = null
             changeRecord = ChangeRecord(previousChild, currentChild = null)
+            if (editor === ime) handleImeShown(shown = false, controlIme)
             adapter.onEditorChanged(editor, current)
             return true
         }
