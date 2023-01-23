@@ -4,6 +4,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.Interpolator
 import androidx.annotation.FloatRange
+import androidx.annotation.IntRange
 
 /**
  * [Editor]的IME默认实现
@@ -37,7 +38,7 @@ class ImeAdapter : EditorAdapter<Ime>() {
  */
 open class FadeEditorAnimator(
     /**
-     * 淡入淡入的原始分数进度阈值
+     * 淡入淡出的原始分数进度阈值
      *
      * 以`thresholdFraction = 0.4f`、`startView != null`、`endView != null`为例：
      * 1. [AnimationState.animatedFraction]在`[0f, 0.4f]`，
@@ -56,19 +57,30 @@ open class FadeEditorAnimator(
      * 动画时长
      *
      * 显示或隐藏IME运行的动画：
-     * 1. Android 11以下，内部实现不会将IME动画的时长修改为[durationMillis]。
-     * 2. Android 11及以上，内部实现会尝试将IME动画的时长修改为[durationMillis]。
-     * 实际动画时长以[AnimationState.durationMillis]为准。
+     * 1. Android 11以下兼容代码的`durationMillis = 160ms`，
+     * 内部实现不会将IME动画的时长修改为[durationMillis]，
+     * 原因是Android 11以下无法跟IME完全贴合，保持兼容代码即可。
+     *
+     * 2. Android 11及以上系统代码的`durationMillis = 285ms`，
+     * 内部实现会尝试将IME动画的时长修改为[durationMillis]。
+     *
+     * **注意**：实际动画时长以[AnimationState.durationMillis]为准。
      */
+    @IntRange(from = 0)
     durationMillis: Long = ANIMATION_DURATION_MILLIS,
 
     /**
      * 动画偏移值插值器
      *
      * 显示或隐藏IME运行的动画：
-     * 1. Android 11以下，内部实现不会将IME动画的插值器修改为[offsetInterpolator]。
-     * 2. Android 11及以上，内部实现会尝试将IME动画的插值器修改为[offsetInterpolator]。
-     * 实际动画偏移值插值器以[AnimationState.offsetInterpolator]为准。
+     * 1. Android 11以下兼容代码的`interpolator = DecelerateInterpolator()`，
+     * 内部实现不会将IME动画的插值器修改为[offsetInterpolator]，
+     * 原因是Android 11以下无法跟IME完全贴合，保持兼容代码即可。
+     *
+     * 2. Android 11及以上系统代码的`interpolator = PathInterpolator(0.2f, 0f, 0f, 1f)`，
+     * 内部实现会尝试将IME动画的插值器修改为[offsetInterpolator]。
+     *
+     * **注意**：实际动画偏移值插值器以[AnimationState.offsetInterpolator]为准。
      */
     interpolator: Interpolator = ANIMATION_OFFSET_INTERPOLATOR
 ) : EditorAnimator(durationMillis, interpolator) {

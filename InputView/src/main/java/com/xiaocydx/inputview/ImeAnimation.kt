@@ -13,20 +13,31 @@ import java.lang.reflect.Field
 /**
  * 修改Android 11及以上IME动画的`durationMillis`和`interpolator`
  *
+ * ### 主要作用
+ * 该函数的主要作用是结合实际场景需求，微调IME动画的属性，让Android 11及以上的设备有更好的交互体验，
+ * 不支持修改Android 11以下IME动画的属性，原因是Android 11以下无法跟IME完全贴合，保持兼容代码即可。
+ *
+ * ### 修改失败
  * 当修改IME动画的属性失败时，会在[WindowInsetsAnimationCompat.Callback.onPrepare]之后，
  * [WindowInsetsAnimationCompat.Callback.onStart]之前恢复`durationMillis`和`interpolator`，
- * 修改成功或失败，会按[TAG]打印日志。
+ * 修改成功或修改失败，都会按[TAG]打印日志。
  *
- * 当[WindowInsetsAnimationCompat]的初始`durationMillis`小于等于0时，不修改`durationMillis`和`interpolator`，
- * 目的是兼容[WindowInsetsControllerCompat.controlWindowInsetsAnimation]的`durationMillis`小于等于0的场景，
+ * ### 兼容场景
+ * 当[WindowInsetsAnimationCompat]的初始`durationMillis <= 0`时，不修改`durationMillis`和`interpolator`，
+ * 目的是兼容[WindowInsetsControllerCompat.controlWindowInsetsAnimation]的`durationMillis <= 0`的场景，
  * 例如通过[WindowInsetsAnimationControlListenerCompat.onReady]获取[WindowInsetsAnimationControllerCompat]，
  * 调用[WindowInsetsAnimationControllerCompat.setInsetsAndAlpha]实现手势拖动显示IME。
  *
  * **注意**：若要对`window.decorView`设置[WindowInsetsAnimationCompat.Callback]，
  * 则调用[setWindowInsetsAnimationCallbackCompat]进行设置，能避免跟此函数产生冲突。
  *
- * @param durationMillis IME动画的时长，默认值[NO_VALUE]表示保持系统原本的时长。
- * @param interpolator   IME动画的插值器，默认值`null`表示保持系统原本的插值器。
+ * @param durationMillis IME动画的时长，默认值[NO_VALUE]表示保持系统原本的时长，
+ * Android 11以下兼容代码的`durationMillis = 160ms`，
+ * Android 11及以上系统代码的`durationMillis = 285ms`。
+ *
+ * @param interpolator   IME动画的插值器，默认值`null`表示保持系统原本的插值器，
+ * Android 11以下兼容代码的`interpolator = DecelerateInterpolator()`，
+ * Android 11及以上系统代码的`interpolator = PathInterpolator(0.2f, 0f, 0f, 1f)`。
  */
 internal fun Window.modifyImeAnimationCompat(
     durationMillis: Long = NO_VALUE,
@@ -248,7 +259,7 @@ private class ImeAnimationCallback(
             if (!animation.containsImeType()) {
                 Log.d(TAG, "WindowInsetsAnimationCompat不包含IME类型，不做修改")
             } else if (initialDurationMillis <= 0) {
-                Log.d(TAG, "兼容initialDurationMillis小于等于0的场景，不做修改")
+                Log.d(TAG, "兼容initialDurationMillis <= 0的场景，不做修改")
             } else {
                 step = Step.ON_PREPARE
             }
