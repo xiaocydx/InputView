@@ -257,8 +257,9 @@ abstract class EditorAnimator(
         /**
          * 该函数被调用之前，可能已更改[Editor]，执行了[onEditorChanged]创建[animationRecord]
          */
-        override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
+        override fun onApplyWindowInsets(v: View, applyInsets: WindowInsetsCompat): WindowInsetsCompat {
             host?.window?.apply {
+                val insets = getRootWindowInsets() ?: applyInsets
                 val lastImeHeight = insets.imeHeight
                 when {
                     imeHeight == 0 && lastImeHeight > 0 -> {
@@ -276,7 +277,7 @@ abstract class EditorAnimator(
                 }
                 imeHeight = lastImeHeight
             }
-            return insets
+            return applyInsets
         }
 
         private fun runSimpleAnimationFixEditorOffset(endOffset: Int) {

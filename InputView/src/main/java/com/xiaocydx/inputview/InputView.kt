@@ -152,13 +152,12 @@ class InputView @JvmOverloads constructor(
      * [contentView]和[editorView]之间会有一个[navBarOffset]区域，
      * 当支持手势导航栏边到边时，[navBarOffset]等于导航栏的高度，此时显示[Editor]，
      * 在[editorOffset]超过[navBarOffset]后，才会更新[contentView]的尺寸或位置。
-     *
-     * **注意**：不重写[dispatchApplyWindowInsets]，是为了提供更多的[insets]修改可能性。
      */
-    override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
-        val applyInsets = super.onApplyWindowInsets(insets)
+    override fun onApplyWindowInsets(applyInsets: WindowInsets): WindowInsets {
         val lastNavBarOffset = window?.run {
-            applyInsets.toCompat(this@InputView).navigationBarOffset
+            val insets = getRootWindowInsets()
+                    ?: applyInsets.toCompat(this@InputView)
+            insets.navigationBarOffset
         } ?: 0
         if (navBarOffset != lastNavBarOffset) {
             navBarOffset = lastNavBarOffset
@@ -166,7 +165,7 @@ class InputView @JvmOverloads constructor(
             if (isLaidOut) editorAnimator.endAnimation()
             requestLayout()
         }
-        return applyInsets
+        return super.onApplyWindowInsets(applyInsets)
     }
 
     /**
