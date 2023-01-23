@@ -2,7 +2,6 @@ package com.xiaocydx.inputview
 
 import android.app.Activity
 import android.app.Dialog
-import android.graphics.Color
 import android.view.*
 import android.view.animation.Interpolator
 import androidx.annotation.CheckResult
@@ -15,15 +14,34 @@ import androidx.fragment.app.DialogFragment
  *
  * **注意**：该函数需要在[Activity.onCreate]调用，暂时不支持[Dialog]和[DialogFragment]。
  *
- * @param statusBarEdgeToEdge     是否状态栏边到边
- * @param gestureNavBarEdgeToEdge 是否手势导航栏边到边
+ * [onApplyWindowInsetsListener]能避免跟内部实现产生冲突，实际效果等同于：
+ * ```
+ * ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
+ *     modifyInsets(insets).let { ViewCompat.onApplyWindowInsets(v, it) }
+ * }
+ * ```
+ *
+ * [windowInsetsAnimationCallback]能避免跟内部实现产生冲突，实际效果等同于：
+ * ```
+ * ViewCompat.setWindowInsetsAnimationCallback(window.decorView, callback)
+ * ```
+ *
+ * @param gestureNavBarEdgeToEdge       是否手势导航栏边到边
+ * @param onApplyWindowInsetsListener   `window.decorView`的[OnApplyWindowInsetsListener]
+ * @param windowInsetsAnimationCallback `window.decorView`的[WindowInsetsAnimationCompat.Callback]
  */
 fun InputView.Companion.init(
     window: Window,
-    statusBarEdgeToEdge: Boolean = false,
-    gestureNavBarEdgeToEdge: Boolean = false
+    gestureNavBarEdgeToEdge: Boolean = false,
+    onApplyWindowInsetsListener: OnApplyWindowInsetsListener? = null,
+    windowInsetsAnimationCallback: WindowInsetsAnimationCompat.Callback? = null
 ) {
-    ViewTreeWindow(window, statusBarEdgeToEdge, gestureNavBarEdgeToEdge).attach()
+    ViewTreeWindow(
+        window,
+        gestureNavBarEdgeToEdge,
+        onApplyWindowInsetsListener,
+        windowInsetsAnimationCallback
+    ).attach()
 }
 
 /**
@@ -56,8 +74,9 @@ internal fun View.findViewTreeWindow(): ViewTreeWindow? {
 
 internal class ViewTreeWindow(
     private val window: Window,
-    private val statusBarEdgeToEdge: Boolean,
-    private val gestureNavBarEdgeToEdge: Boolean
+    private val gestureNavBarEdgeToEdge: Boolean,
+    private val onApplyWindowInsetsListener: OnApplyWindowInsetsListener?,
+    private val windowInsetsAnimationCallback: WindowInsetsAnimationCompat.Callback?
 ) {
     private val statusBarType = WindowInsetsCompat.Type.statusBars()
     private val navBarType = WindowInsetsCompat.Type.navigationBars()
@@ -65,48 +84,28 @@ internal class ViewTreeWindow(
 
     fun attach() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { _, insets ->
-            ViewCompat.onApplyWindowInsets(window.decorView, insets.decorWindowInsets())
-            insets
+        ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
+            val applyInsets = onApplyWindowInsetsListener?.onApplyWindowInsets(v, insets) ?: insets
+            ViewCompat.onApplyWindowInsets(v, applyInsets.decorWindowInsets())
+            applyInsets
         }
 
         val content = window.decorView.findViewById<View>(android.R.id.content)
-        ViewCompat.setOnApplyWindowInsetsListener(content) { _, insets ->
-            content.updatePadding(
-                top = insets.contentPaddingTop,
-                bottom = insets.contentPaddingBottom
-            )
+        ViewCompat.setOnApplyWindowInsetsListener(content) { v, insets ->
+            v.updatePadding(top = insets.contentPaddingTop, bottom = insets.contentPaddingBottom)
             insets
-        }
-
-        if (statusBarEdgeToEdge) {
-            // FIXME: 暂时用透明背景
-            window.statusBarColor = Color.TRANSPARENT
         }
 
         // 兼容Android各版本IME的WindowInsets分发
         @Suppress("DEPRECATION")
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        window.setWindowInsetsAnimationCallbackCompat(windowInsetsAnimationCallback)
         window.decorView.setViewTreeWindow(this)
     }
 
     @CheckResult
     private fun WindowInsetsCompat.decorWindowInsets(): WindowInsetsCompat {
-        var outcome = this
-        if (statusBarEdgeToEdge) {
-            outcome = outcome.consumeStatusBarHeight()
-        }
-        if (outcome.supportGestureNavBarEdgeToEdge) {
-            outcome = outcome.consumeNavigationBarHeight()
-        }
-        return outcome
-    }
-
-    @CheckResult
-    private fun WindowInsetsCompat.consumeStatusBarHeight(): WindowInsetsCompat {
-        val oldInsets = getInsets(statusBarType)
-        val newInsets = Insets.of(oldInsets.left, 0, oldInsets.right, oldInsets.bottom)
-        return WindowInsetsCompat.Builder(this).setInsets(statusBarType, newInsets).build()
+        return if (supportGestureNavBarEdgeToEdge) consumeNavigationBarHeight() else this
     }
 
     @CheckResult
@@ -117,7 +116,7 @@ internal class ViewTreeWindow(
     }
 
     private val WindowInsetsCompat.contentPaddingTop: Int
-        get() = if (statusBarEdgeToEdge) 0 else statusBarHeight
+        get() = getInsets(statusBarType).top
 
     private val WindowInsetsCompat.contentPaddingBottom: Int
         get() = if (supportGestureNavBarEdgeToEdge) 0 else navigationBarHeight
@@ -128,10 +127,7 @@ internal class ViewTreeWindow(
             return navigationBarHeight <= threshold.coerceAtLeast(66)
         }
 
-    val WindowInsetsCompat.statusBarHeight: Int
-        get() = getInsets(statusBarType).top
-
-    val WindowInsetsCompat.navigationBarHeight: Int
+    private val WindowInsetsCompat.navigationBarHeight: Int
         get() = getInsets(navBarType).bottom
 
     val WindowInsetsCompat.imeHeight
