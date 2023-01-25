@@ -238,7 +238,11 @@ class InputView @JvmOverloads constructor(
                 WRAP_CONTENT -> maxContentWidth.toAtMostMeasureSpec()
                 else -> width.coerceAtMost(maxContentWidth).toExactlyMeasureSpec()
             },
-            maxContentHeight.toExactlyMeasureSpec()
+            when (val height = contentView.layoutParams.height) {
+                MATCH_PARENT -> maxContentHeight.toExactlyMeasureSpec()
+                WRAP_CONTENT -> maxContentHeight.toAtMostMeasureSpec()
+                else -> height.coerceAtMost(maxContentHeight).toExactlyMeasureSpec()
+            }
         )
     }
 
