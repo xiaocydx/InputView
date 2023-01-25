@@ -16,7 +16,7 @@ class TestActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        InputView.init(window)
+        InputView.init(this)
         content = View(this)
         inputView = InputView(this).apply {
             layoutParams = LayoutParams(MATCH_PARENT, MATCH_PARENT)

@@ -1,6 +1,5 @@
 package com.xiaocydx.inputview
 
-import android.app.Activity
 import android.content.Context
 import android.util.AttributeSet
 import android.view.*
@@ -16,7 +15,7 @@ import androidx.core.view.*
 /**
  * 输入控件
  *
- * 1. 在[Activity.onCreate]调用`InputView.init(window)`。
+ * 1. 调用`InputView.init()`初始化[InputView]所需的配置。
  * 2. [InputView]初始化时只能有一个子View，该子View作为[contentView]。
  * 3. [editText]用于兼容Android各版本显示和隐藏IME。
  * 4. [editorAdapter]支持多种[Editor]的视图创建和显示。
