@@ -1,6 +1,5 @@
 package com.xiaocydx.inputview
 
-import android.app.Activity
 import android.graphics.*
 import android.view.*
 import android.view.ViewGroup.MarginLayoutParams
@@ -8,83 +7,40 @@ import android.view.animation.Interpolator
 import androidx.annotation.CheckResult
 import androidx.core.graphics.Insets
 import androidx.core.view.*
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 /**
  * 初始化[InputView]所需的配置
  *
- * **注意**：该函数需要在[Activity.onCreate]调用。
- *
- * [onApplyWindowInsetsListener]能避免跟内部实现产生冲突，实际效果等同于：
+ * 当[dispatchApplyWindowInsetsRoot]返回的`root`不为`null`时，实际效果等同于：
  * ```
  * ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
- *     insets.consumeInsets(typeMask).let { ViewCompat.onApplyWindowInsets(v, it) }
+ *     val root = dispatchApplyWindowInsetsRoot()
+ *     ViewCompat.dispatchApplyWindowInsets(root, insets)
+ *     WindowInsetsCompat.CONSUMED
  * }
  * ```
+ * 不对`window.decorView`到`root`之间的View分发insets，
+ * 作用是去除中间View的边到边实现，自行实现状态栏和导航栏边到边，
+ * 以及确保`root`的insets分发正常和Android 11以下insets动画回调正常，
+ * 自行实现边到边虽然有点麻烦，但是会更加灵活，能满足实际场景不同的需求。
  *
- * [windowInsetsAnimationCallback]能避免跟内部实现产生冲突，实际效果等同于：
- * ```
- * ViewCompat.setWindowInsetsAnimationCallback(window.decorView, callback)
- * ```
- *
- * @param gestureNavBarEdgeToEdge       是否手势导航栏边到边
- * @param onApplyWindowInsetsListener   `window.decorView`的[OnApplyWindowInsetsListener]
- * @param windowInsetsAnimationCallback `window.decorView`的[WindowInsetsAnimationCompat.Callback]
+ * @param window                        `activity.window`或`dialog.window`。
+ * @param statusBarEdgeToEdge           是否状态栏边到边。
+ * @param gestureNavBarEdgeToEdge       是否手势导航栏边到边。
+ * @param dispatchApplyWindowInsetsRoot 返回分发insets的`root`。
  */
 fun InputView.Companion.init(
-    activity: Activity,
+    window: Window,
+    statusBarEdgeToEdge: Boolean = false,
     gestureNavBarEdgeToEdge: Boolean = false,
-    onApplyWindowInsetsListener: OnApplyWindowInsetsListener? = null,
-    windowInsetsAnimationCallback: WindowInsetsAnimationCompat.Callback? = null
+    dispatchApplyWindowInsetsRoot: (() -> View?)? = null
 ) {
-    ViewTreeWindow(
-        activity.window,
-        gestureNavBarEdgeToEdge,
-        onApplyWindowInsetsListener,
-        windowInsetsAnimationCallback
-    ).attach()
-}
-
-/**
- * 初始化[InputView]所需的配置
- *
- * **注意**：该函数需要在[BottomSheetDialogFragment.onCreateView]调用。
- *
- * [onApplyWindowInsetsListener]能避免跟内部实现产生冲突，实际效果等同于：
- * ```
- * ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
- *     insets.consumeInsets(typeMask).let { ViewCompat.onApplyWindowInsets(v, it) }
- * }
- * ```
- *
- * [windowInsetsAnimationCallback]能避免跟内部实现产生冲突，实际效果等同于：
- * ```
- * ViewCompat.setWindowInsetsAnimationCallback(window.decorView, callback)
- * ```
- *
- * @param gestureNavBarEdgeToEdge       是否手势导航栏边到边
- * @param onApplyWindowInsetsListener   `window.decorView`的[OnApplyWindowInsetsListener]
- * @param windowInsetsAnimationCallback `window.decorView`的[WindowInsetsAnimationCompat.Callback]
- */
-fun InputView.Companion.init(
-    dialogFragment: BottomSheetDialogFragment,
-    gestureNavBarEdgeToEdge: Boolean = false,
-    onApplyWindowInsetsListener: OnApplyWindowInsetsListener? = null,
-    windowInsetsAnimationCallback: WindowInsetsAnimationCompat.Callback? = null
-) {
-    val window = dialogFragment.dialog?.window ?: return
     ViewTreeWindow(
         window,
+        statusBarEdgeToEdge,
         gestureNavBarEdgeToEdge,
-        onApplyWindowInsetsListener,
-        windowInsetsAnimationCallback
-    ).attach { applyInsets ->
-        // 对window.decorView到fragment.view之间的View不分发insets，
-        // 目的是去除BottomSheetDialogFragment的边到边实现，自行实现状态栏和导航栏边到边，
-        // 并确保fragment.view的子视图树insets分发正常、Android 11以下insets动画回调正常。
-        dialogFragment.view?.let { ViewCompat.dispatchApplyWindowInsets(it, applyInsets) }
-        WindowInsetsCompat.CONSUMED
-    }
+        dispatchApplyWindowInsetsRoot
+    ).attach()
 }
 
 /**
@@ -117,37 +73,53 @@ internal fun View.findViewTreeWindow(): ViewTreeWindow? {
 
 internal class ViewTreeWindow(
     private val window: Window,
+    private val statusBarEdgeToEdge: Boolean,
     private val gestureNavBarEdgeToEdge: Boolean,
-    private val onApplyWindowInsetsListener: OnApplyWindowInsetsListener?,
-    private val windowInsetsAnimationCallback: WindowInsetsAnimationCompat.Callback?
+    private val dispatchApplyWindowInsetsRoot: (() -> View?)?,
 ) {
     private val statusBarType = WindowInsetsCompat.Type.statusBars()
     private val navBarType = WindowInsetsCompat.Type.navigationBars()
     private val imeType = WindowInsetsCompat.Type.ime()
 
-    fun attach(finalInsets: ((applyInsets: WindowInsetsCompat) -> WindowInsetsCompat)? = null) {
+    fun attach() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        val contentRoot = (window.decorView as ViewGroup).children.first { it is ViewGroup }
+        val content = (window.decorView as ViewGroup).children.first { it is ViewGroup }
         ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
-            val applyInsets = onApplyWindowInsetsListener?.onApplyWindowInsets(v, insets) ?: insets
-            ViewCompat.onApplyWindowInsets(v, applyInsets.decorInsets())
-            contentRoot.updateMargins(
-                top = applyInsets.contentMarginTop,
-                bottom = applyInsets.contentMarginBottom
+            val decorInsets = insets.toDecorInsets()
+            ViewCompat.onApplyWindowInsets(v, decorInsets)
+            content.updateMargins(
+                top = decorInsets.statusBarHeight,
+                bottom = decorInsets.navigationBarHeight
             )
-            finalInsets?.invoke(applyInsets) ?: applyInsets
+
+            var applyInsets = insets
+            val root = dispatchApplyWindowInsetsRoot?.invoke()
+            if (root != null && root !== window.decorView) {
+                ViewCompat.dispatchApplyWindowInsets(root, applyInsets)
+                applyInsets = WindowInsetsCompat.CONSUMED
+            }
+            applyInsets
         }
 
         // SOFT_INPUT_ADJUST_RESIZE用于兼容Android各版本IME的insets分发
         @Suppress("DEPRECATION")
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-        window.setWindowInsetsAnimationCallbackCompat(windowInsetsAnimationCallback)
         window.decorView.setViewTreeWindow(this)
     }
 
-    @CheckResult
-    private fun WindowInsetsCompat.decorInsets(): WindowInsetsCompat {
-        return if (supportGestureNavBarEdgeToEdge) consumeInsets(navBarType) else this
+    private fun WindowInsetsCompat.toDecorInsets(): WindowInsetsCompat {
+        var insets = this
+        if (statusBarEdgeToEdge) {
+            if (window.statusBarColor != Color.TRANSPARENT) {
+                // Color.TRANSPARENT用于兼容部分设备仍然绘制背景色的问题
+                window.statusBarColor = Color.TRANSPARENT
+            }
+            insets = insets.consumeInsets(statusBarType)
+        }
+        if (supportGestureNavBarEdgeToEdge) {
+            insets = insets.consumeInsets(navBarType)
+        }
+        return insets
     }
 
     @CheckResult
@@ -168,17 +140,14 @@ internal class ViewTreeWindow(
         if (changed) layoutParams = params
     }
 
-    private val WindowInsetsCompat.contentMarginTop: Int
-        get() = getInsets(statusBarType).top
-
-    private val WindowInsetsCompat.contentMarginBottom: Int
-        get() = if (supportGestureNavBarEdgeToEdge) 0 else navigationBarHeight
-
     private val WindowInsetsCompat.isGestureNavigationBar: Boolean
         get() {
             val threshold = (24 * window.decorView.resources.displayMetrics.density).toInt()
             return navigationBarHeight <= threshold.coerceAtLeast(66)
         }
+
+    private val WindowInsetsCompat.statusBarHeight: Int
+        get() = getInsets(statusBarType).top
 
     private val WindowInsetsCompat.navigationBarHeight: Int
         get() = getInsets(navBarType).bottom
