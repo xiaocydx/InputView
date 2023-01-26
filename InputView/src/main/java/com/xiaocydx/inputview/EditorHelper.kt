@@ -89,7 +89,7 @@ interface EditorHelper {
      * @return true表示支持，返回结果关联了`InputView.init()`的初始化配置。
      */
     fun View.supportGestureNavBarEdgeToEdge(insets: WindowInsetsCompat): Boolean {
-        val window = getViewTreeWindow() ?: findViewTreeWindow()?.also(::setViewTreeWindow)
+        val window = getOrFindViewTreeWindow()
         return window?.run { insets.supportGestureNavBarEdgeToEdge } ?: false
     }
 }

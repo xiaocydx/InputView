@@ -45,31 +45,33 @@ fun InputView.Companion.init(
 }
 
 /**
- * 设置视图树的[ViewTreeWindow]
+ * 视图树的[ViewTreeWindow]
  */
-internal fun View.setViewTreeWindow(window: ViewTreeWindow) {
-    setTag(R.id.tag_view_tree_window, window)
-}
-
-/**
- * 获取视图树的[ViewTreeWindow]，若未设置，则返回`null`
- */
-internal fun View.getViewTreeWindow(): ViewTreeWindow? {
-    return getTag(R.id.tag_view_tree_window) as? ViewTreeWindow
-}
+private var View.viewTreeWindow: ViewTreeWindow?
+    get() = getTag(R.id.tag_view_tree_window) as? ViewTreeWindow
+    set(value) {
+        setTag(R.id.tag_view_tree_window, value)
+    }
 
 /**
  * 查找视图树的[ViewTreeWindow]，若查找不到，则返回`null`
  */
 internal fun View.findViewTreeWindow(): ViewTreeWindow? {
-    var found: ViewTreeWindow? = getViewTreeWindow()
+    var found: ViewTreeWindow? = viewTreeWindow
     if (found != null) return found
     var parent: ViewParent? = parent
     while (found == null && parent is View) {
-        found = parent.getViewTreeWindow()
+        found = parent.viewTreeWindow
         parent = (parent as View).parent
     }
     return found
+}
+
+/**
+ * 获取视图树的[ViewTreeWindow]，若获取不到，则查找并设置
+ */
+internal fun View.getOrFindViewTreeWindow(): ViewTreeWindow? {
+    return viewTreeWindow ?: findViewTreeWindow()?.also { viewTreeWindow = it }
 }
 
 internal class ViewTreeWindow(
@@ -85,6 +87,7 @@ internal class ViewTreeWindow(
         ?.takeIf { it !== window.decorView }?.let(::WeakReference)
 
     fun attach() {
+        require(window.decorView.viewTreeWindow == null) { "已完成InputView.init()" }
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val content = (window.decorView as ViewGroup).children.first { it is ViewGroup }
         ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
@@ -104,7 +107,7 @@ internal class ViewTreeWindow(
         // SOFT_INPUT_ADJUST_RESIZE用于兼容Android各版本IME的insets分发
         @Suppress("DEPRECATION")
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-        window.decorView.setViewTreeWindow(this)
+        window.decorView.viewTreeWindow = this
     }
 
     private fun WindowInsetsCompat.toDecorInsets(): WindowInsetsCompat {
