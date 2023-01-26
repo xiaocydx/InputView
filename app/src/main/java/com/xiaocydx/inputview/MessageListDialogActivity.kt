@@ -65,6 +65,8 @@ class MessageListDialog(
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val window = window!!
+        val binding = MessageListBinding.inflate(layoutInflater)
+
         // 1. 初始化InputView所需的配置
         InputView.init(
             window = window,
@@ -72,7 +74,6 @@ class MessageListDialog(
             gestureNavBarEdgeToEdge = gestureNavBarEdgeToEdge
         )
 
-        val binding = MessageListBinding.inflate(layoutInflater).init(window)
         binding.tvTitle.apply {
             setBackgroundColor(0xFFD5A7AE.toInt())
             if (!statusBarEdgeToEdge) return@apply
@@ -84,7 +85,8 @@ class MessageListDialog(
             }
             WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
         }
-        setContentView(binding.root)
+
+        setContentView(binding.init(window).root)
     }
 }
 
@@ -99,7 +101,6 @@ class MessageListBottomSheetDialog(
     context: Context,
     @StyleRes theme: Int = 0
 ) : BottomSheetDialog(context, theme) {
-    private lateinit var binding: MessageListBinding
 
     /**
      * `InputView.init()`不对`decorView`到`binding.root`之间的View分发insets，
@@ -110,15 +111,16 @@ class MessageListBottomSheetDialog(
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val window = window!!
+        val binding = MessageListBinding.inflate(layoutInflater)
+
         // 1. 初始化InputView所需的配置
         InputView.init(
             window = window,
             statusBarEdgeToEdge = statusBarEdgeToEdge,
             gestureNavBarEdgeToEdge = gestureNavBarEdgeToEdge,
-            dispatchApplyWindowInsetsRoot = { binding.root }
+            dispatchApplyWindowInsetsRoot = binding.root
         )
 
-        binding = MessageListBinding.inflate(layoutInflater).init(window)
         binding.root.doOnLayout {
             val bottomSheet = binding.root.parent as View
             behavior.peekHeight = bottomSheet.height
@@ -127,7 +129,8 @@ class MessageListBottomSheetDialog(
         if (statusBarEdgeToEdge) {
             behavior.addBottomSheetCallback(StatusBarEdgeToEdgeCallback(window, binding))
         }
-        setContentView(binding.root)
+
+        setContentView(binding.init(window).root)
     }
 
     private class StatusBarEdgeToEdgeCallback(

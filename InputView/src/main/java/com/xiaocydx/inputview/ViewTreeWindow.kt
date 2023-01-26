@@ -7,14 +7,15 @@ import android.view.animation.Interpolator
 import androidx.annotation.CheckResult
 import androidx.core.graphics.Insets
 import androidx.core.view.*
+import java.lang.ref.WeakReference
 
 /**
  * 初始化[InputView]所需的配置
  *
- * 当[dispatchApplyWindowInsetsRoot]返回的`root`不为`null`时，实际效果等同于：
+ * 当[dispatchApplyWindowInsetsRoot]不为`null`时，实际效果等同于：
  * ```
+ * val root = dispatchApplyWindowInsetsRoot
  * ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
- *     val root = dispatchApplyWindowInsetsRoot()
  *     ViewCompat.dispatchApplyWindowInsets(root, insets)
  *     WindowInsetsCompat.CONSUMED
  * }
@@ -27,13 +28,13 @@ import androidx.core.view.*
  * @param window                        `activity.window`或`dialog.window`。
  * @param statusBarEdgeToEdge           是否状态栏边到边。
  * @param gestureNavBarEdgeToEdge       是否手势导航栏边到边。
- * @param dispatchApplyWindowInsetsRoot 返回分发insets的`root`。
+ * @param dispatchApplyWindowInsetsRoot 分发insets的`root`。
  */
 fun InputView.Companion.init(
     window: Window,
     statusBarEdgeToEdge: Boolean = false,
     gestureNavBarEdgeToEdge: Boolean = false,
-    dispatchApplyWindowInsetsRoot: (() -> View?)? = null
+    dispatchApplyWindowInsetsRoot: View? = null
 ) {
     ViewTreeWindow(
         window,
@@ -75,11 +76,13 @@ internal class ViewTreeWindow(
     private val window: Window,
     private val statusBarEdgeToEdge: Boolean,
     private val gestureNavBarEdgeToEdge: Boolean,
-    private val dispatchApplyWindowInsetsRoot: (() -> View?)?,
+    dispatchApplyWindowInsetsRoot: View?,
 ) {
     private val statusBarType = WindowInsetsCompat.Type.statusBars()
     private val navBarType = WindowInsetsCompat.Type.navigationBars()
     private val imeType = WindowInsetsCompat.Type.ime()
+    private val rootRef = dispatchApplyWindowInsetsRoot
+        ?.takeIf { it !== window.decorView }?.let(::WeakReference)
 
     fun attach() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -92,13 +95,10 @@ internal class ViewTreeWindow(
                 bottom = decorInsets.navigationBarHeight
             )
 
-            var applyInsets = insets
-            val root = dispatchApplyWindowInsetsRoot?.invoke()
-            if (root != null && root !== window.decorView) {
-                ViewCompat.dispatchApplyWindowInsets(root, applyInsets)
-                applyInsets = WindowInsetsCompat.CONSUMED
-            }
-            applyInsets
+            rootRef?.get()?.let { root ->
+                ViewCompat.dispatchApplyWindowInsets(root, insets)
+                WindowInsetsCompat.CONSUMED
+            } ?: insets
         }
 
         // SOFT_INPUT_ADJUST_RESIZE用于兼容Android各版本IME的insets分发
