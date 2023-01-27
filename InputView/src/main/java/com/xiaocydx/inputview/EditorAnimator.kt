@@ -284,11 +284,11 @@ abstract class EditorAnimator(
 
         private fun runSimpleAnimationFixEditorOffset(endOffset: Int) {
             val current = host?.current ?: return
-            resetAnimationRecord(record = AnimationRecord(current, current)
-                .apply { setAnimationOffsetForCurrent() }
-                .apply { setAnimationOffset(endOffset = endOffset) }
-                .also(::runSimpleAnimationIfNecessary)
-            )
+            val record = AnimationRecord(current, current)
+            resetAnimationRecord(record)
+            record.setAnimationOffsetForCurrent()
+            record.setAnimationOffset(endOffset = endOffset)
+            runSimpleAnimationIfNecessary(record)
         }
 
         override fun onStart(
