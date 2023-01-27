@@ -89,7 +89,10 @@ private fun MessageListBinding.handleScroll() {
         if (right - left == 0) return@listener
         val oldHeight = oldBottom - oldTop
         val newHeight = bottom - top
-        if (oldHeight > 0 && oldHeight != newHeight) scrollToFirst()
+        if (oldHeight > 0 && oldHeight != newHeight) {
+            // 视图树的PFLAG_FORCE_LAYOUT都移除后，再申请下一帧重新布局
+            rvMessage.doOnPreDraw { scrollToFirst() }
+        }
     }
     //endregion
 
