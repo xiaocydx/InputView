@@ -57,12 +57,14 @@ abstract class EditorAnimator(
     private val animationDispatcher = AnimationDispatcher()
     private val callbacks = ArrayList<AnimationCallback>(2)
     internal open val canRunAnimation: Boolean = true
+    internal val isActive: Boolean
+        get() = animationRecord != null
 
     /**
      * 动画是否运行中
      */
     val isRunning: Boolean
-        get() = animationRecord != null
+        get() = animationRecord?.isRunning == true
 
     /**
      * 添加[AnimationCallback]
@@ -345,6 +347,8 @@ abstract class EditorAnimator(
         var simpleAnimation: ValueAnimator? = null; private set
         val handleInsetsAnimation: Boolean
             get() = simpleAnimation == null && insetsAnimation != null
+        val isRunning: Boolean
+            get() = simpleAnimation != null || insetsAnimation != null
 
         init {
             durationMillis = this@EditorAnimator.durationMillis

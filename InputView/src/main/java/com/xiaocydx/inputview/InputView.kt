@@ -160,8 +160,6 @@ class InputView @JvmOverloads constructor(
         } ?: 0
         if (navBarOffset != lastNavBarOffset) {
             navBarOffset = lastNavBarOffset
-            // 首次布局完成之前，不执行清除操作，避免初始化操作无效
-            if (isLaidOut) editorAnimator.endAnimation()
             requestLayout()
         }
         return super.onApplyWindowInsets(applyInsets)
@@ -213,7 +211,7 @@ class InputView @JvmOverloads constructor(
         val contentView = contentView ?: return
 
         editorView.measure(widthMeasureSpec, measuredHeight.toAtMostMeasureSpec())
-        if (!editorAnimator.canRunAnimation || !editorAnimator.isRunning) {
+        if (!editorAnimator.canRunAnimation || !editorAnimator.isActive) {
             // 修复editorOffset，例如导航栏高度改变（导航栏模式改变），
             // editorView的子View处理手势导航栏边到边，可能会修改尺寸，
             // 此时未同步editorOffset，导致布局位置不正确。
