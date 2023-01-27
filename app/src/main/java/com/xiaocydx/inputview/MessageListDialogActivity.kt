@@ -54,7 +54,7 @@ private const val statusBarEdgeToEdge = true
 private const val gestureNavBarEdgeToEdge = true
 
 /**
- * [R.style.MessageListDialog]最重要的是`windowIsFloating = false`，这能让Dialog的视图树自行处理insets，
+ * [R.style.MessageListDialog]最重要的是`windowIsFloating = false`，这能让Dialog的视图树自行处理insets分发，
  * 例如[BottomSheetDialog]的默认主题包含`windowIsFloating = false`，布局文件是`design_bottom_sheet_dialog.xml`
  * id为`coordinator`和`design_bottom_sheet`的View实现边到边，id为`touch_outside`的View实现`canceledOnTouchOutside`。
  */

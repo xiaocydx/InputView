@@ -3,6 +3,7 @@ package com.xiaocydx.inputview
 import android.graphics.*
 import android.view.*
 import android.view.ViewGroup.MarginLayoutParams
+import android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
 import android.view.animation.Interpolator
 import androidx.annotation.CheckResult
 import androidx.core.graphics.Insets
@@ -87,7 +88,7 @@ internal class ViewTreeWindow(
         ?.takeIf { it !== window.decorView }?.let(::WeakReference)
 
     fun attach() {
-        require(window.decorView.viewTreeWindow == null) { "已完成InputView.init()" }
+        window.checkDispatchApplyWindowInsetsCompatibility()
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val content = (window.decorView as ViewGroup).children.first { it is ViewGroup }
         ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
@@ -108,6 +109,19 @@ internal class ViewTreeWindow(
         @Suppress("DEPRECATION")
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         window.decorView.viewTreeWindow = this
+    }
+
+    private fun Window.checkDispatchApplyWindowInsetsCompatibility() {
+        check(decorView.viewTreeWindow == null) { "InputView.init()只能调用一次" }
+        check(!isFloating) {
+            "InputView需要主题的windowIsFloating = false，否则会导致无法自行处理WindowInsets分发"
+        }
+        @Suppress("DEPRECATION")
+        check(attributes.flags and FLAG_FULLSCREEN == 0) {
+            "InputView需要主题的windowFullscreen = false，" +
+                    "或window.attributes.flags不包含FLAG_FULLSCREEN，" +
+                    "否则会导致Android 11以下的WindowInsets分发异常"
+        }
     }
 
     private fun WindowInsetsCompat.toDecorInsets(): WindowInsetsCompat {
