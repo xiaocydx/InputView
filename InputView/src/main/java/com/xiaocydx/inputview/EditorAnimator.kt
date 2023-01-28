@@ -53,6 +53,7 @@ abstract class EditorAnimator(
     private val offsetInterpolator: Interpolator = ANIMATION_OFFSET_INTERPOLATOR
 ) {
     private var host: EditorHost? = null
+    private var insets: WindowInsetsCompat? = null
     private var animationRecord: AnimationRecord? = null
     private val animationDispatcher = AnimationDispatcher()
     private val callbacks = ArrayList<AnimationCallback>(2)
@@ -259,9 +260,9 @@ abstract class EditorAnimator(
         /**
          * 该函数被调用之前，可能已更改[Editor]，执行了[onEditorChanged]创建[animationRecord]
          */
-        override fun onApplyWindowInsets(v: View, applyInsets: WindowInsetsCompat): WindowInsetsCompat {
+        override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
             host?.window?.apply {
-                val insets = getRootWindowInsets() ?: applyInsets
+                this@EditorAnimator.insets = insets
                 val lastImeHeight = insets.imeHeight
                 when {
                     imeHeight == 0 && lastImeHeight > 0 -> {
@@ -279,7 +280,7 @@ abstract class EditorAnimator(
                 }
                 imeHeight = lastImeHeight
             }
-            return applyInsets
+            return insets
         }
 
         private fun runSimpleAnimationFixEditorOffset(endOffset: Int) {
@@ -406,11 +407,11 @@ abstract class EditorAnimator(
 
         fun setAnimationOffsetForCurrent() {
             setAnimationOffset(NO_VALUE, NO_VALUE, NO_VALUE)
-            host?.window?.run {
+            host?.window?.apply {
                 val host = host!!
                 val startOffset = host.editorOffset
                 val endOffset = if (isIme(current)) {
-                    getRootWindowInsets()?.imeOffset ?: NO_VALUE
+                    insets?.imeOffset ?: NO_VALUE
                 } else {
                     host.currentView?.height ?: 0
                 }

@@ -86,8 +86,8 @@ class InputView @JvmOverloads constructor(
      * [ImeAdapter]用于只需要IME的场景，若需要显示多种[Editor]，
      * 则继承并实现[EditorAdapter]，其注释介绍了如何实现以及注意点。
      *
-     * [EditorAdapter.onCreateView]创建的视图可能需要处理手势导航栏边到边，
-     * [EditorHelper]提供了辅助函数，这些函数能够帮助处理手势导航栏边到边。
+     * [EditorAdapter.onCreateView]创建的视图可能需要实现手势导航栏边到边，
+     * [EdgeToEdgeHelper]提供了实现手势导航栏边到边的函数。
      */
     var editorAdapter: EditorAdapter<*>
         get() = requireNotNull(editorView.adapter) { "未初始化EditorAdapter" }
@@ -152,17 +152,15 @@ class InputView @JvmOverloads constructor(
      * 当支持手势导航栏边到边时，[navBarOffset]等于导航栏的高度，此时显示[Editor]，
      * 在[editorOffset]超过[navBarOffset]后，才会更新[contentView]的尺寸或位置。
      */
-    override fun onApplyWindowInsets(applyInsets: WindowInsets): WindowInsets {
+    override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
         val lastNavBarOffset = window?.run {
-            val insets = getRootWindowInsets()
-                    ?: applyInsets.toCompat(this@InputView)
-            insets.navigationBarOffset
+            insets.toCompat(this@InputView).navigationBarOffset
         } ?: 0
         if (navBarOffset != lastNavBarOffset) {
             navBarOffset = lastNavBarOffset
             requestLayout()
         }
-        return super.onApplyWindowInsets(applyInsets)
+        return super.onApplyWindowInsets(insets)
     }
 
     /**
@@ -213,7 +211,7 @@ class InputView @JvmOverloads constructor(
         editorView.measure(widthMeasureSpec, measuredHeight.toAtMostMeasureSpec())
         if (!editorAnimator.canRunAnimation || !editorAnimator.isActive) {
             // 修复editorOffset，例如导航栏高度改变（导航栏模式改变），
-            // editorView的子View处理手势导航栏边到边，可能会修改尺寸，
+            // editorView的子View实现手势导航栏边到边，可能会修改尺寸，
             // 此时未同步editorOffset，导致布局位置不正确。
             val ime = editorView.ime
             val current = editorView.current
