@@ -91,7 +91,7 @@ interface EdgeToEdgeHelper {
      * 从[WindowInsetsCompat]获取状态栏的高度
      */
     fun WindowInsetsCompat.getStatusBarHeight(): Int {
-        return getInsets(WindowInsetsCompat.Type.statusBars()).bottom
+        return getInsets(WindowInsetsCompat.Type.statusBars()).top
     }
 
     /**
