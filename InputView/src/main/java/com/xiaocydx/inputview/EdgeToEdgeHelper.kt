@@ -6,23 +6,23 @@ import androidx.core.view.*
 import androidx.recyclerview.widget.RecyclerView
 
 /**
- * 提供帮助处理手势导航栏边到边的函数
+ * 提供实现边到边的辅助函数
  *
  * @author xcc
  * @date 2023/1/10
  */
-interface EditorHelper {
+interface EdgeToEdgeHelper {
 
     /**
      * 当分发到[WindowInsetsCompat]时，调用[block]
      *
-     * 以处理[RecyclerView]的手势导航栏边到边为例：
+     * 以实现[RecyclerView]的手势导航栏边到边为例：
      * ```
      * // recyclerView.layoutParams.height的初始高度是固定值
      *
      * recyclerView.doOnApplyWindowInsets { _, insets, initialState ->
-     *     val supportGestureNavBarEdgeToEdge = recyclerView.supportGestureNavBarEdgeToEdge(insets)
      *     val navigationBarHeight = insets.getNavigationBarHeight()
+     *     val supportGestureNavBarEdgeToEdge = recyclerView.supportGestureNavBarEdgeToEdge(insets)
      *
      *     // 1. 若支持手势导航栏边到边，则增加高度，否则保持初始高度
      *     val height = when {
@@ -54,19 +54,21 @@ interface EditorHelper {
             block(view, insets, initialState)
             insets
         }
+        // 当view首次或再次附加到window时，可能错过insets分发,
+        // 因此主动申请insets分发，确保调用block完成视图初始化。
+        requestApplyInsetsOnAttach()
+    }
 
+    /**
+     * 当附加到window时，申请insets分发
+     */
+    fun View.requestApplyInsetsOnAttach() {
         if (isAttachedToWindow) {
             ViewCompat.requestApplyInsets(this)
         }
-
-        getTag(R.id.tag_view_request_apply_insets)
-            ?.let { it as? View.OnAttachStateChangeListener }
-            ?.let(::removeOnAttachStateChangeListener)
-
+        removeRequestApplyInsetsOnAttach()
         val listener = object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(view: View) {
-                // 当view首次或再次附加到Window时，可能错过WindowInsets分发,
-                // 因此主动申请WindowInsets分发，确保调用block完成视图初始化。
                 ViewCompat.requestApplyInsets(view)
             }
 
@@ -74,6 +76,22 @@ interface EditorHelper {
         }
         setTag(R.id.tag_view_request_apply_insets, listener)
         addOnAttachStateChangeListener(listener)
+    }
+
+    /**
+     * 移除[requestApplyInsetsOnAttach]的设置
+     */
+    fun View.removeRequestApplyInsetsOnAttach() {
+        getTag(R.id.tag_view_request_apply_insets)
+            ?.let { it as? View.OnAttachStateChangeListener }
+            ?.let(::removeOnAttachStateChangeListener)
+    }
+
+    /**
+     * 从[WindowInsetsCompat]获取状态栏的高度
+     */
+    fun WindowInsetsCompat.getStatusBarHeight(): Int {
+        return getInsets(WindowInsetsCompat.Type.statusBars()).bottom
     }
 
     /**
@@ -89,10 +107,16 @@ interface EditorHelper {
      * @return true表示支持，返回结果关联了`InputView.init()`的初始化配置。
      */
     fun View.supportGestureNavBarEdgeToEdge(insets: WindowInsetsCompat): Boolean {
-        val window = getOrFindViewTreeWindow()
-        return window?.run { insets.supportGestureNavBarEdgeToEdge } ?: false
+        return getOrFindViewTreeWindow()?.run { insets.supportGestureNavBarEdgeToEdge } ?: false
     }
+
+    companion object : EdgeToEdgeHelper
 }
+
+/**
+ * 不需要实现[EdgeToEdgeHelper]的便捷函数
+ */
+inline fun <R> withEdgeToEdgeHelper(block: EdgeToEdgeHelper.() -> R): R = with(EdgeToEdgeHelper, block)
 
 /**
  * 视图的初始状态

@@ -1,6 +1,5 @@
 package com.xiaocydx.inputview
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
@@ -25,7 +24,6 @@ class MessageEditorAdapter : EditorAdapter<MessageEditor>() {
 
     override fun isIme(editor: MessageEditor): Boolean = editor === IME
 
-    @SuppressLint("SetTextI18n")
     override fun onCreateView(parent: ViewGroup, editor: MessageEditor): View? = when (editor) {
         IME, VOICE -> null
         // EMOJI -> GestureNavBarEdgeToEdgeRecyclerView(parent.context)
@@ -43,9 +41,9 @@ enum class MessageEditor : Editor {
 }
 
 /**
- * 处理手势导航栏边到边的[RecyclerView]示例代码
+ * 实现[RecyclerView]的手势导航栏边到边示例代码
  */
-private class GestureNavBarEdgeToEdgeRecyclerView(context: Context) : RecyclerView(context), EditorHelper {
+private class GestureNavBarEdgeToEdgeRecyclerView(context: Context) : RecyclerView(context) {
 
     init {
         withLayoutParams(matchParent, 350.dp)
@@ -66,14 +64,11 @@ private class GestureNavBarEdgeToEdgeRecyclerView(context: Context) : RecyclerVi
         setupWindowInsetsHandler()
     }
 
-    /**
-     * 处理手势导航栏边到边的过程
-     */
-    private fun setupWindowInsetsHandler() {
+    private fun setupWindowInsetsHandler() = withEdgeToEdgeHelper {
         // layoutParams.height初始高度是350.dp
         doOnApplyWindowInsets { view, insets, initialState ->
-            val supportGestureNavBarEdgeToEdge = view.supportGestureNavBarEdgeToEdge(insets)
             val navigationBarHeight = insets.getNavigationBarHeight()
+            val supportGestureNavBarEdgeToEdge = view.supportGestureNavBarEdgeToEdge(insets)
 
             // 1. 若支持手势导航栏边到边，则增加高度，否则保持初始高度
             val height = when {
