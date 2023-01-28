@@ -38,19 +38,19 @@ abstract class EditorAnimator(
     private val durationMillis: Long = ANIMATION_DURATION_MILLIS,
 
     /**
-     * 动画偏移值插值器
+     * 动画插值器
      *
      * 显示或隐藏IME运行的动画：
      * 1. Android 11以下兼容代码的`interpolator = DecelerateInterpolator()`，
-     * 内部实现不会将IME动画的插值器修改为[offsetInterpolator]，
+     * 内部实现不会将IME动画的插值器修改为[interpolator]，
      * 原因是Android 11以下无法跟IME完全贴合，保持兼容代码即可。
      *
      * 2. Android 11及以上系统代码的`interpolator = PathInterpolator(0.2f, 0f, 0f, 1f)`，
-     * 内部实现会尝试将IME动画的插值器修改为[offsetInterpolator]。
+     * 内部实现会尝试将IME动画的插值器修改为[interpolator]。
      *
-     * **注意**：实际动画偏移值插值器以[AnimationState.offsetInterpolator]为准。
+     * **注意**：实际动画插值器以[AnimationState.interpolator]为准。
      */
-    private val offsetInterpolator: Interpolator = ANIMATION_OFFSET_INTERPOLATOR
+    private val interpolator: Interpolator = ANIMATION_INTERPOLATOR
 ) {
     private var host: EditorHost? = null
     private var insets: WindowInsetsCompat? = null
@@ -192,7 +192,7 @@ abstract class EditorAnimator(
         host.addEditorChangedListener(animationDispatcher)
         host.setOnApplyWindowInsetsListener(animationDispatcher)
         host.takeIf { canRunAnimation }?.setWindowInsetsAnimationCallback(
-            durationMillis, offsetInterpolator, animationDispatcher
+            durationMillis, interpolator, animationDispatcher
         )
     }
 
@@ -201,7 +201,7 @@ abstract class EditorAnimator(
         host.removeEditorChangedListener(animationDispatcher)
         host.setOnApplyWindowInsetsListener(null)
         host.takeIf { canRunAnimation }?.setWindowInsetsAnimationCallback(
-            durationMillis, offsetInterpolator, callback = null
+            durationMillis, interpolator, callback = null
         )
         this.host = null
     }
@@ -341,7 +341,7 @@ abstract class EditorAnimator(
         override val navBarOffset: Int get() = host?.navBarOffset ?: 0
         override var animatedFraction: Float = 0f; private set
         override var durationMillis: Long = 0; private set
-        override lateinit var offsetInterpolator: Interpolator; private set
+        override lateinit var interpolator: Interpolator; private set
 
         val willRunInsetsAnimation = isIme(previous) || isIme(current)
         var insetsAnimation: WindowInsetsAnimationCompat? = null; private set
@@ -353,7 +353,7 @@ abstract class EditorAnimator(
 
         init {
             durationMillis = this@EditorAnimator.durationMillis
-            offsetInterpolator = this@EditorAnimator.offsetInterpolator
+            interpolator = this@EditorAnimator.interpolator
         }
 
         override fun isIme(editor: Editor?): Boolean {
@@ -424,7 +424,7 @@ abstract class EditorAnimator(
                 animatedFraction = simpleAnimation?.animatedFraction
                         ?: insetsAnimation?.fraction ?: 0f
             }
-            val currentOffset = startOffset + (endOffset - startOffset) * offsetFraction
+            val currentOffset = startOffset + (endOffset - startOffset) * interpolatedFraction
             setAnimationOffset(currentOffset = currentOffset.toInt())
         }
 
@@ -436,13 +436,13 @@ abstract class EditorAnimator(
         fun setInsetsAnimation(animation: WindowInsetsAnimationCompat) {
             insetsAnimation = animation
             durationMillis = animation.durationMillis
-            animation.interpolator?.let { offsetInterpolator = it }
+            animation.interpolator?.let { interpolator = it }
         }
 
         fun setSimpleAnimation(animation: ValueAnimator) {
             simpleAnimation = animation
             durationMillis = animation.duration
-            offsetInterpolator = this@EditorAnimator.offsetInterpolator
+            interpolator = this@EditorAnimator.interpolator
         }
 
         fun setPreDrawRunSimpleAnimation(action: () -> Unit) {
@@ -478,7 +478,7 @@ abstract class EditorAnimator(
     companion object {
         private const val NO_VALUE = -1
         internal const val ANIMATION_DURATION_MILLIS = 200L
-        internal val ANIMATION_OFFSET_INTERPOLATOR = DecelerateInterpolator()
+        internal val ANIMATION_INTERPOLATOR = DecelerateInterpolator()
     }
 }
 
@@ -520,7 +520,7 @@ interface AnimationState {
     val endOffset: Int
 
     /**
-     * 基于[offsetInterpolator]计算的动画当前偏移值
+     * 基于[interpolator]计算的动画当前偏移值
      */
     @get:IntRange(from = 0)
     val currentOffset: Int
@@ -540,7 +540,7 @@ interface AnimationState {
     /**
      * 计算[currentOffset]的插值器
      */
-    val offsetInterpolator: Interpolator
+    val interpolator: Interpolator
 
     /**
      * 动画起始状态和结束状态之间的原始分数进度
@@ -552,8 +552,8 @@ interface AnimationState {
      * [startOffset]和[endOffset]之间的分数进度
      */
     @get:FloatRange(from = 0.0, to = 1.0)
-    val offsetFraction: Float
-        get() = offsetInterpolator.getInterpolation(animatedFraction)
+    val interpolatedFraction: Float
+        get() = interpolator.getInterpolation(animatedFraction)
 
     /**
      * [editor]是否为IME

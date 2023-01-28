@@ -70,19 +70,19 @@ open class FadeEditorAnimator(
     durationMillis: Long = ANIMATION_DURATION_MILLIS,
 
     /**
-     * 动画偏移值插值器
+     * 动画插值器
      *
      * 显示或隐藏IME运行的动画：
      * 1. Android 11以下兼容代码的`interpolator = DecelerateInterpolator()`，
-     * 内部实现不会将IME动画的插值器修改为[offsetInterpolator]，
+     * 内部实现不会将IME动画的插值器修改为[interpolator]，
      * 原因是Android 11以下无法跟IME完全贴合，保持兼容代码即可。
      *
      * 2. Android 11及以上系统代码的`interpolator = PathInterpolator(0.2f, 0f, 0f, 1f)`，
-     * 内部实现会尝试将IME动画的插值器修改为[offsetInterpolator]。
+     * 内部实现会尝试将IME动画的插值器修改为[interpolator]。
      *
-     * **注意**：实际动画偏移值插值器以[AnimationState.offsetInterpolator]为准。
+     * **注意**：实际动画插值器以[AnimationState.interpolator]为准。
      */
-    interpolator: Interpolator = ANIMATION_OFFSET_INTERPOLATOR
+    interpolator: Interpolator = ANIMATION_INTERPOLATOR
 ) : EditorAnimator(durationMillis, interpolator) {
 
     init {
