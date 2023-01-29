@@ -14,6 +14,18 @@ import androidx.recyclerview.widget.RecyclerView
 interface EdgeToEdgeHelper {
 
     /**
+     * 获取状态栏高度
+     */
+    val WindowInsetsCompat.statusBarHeight: Int
+        get() = getInsets(WindowInsetsCompat.Type.statusBars()).top
+
+    /**
+     * 获取导航栏高度
+     */
+    val WindowInsetsCompat.navigationBarHeight: Int
+        get() = getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+
+    /**
      * 当分发到[WindowInsetsCompat]时，调用[block]
      *
      * 以实现[RecyclerView]的手势导航栏边到边为例：
@@ -21,7 +33,7 @@ interface EdgeToEdgeHelper {
      * // recyclerView.layoutParams.height的初始高度是固定值
      *
      * recyclerView.doOnApplyWindowInsets { _, insets, initialState ->
-     *     val navigationBarHeight = insets.getNavigationBarHeight()
+     *     val navigationBarHeight = insets.navigationBarHeight
      *     val supportGestureNavBarEdgeToEdge = recyclerView.supportGestureNavBarEdgeToEdge(insets)
      *
      *     // 1. 若支持手势导航栏边到边，则增加高度，否则保持初始高度
@@ -85,20 +97,6 @@ interface EdgeToEdgeHelper {
         getTag(R.id.tag_view_request_apply_insets)
             ?.let { it as? View.OnAttachStateChangeListener }
             ?.let(::removeOnAttachStateChangeListener)
-    }
-
-    /**
-     * 从[WindowInsetsCompat]获取状态栏的高度
-     */
-    fun WindowInsetsCompat.getStatusBarHeight(): Int {
-        return getInsets(WindowInsetsCompat.Type.statusBars()).top
-    }
-
-    /**
-     * 从[WindowInsetsCompat]获取导航栏的高度
-     */
-    fun WindowInsetsCompat.getNavigationBarHeight(): Int {
-        return getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
     }
 
     /**
