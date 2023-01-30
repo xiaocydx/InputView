@@ -6,6 +6,7 @@ import android.graphics.*
 import android.view.*
 import android.view.ViewGroup.MarginLayoutParams
 import android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
+import android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
 import android.view.animation.Interpolator
 import androidx.annotation.CheckResult
 import androidx.core.graphics.Insets
@@ -129,24 +130,38 @@ internal class ViewTreeWindow(
                 WindowInsetsCompat.CONSUMED
             } ?: applyInsets
         }
-
-        // SOFT_INPUT_ADJUST_RESIZE用于兼容Android各版本IME的insets分发
-        @Suppress("DEPRECATION")
-        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         window.decorView.viewTreeWindow = this
     }
 
+    /**
+     * 检查Android 11以下`ViewRootImpl.dispatchApplyInsets()`的兼容性
+     *
+     * 以Android 10显示IME为例：
+     * 1. IME进程调用`WindowManagerService.setInsetsWindow()`，
+     * 进而调用`DisplayPolicy.layoutWindowLw()`计算各项`insets`。
+     *
+     * 2. `window.attributes.flags`包含[FLAG_FULLSCREEN]，
+     * 或`window.attributes.softInputMode`不是[SOFT_INPUT_ADJUST_RESIZE]，
+     * `DisplayPolicy.layoutWindowLw()`计算的`contentInsets`不会减去IME的数值。
+     *
+     * 3. `WindowManagerService`通知应用进程的`ViewRootImpl`重新设置`mPendingContentInsets`的数值，
+     * 并申请下一帧布局，下一帧由于`mPendingContentInsets`跟`mAttachInfo.mContentInsets`的数值相等，
+     * 因此不调用`ViewRootImpl.dispatchApplyInsets()`。
+     */
     private fun Window.checkDispatchApplyWindowInsetsCompatibility() {
         check(decorView.viewTreeWindow == null) { "InputView.init()只能调用一次" }
         check(!isFloating) {
-            "InputView需要主题的windowIsFloating = false，否则会导致无法自行处理WindowInsets分发"
+            "InputView需要主题的windowIsFloating = false，" +
+                    "否则会导致视图树无法自行处理WindowInsets分发"
         }
         @Suppress("DEPRECATION")
         check(attributes.flags and FLAG_FULLSCREEN == 0) {
             "InputView需要主题的windowFullscreen = false，" +
                     "或window.attributes.flags不包含FLAG_FULLSCREEN，" +
-                    "否则会导致Android 11以下的WindowInsets分发异常"
+                    "否则会导致Android 11以下显示或隐藏IME不进行WindowInsets分发"
         }
+        @Suppress("DEPRECATION")
+        window.setSoftInputMode(SOFT_INPUT_ADJUST_RESIZE)
     }
 
     private fun WindowInsetsCompat.toApplyInsets(): WindowInsetsCompat {
