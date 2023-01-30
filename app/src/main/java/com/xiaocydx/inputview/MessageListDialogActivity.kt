@@ -3,6 +3,7 @@ package com.xiaocydx.inputview
 import android.app.Dialog
 import android.content.Context
 import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.View
 import android.view.Window
@@ -14,6 +15,7 @@ import androidx.fragment.app.DialogFragment
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.bottomsheet.SimpleBottomSheetCallback
 import com.xiaocydx.inputview.databinding.ActivityMessageListDialogBinding
 import com.xiaocydx.inputview.databinding.MessageListBinding
 import com.xiaocydx.sample.onClick
@@ -142,21 +144,20 @@ class MessageListBottomSheetDialog(
         window: Window,
         private val color: Int,
         private val binding: MessageListBinding
-    ) : OnApplyWindowInsetsListener, BottomSheetBehavior.BottomSheetCallback() {
+    ) : OnApplyWindowInsetsListener, SimpleBottomSheetCallback() {
+        private var background: Drawable? = null
         private var lastInsets = WindowInsetsCompat.CONSUMED
         private val controller = WindowInsetsControllerCompat(window, window.decorView)
+
+        init {
+            controller.isAppearanceLightStatusBars = true
+        }
 
         /**
          * [lastInsets]用于减少[ViewCompat.getRootWindowInsets]的调用次数
          */
         override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
-            val isFirst = lastInsets === WindowInsetsCompat.CONSUMED
             lastInsets = insets
-            if (isFirst) {
-                val bottomSheet = binding.root.parent as View
-                updatePadding(bottomSheet)
-                bottomSheet.doOnLayout(::setupBackground)
-            }
             return insets
         }
 
@@ -169,16 +170,26 @@ class MessageListBottomSheetDialog(
             updatePadding(bottomSheet)
         }
 
+        override fun onLayout(bottomSheet: View) {
+            updatePadding(bottomSheet)
+            setupBackground(bottomSheet)
+        }
+
         /**
-         * 用[ColorDrawable]替换[bottomSheet]默认的`background`，并减小过度绘制范围
+         * 用[ColorDrawable]替换[bottomSheet]的默认`background`，并减小过度绘制范围
          */
         private fun setupBackground(bottomSheet: View) {
-            bottomSheet.background = object : ColorDrawable(color) {
-                override fun setBounds(left: Int, top: Int, right: Int, bottom: Int) {
-                    val statusBars = lastInsets.getInsets(WindowInsetsCompat.Type.statusBars())
-                    val finalBottom = bottom.coerceAtMost(statusBars.top)
-                    super.setBounds(left, top, right, finalBottom)
+            if (background == null) {
+                background = object : ColorDrawable(color) {
+                    override fun setBounds(left: Int, top: Int, right: Int, bottom: Int) {
+                        val statusBars = lastInsets.getInsets(WindowInsetsCompat.Type.statusBars())
+                        val finalBottom = bottom.coerceAtMost(statusBars.top)
+                        super.setBounds(left, top, right, finalBottom)
+                    }
                 }
+            }
+            if (bottomSheet.background !== background) {
+                bottomSheet.background = background
             }
         }
 
