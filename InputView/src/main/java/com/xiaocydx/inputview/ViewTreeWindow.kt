@@ -114,13 +114,14 @@ internal class ViewTreeWindow(
 
     fun attach() {
         window.checkDispatchApplyWindowInsetsCompatibility()
+        val contentRef = (window.decorView as ViewGroup).children
+            .firstOrNull { it is ViewGroup }?.let(::WeakReference)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        val content = (window.decorView as ViewGroup).children.first { it is ViewGroup }
         ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
             val applyInsets = insets.toApplyInsets()
             val decorInsets = applyInsets.toDecorInsets()
             ViewCompat.onApplyWindowInsets(v, decorInsets)
-            content.updateMargins(
+            contentRef?.get()?.updateMargins(
                 top = decorInsets.statusBarHeight,
                 bottom = decorInsets.navigationBarHeight
             )
