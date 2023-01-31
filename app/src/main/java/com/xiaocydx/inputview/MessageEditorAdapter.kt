@@ -64,11 +64,11 @@ private class GestureNavBarEdgeToEdgeRecyclerView(context: Context) : RecyclerVi
         setupGestureNavBarEdgeToEdge()
     }
 
-    private fun setupGestureNavBarEdgeToEdge() = withEdgeToEdgeHelper {
+    private fun setupGestureNavBarEdgeToEdge() = EdgeToEdgeHelper {
         // layoutParams.height初始高度是350.dp
         doOnApplyWindowInsets { view, insets, initialState ->
             val navigationBarHeight = insets.navigationBarHeight
-            val supportGestureNavBarEdgeToEdge = view.supportGestureNavBarEdgeToEdge(insets)
+            val supportGestureNavBarEdgeToEdge = insets.supportGestureNavBarEdgeToEdge(view)
 
             // 1. 若支持手势导航栏边到边，则增加高度，否则保持初始高度
             val height = when {

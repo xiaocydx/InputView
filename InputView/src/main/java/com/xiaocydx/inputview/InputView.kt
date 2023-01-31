@@ -134,7 +134,9 @@ class InputView @JvmOverloads constructor(
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         if (window == null) {
-            window = findViewTreeWindow()
+            window = requireNotNull(findViewTreeWindow()) {
+                "需要调用InputView.init()初始化InputView所需的配置"
+            }
             window?.also(host::onAttachedToWindow)
             window?.also { editTextHolder?.onAttachedToWindow(it) }
         }

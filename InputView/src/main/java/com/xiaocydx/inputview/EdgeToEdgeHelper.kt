@@ -1,8 +1,12 @@
 package com.xiaocydx.inputview
 
 import android.view.View
+import android.view.ViewGroup
+import androidx.annotation.CheckResult
 import androidx.annotation.Px
+import androidx.core.graphics.Insets
 import androidx.core.view.*
+import androidx.core.view.WindowInsetsCompat.Type.*
 import androidx.recyclerview.widget.RecyclerView
 
 /**
@@ -17,13 +21,41 @@ interface EdgeToEdgeHelper {
      * 获取状态栏高度
      */
     val WindowInsetsCompat.statusBarHeight: Int
-        get() = getInsets(WindowInsetsCompat.Type.statusBars()).top
+        get() = getInsets(statusBars()).top
 
     /**
      * 获取导航栏高度
      */
     val WindowInsetsCompat.navigationBarHeight: Int
-        get() = getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+        get() = getInsets(navigationBars()).bottom
+
+    /**
+     * 消费指定的[InsetsType]类型集
+     */
+    @CheckResult
+    fun WindowInsetsCompat.consume(@InsetsType typeMask: Int): WindowInsetsCompat {
+        if (typeMask <= 0) return this
+        return WindowInsetsCompat.Builder(this).setInsets(typeMask, Insets.NONE).build()
+    }
+
+    /**
+     * 是否为手势导航栏
+     */
+    fun WindowInsetsCompat.isGestureNavigationBar(view: View): Boolean {
+        val threshold = (24 * view.resources.displayMetrics.density).toInt()
+        val stableHeight = getInsetsIgnoringVisibility(navigationBars()).bottom
+        return stableHeight <= threshold.coerceAtLeast(66)
+    }
+
+    /**
+     * 是否支持手势导航栏边到边
+     *
+     * @return 返回结果关联了`InputView.init()`的初始化配置。
+     */
+    fun WindowInsetsCompat.supportGestureNavBarEdgeToEdge(view: View): Boolean {
+        val window = view.getOrFindViewTreeWindow() ?: return false
+        return window.gestureNavBarEdgeToEdge && isGestureNavigationBar(view)
+    }
 
     /**
      * 当分发到[WindowInsetsCompat]时，调用[block]
@@ -34,7 +66,7 @@ interface EdgeToEdgeHelper {
      *
      * recyclerView.doOnApplyWindowInsets { _, insets, initialState ->
      *     val navigationBarHeight = insets.navigationBarHeight
-     *     val supportGestureNavBarEdgeToEdge = recyclerView.supportGestureNavBarEdgeToEdge(insets)
+     *     val supportGestureNavBarEdgeToEdge = insets.supportGestureNavBarEdgeToEdge(recyclerView)
      *
      *     // 1. 若支持手势导航栏边到边，则增加高度，否则保持初始高度
      *     val height = when {
@@ -100,12 +132,19 @@ interface EdgeToEdgeHelper {
     }
 
     /**
-     * 是否支持手势导航栏边到边
-     *
-     * @return true表示支持，返回结果关联了`InputView.init()`的初始化配置。
+     * 更新`margins`，有改变才申请重新布局
      */
-    fun View.supportGestureNavBarEdgeToEdge(insets: WindowInsetsCompat): Boolean {
-        return getOrFindViewTreeWindow()?.run { insets.supportGestureNavBarEdgeToEdge } ?: false
+    fun View.updateMargins(
+        left: Int = marginLeft,
+        top: Int = marginTop,
+        right: Int = marginRight,
+        bottom: Int = marginBottom
+    ) {
+        val params = layoutParams as? ViewGroup.MarginLayoutParams ?: return
+        val changed = left != marginLeft || top != marginTop
+                || right != marginTop || bottom != marginBottom
+        params.setMargins(left, top, right, bottom)
+        if (changed) layoutParams = params
     }
 
     companion object : EdgeToEdgeHelper
@@ -114,7 +153,8 @@ interface EdgeToEdgeHelper {
 /**
  * 不需要实现[EdgeToEdgeHelper]的便捷函数
  */
-inline fun <R> withEdgeToEdgeHelper(block: EdgeToEdgeHelper.() -> R): R = with(EdgeToEdgeHelper, block)
+@Suppress("FunctionName")
+inline fun <R> EdgeToEdgeHelper(block: EdgeToEdgeHelper.() -> R): R = with(EdgeToEdgeHelper, block)
 
 /**
  * 视图的初始状态
@@ -130,7 +170,7 @@ data class ViewState internal constructor(
      */
     val paddings: ViewPaddings,
 ) {
-    internal constructor(view: View) : this(ViewParams(view), ViewPaddings(view))
+    constructor(view: View) : this(ViewParams(view), ViewPaddings(view))
 }
 
 /**
