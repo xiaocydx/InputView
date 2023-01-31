@@ -30,18 +30,8 @@ internal class EditorView(context: Context) : FrameLayout(context) {
             changeRecord = ChangeRecord()
         }
 
-        ime = null
+        ime = checkedAdapter()?.ime
         current = null
-        val checkedAdapter = checkedAdapter() ?: return
-        var imeCount = 0
-        adapter.editors.forEach {
-            if (checkedAdapter.isIme(it)) {
-                ime = it
-                imeCount++
-            }
-        }
-        require(imeCount > 0) { "editors不包含表示IME的Editor" }
-        require(imeCount == 1) { "editors包含${imeCount}个表示IME的Editor" }
     }
 
     fun setEditText(editText: EditTextHolder?) {

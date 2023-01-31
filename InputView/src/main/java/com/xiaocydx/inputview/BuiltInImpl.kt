@@ -26,9 +26,7 @@ object Ime : Editor
  * ```
  */
 class ImeAdapter : EditorAdapter<Ime>() {
-    override val editors: List<Ime> = listOf(Ime)
-
-    override fun isIme(editor: Ime): Boolean = editor === Ime
+    override val ime: Ime = Ime
 
     override fun onCreateView(parent: ViewGroup, editor: Ime): View? = null
 }

@@ -33,30 +33,6 @@ class EditorViewTest {
     }
 
     @Test
-    fun imeCount_Throw_Exception() {
-        scenario.onActivity {
-            val editorView = EditorView(it)
-            var result = runCatching {
-                editorView.setAdapter(object : EditorAdapter<Ime>() {
-                    override val editors: List<Ime> = listOf()
-                    override fun isIme(editor: Ime): Boolean = false
-                    override fun onCreateView(parent: ViewGroup, editor: Ime): View? = null
-                })
-            }
-            assertThat(result.exceptionOrNull()).isNotNull()
-
-            result = runCatching {
-                editorView.setAdapter(object : EditorAdapter<Ime>() {
-                    override val editors: List<Ime> = listOf(Ime, Ime)
-                    override fun isIme(editor: Ime): Boolean = editor === Ime
-                    override fun onCreateView(parent: ViewGroup, editor: Ime): View? = null
-                })
-            }
-            assertThat(result.exceptionOrNull()).isNotNull()
-        }
-    }
-
-    @Test
     fun showChecked_Success() {
         scenario.onActivity {
             val editorView = EditorView(it)
@@ -137,9 +113,7 @@ class EditorViewTest {
     }
 
     private class TestEditorAdapter : EditorAdapter<TestEditor>() {
-        override val editors: List<TestEditor> = listOf(TestEditor.IME, TestEditor.A, TestEditor.B)
-
-        override fun isIme(editor: TestEditor): Boolean = editor === TestEditor.IME
+        override val ime: TestEditor = TestEditor.IME
 
         override fun onCreateView(parent: ViewGroup, editor: TestEditor): View? = when (editor) {
             TestEditor.IME -> null

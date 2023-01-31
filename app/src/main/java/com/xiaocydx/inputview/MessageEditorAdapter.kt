@@ -20,9 +20,7 @@ import com.xiaocydx.sample.withLayoutParams
  * @date 2023/1/8
  */
 class MessageEditorAdapter : EditorAdapter<MessageEditor>() {
-    override val editors: List<MessageEditor> = listOf(IME, VOICE, EMOJI, EXTRA)
-
-    override fun isIme(editor: MessageEditor): Boolean = editor === IME
+    override val ime: MessageEditor = IME
 
     override fun onCreateView(parent: ViewGroup, editor: MessageEditor): View? = when (editor) {
         IME, VOICE -> null

@@ -12,9 +12,7 @@ import android.view.ViewGroup
  * }
  *
  * class MessageEditorAdapter : EditorAdapter<MessageEditor>() {
- *     override val editors: List<MessageEditor> = listOf(IME, VOICE, EMOJI)
- *
- *     override fun isIme(editor: MessageEditor): Boolean = editor === IME
+ *     override val ime: MessageEditor = IME
  *
  *     override fun onCreateView(parent: ViewGroup, editor: MessageEditor): View? {
  *         return when(editor) {
@@ -34,19 +32,12 @@ abstract class EditorAdapter<T : Editor> {
     internal var host: EditorHost? = null
 
     /**
-     * [InputView]编辑区的[Editor]集合
+     * 表示IME的`editor`
      */
-    abstract val editors: List<T>
+    abstract val ime: T
 
     /**
-     * [editor]是否为IME
-     *
-     * **注意**：[editors]只能有一个[Editor]表示IME，否则初始化时抛出异常。
-     */
-    abstract fun isIme(editor: T): Boolean
-
-    /**
-     * 创建[editor]的视图，返回`null`表示不需要视图，当[editor]为IME时，该函数不会被调用
+     * 创建[editor]的视图，返回`null`表示不需要视图，当[editor]表示IME时，该函数不会被调用
      */
     abstract fun onCreateView(parent: ViewGroup, editor: T): View?
 
