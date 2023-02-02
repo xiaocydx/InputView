@@ -9,6 +9,8 @@ import android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
 import android.view.animation.Interpolator
 import androidx.core.view.*
 import androidx.core.view.WindowInsetsCompat.Type.*
+import com.xiaocydx.inputview.compat.modifyImeAnimationCompat
+import com.xiaocydx.inputview.compat.restoreImeAnimationCompat
 import java.lang.ref.WeakReference
 
 /**

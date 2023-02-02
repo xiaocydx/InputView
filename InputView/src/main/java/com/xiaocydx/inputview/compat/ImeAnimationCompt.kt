@@ -1,14 +1,14 @@
-package com.xiaocydx.inputview
+package com.xiaocydx.inputview.compat
 
+import android.annotation.SuppressLint
 import android.os.Build
 import android.util.Log
 import android.view.*
 import android.view.animation.Interpolator
 import androidx.annotation.RequiresApi
-import androidx.annotation.UiThread
 import androidx.core.view.*
-import org.lsposed.hiddenapibypass.HiddenApiBypass
-import java.lang.reflect.Field
+import androidx.core.view.WindowInsetsCompat.Type.ime
+import com.xiaocydx.inputview.R
 
 /**
  * 修改Android 11及以上IME动画的`durationMillis`和`interpolator`
@@ -127,22 +127,19 @@ private class ImeAnimationCallback(
     private val delegate: WindowInsetsAnimationCompat.Callback?,
     dispatchMode: Int = delegate?.dispatchMode ?: DISPATCH_MODE_CONTINUE_ON_SUBTREE
 ) : WindowInsetsAnimationCompat.Callback(dispatchMode) {
-    private val cache: InsetsReflectCache
-        get() = cacheThreadLocal.get()!!
     private val trackers = mutableMapOf<WindowInsetsAnimationCompat, Tracker>()
 
     /**
      * 修改[WindowInsetsAnimationCompat]中[WindowInsetsAnimation]的属性值，
      * 确保接下来对视图树分发的[WindowInsetsAnimation]，是修改后的属性值。
      */
-    override fun onPrepare(animation: WindowInsetsAnimationCompat): Unit = with(cache) {
+    override fun onPrepare(animation: WindowInsetsAnimationCompat) {
         val tracker = getTracker(animation)
         if (tracker.step === Step.ON_PREPARE) {
             val wrapped = animation.getWrapped()
-            ensureInsetsAnimation(wrapped)
-            insetsAnimation?.apply {
-                modifyInterpolatorIfNecessary { mInterpolatorField.set(wrapped, it) }
-                modifyDurationMillisIfNecessary { mDurationMillisField.set(wrapped, it) }
+            InsetsReflectCache.insetsAnimation?.apply {
+                tracker.modifyInterpolatorIfNecessary { mInterpolatorField.set(wrapped, it) }
+                tracker.modifyDurationMillisIfNecessary { mDurationMillisField.set(wrapped, it) }
             }
             tracker.checkOnPrepare(wrapped)
         }
@@ -170,11 +167,10 @@ private class ImeAnimationCallback(
     override fun onStart(
         animation: WindowInsetsAnimationCompat,
         bounds: WindowInsetsAnimationCompat.BoundsCompat
-    ): WindowInsetsAnimationCompat.BoundsCompat = with(cache) {
+    ): WindowInsetsAnimationCompat.BoundsCompat = with(InsetsReflectCache) {
         val tracker = getTracker(animation)
         if (tracker.step === Step.ON_START) {
             val wrapped = animation.getWrapped()
-            ensureInsetsController(controller)
             val runningAnimations = insetsController?.mRunningAnimationsField
                 ?.get(controller)?.let { it as? ArrayList<*> } ?: emptyList<Any>()
 
@@ -182,32 +178,21 @@ private class ImeAnimationCallback(
             for (index in runningAnimations.indices) {
                 val runningAnimation = runningAnimations[index]
                 val runner = insetsController?.runnerField?.get(runningAnimation)
-                ensureInsetsAnimationRunner(runner)
                 val target = insetsAnimationRunner?.mAnimationField?.get(runner)
                 if (target !== wrapped) continue
 
                 listener = insetsAnimationRunner?.mListenerField?.get(runner) ?: continue
-                ensureAnimationControlListener(listener)
-                modifyInterpolatorIfNecessary {
-                    insetsController?.syncImeInterpolator?.set(null, it)
+                tracker.modifyInterpolatorIfNecessary {
+                    insetsController?.syncImeInterpolatorField?.set(null, it)
                 }
-                modifyDurationMillisIfNecessary {
+                tracker.modifyDurationMillisIfNecessary {
                     animationControlListener?.mDurationMsField?.set(listener, it)
                 }
                 break
             }
-
-            if (listener != null && modifyInterpolatorIfNecessary()) {
-                // 将恢复操作插到下一帧动画更新之前，尽可能减少修改静态变量造成的影响
-                Choreographer.getInstance().postFrameCallback {
-                    // 恢复InsetsController.SYNC_IME_INTERPOLATOR原本的值
-                    tracker.restoreSyncImeInterpolator()
-                }
-            }
-
             tracker.checkOnStart(wrapped, listener)
         }
-        delegate?.onStart(animation, bounds) ?: bounds
+        return delegate?.onStart(animation, bounds) ?: bounds
     }
 
     override fun onProgress(
@@ -231,19 +216,10 @@ private class ImeAnimationCallback(
         return tracker
     }
 
-    private fun WindowInsetsAnimationCompat.getWrapped(): WindowInsetsAnimation? = cache.run {
+    private fun WindowInsetsAnimationCompat.getWrapped() = InsetsReflectCache.run {
         val animation = this@getWrapped
-        ensureInsetsAnimationCompat(animation)
         val impl = insetsAnimationCompat?.mImplField?.get(animation) ?: return null
-        return insetsAnimationCompat?.mWrappedField?.get(impl) as? WindowInsetsAnimation
-    }
-
-    private inline fun modifyInterpolatorIfNecessary(action: (Interpolator) -> Unit = {}): Boolean {
-        return interpolator?.apply(action) != null
-    }
-
-    private inline fun modifyDurationMillisIfNecessary(action: (Long) -> Unit = {}): Boolean {
-        return durationMillis.takeIf { it > NO_VALUE }?.apply(action) != null
+        insetsAnimationCompat?.mWrappedField?.get(impl) as? WindowInsetsAnimation
     }
 
     /**
@@ -252,11 +228,15 @@ private class ImeAnimationCallback(
     private inner class Tracker(private val animation: WindowInsetsAnimationCompat) {
         private val initialInterpolator = animation.interpolator
         private val initialDurationMillis = animation.durationMillis
+        private var modifyInterpolatorOutcome = false
+        private var modifyDurationMillisOutcome = false
         var step: Step = Step.COMPLETED
             private set
 
         init {
-            if (!animation.containsImeType()) {
+            if (!InsetsReflectCache.reflectSucceed) {
+                Log.d(TAG, "ReflectionCache反射失败，不做修改")
+            } else if (animation.typeMask and ime() == 0) {
                 Log.d(TAG, "WindowInsetsAnimationCompat不包含IME类型，不做修改")
             } else if (initialDurationMillis <= 0) {
                 Log.d(TAG, "兼容initialDurationMillis <= 0的场景，不做修改")
@@ -265,58 +245,68 @@ private class ImeAnimationCallback(
             }
         }
 
-        fun checkOnPrepare(wrapped: WindowInsetsAnimation?) {
-            assert(step === Step.ON_PREPARE)
-            var succeed = wrapped != null
-            val checkInterpolator = !modifyInterpolatorIfNecessary()
-                    || animation.interpolator === interpolator
-            val checkDurationMillis = !modifyDurationMillisIfNecessary()
-                    || animation.durationMillis == durationMillis
-            if (!checkInterpolator || !checkDurationMillis) {
-                succeed = false
-                wrapped?.let(::restoreInsetsAnimation)
+        inline fun modifyInterpolatorIfNecessary(action: (Interpolator) -> Boolean?) {
+            modifyInterpolatorOutcome = when (interpolator) {
+                null -> true
+                else -> action(interpolator) == true
             }
+        }
+
+        inline fun modifyDurationMillisIfNecessary(action: (Long) -> Boolean?) {
+            modifyDurationMillisOutcome = when {
+                durationMillis <= NO_VALUE -> true
+                else -> action(durationMillis) == true
+            }
+        }
+
+        fun checkOnPrepare(wrapped: WindowInsetsAnimation?) {
+            if (step !== Step.ON_PREPARE) return
+            val succeed = wrapped != null && consumeModifyOutcome()
+            if (!succeed) wrapped?.let(::restoreInsetsAnimation)
             if (succeed) step = Step.ON_START
             val outcome = if (succeed) "成功" else "失败"
             Log.d(TAG, "onPrepare()修改WindowInsetsAnimation$outcome")
         }
 
-        fun checkOnStart(wrapped: WindowInsetsAnimation?, listener: Any?): Unit = with(cache) {
-            assert(step === Step.ON_START)
-            var succeed = wrapped != null && listener != null
-            val checkInterpolator = !modifyInterpolatorIfNecessary()
-                    || insetsController?.syncImeInterpolator?.get(null) === interpolator
-            val checkDurationMillis = !modifyDurationMillisIfNecessary()
-                    || animationControlListener?.mDurationMsField?.get(listener) == durationMillis
-            if (!checkInterpolator || !checkDurationMillis) {
-                succeed = false
+        fun checkOnStart(wrapped: WindowInsetsAnimation?, listener: Any?) {
+            if (step !== Step.ON_START) return
+            val succeed = wrapped != null && listener != null && consumeModifyOutcome()
+            if (!succeed) {
                 wrapped?.let(::restoreInsetsAnimation)
                 listener?.let(::restoreControlListener)
                 restoreSyncImeInterpolator()
+            } else {
+                // 将恢复操作插到下一帧动画更新之前，尽可能减少修改静态变量造成的影响
+                Choreographer.getInstance().postFrameCallback { restoreSyncImeInterpolator() }
             }
             step = Step.COMPLETED
             val outcome = if (succeed) "成功" else "失败"
             Log.d(TAG, "onStart()修改InternalAnimationControlListener$outcome")
         }
 
-        fun restoreInsetsAnimation(wrapped: WindowInsetsAnimation): Unit = with(cache) {
-            insetsAnimation?.apply {
+        private fun consumeModifyOutcome(): Boolean {
+            val outcome = modifyInterpolatorOutcome && modifyDurationMillisOutcome
+            modifyInterpolatorOutcome = false
+            modifyDurationMillisOutcome = false
+            return outcome
+        }
+
+        private fun restoreInsetsAnimation(wrapped: WindowInsetsAnimation) {
+            InsetsReflectCache.insetsAnimation?.apply {
                 mInterpolatorField.set(wrapped, initialInterpolator)
                 mDurationMillisField.set(wrapped, initialDurationMillis)
             }
         }
 
-        fun restoreControlListener(listener: Any): Unit = with(cache) {
-            animationControlListener?.mDurationMsField?.set(listener, initialDurationMillis)
+        private fun restoreControlListener(listener: Any) {
+            InsetsReflectCache.animationControlListener
+                ?.mDurationMsField?.set(listener, initialDurationMillis)
         }
 
-        fun restoreSyncImeInterpolator(): Unit = with(cache) {
-            insetsController?.apply { syncImeInterpolator.set(null, initialSyncImeInterpolator) }
-        }
-
-        private fun WindowInsetsAnimationCompat.containsImeType(): Boolean {
-            val imeType = WindowInsetsCompat.Type.ime()
-            return typeMask and imeType == imeType
+        private fun restoreSyncImeInterpolator() {
+            InsetsReflectCache.insetsController?.apply {
+                syncImeInterpolatorField.set(null, initialSyncImeInterpolator)
+            }
         }
     }
 
@@ -325,104 +315,90 @@ private class ImeAnimationCallback(
     }
 }
 
-internal const val TAG = "ImeAnimationCallback"
+private const val TAG = "ImeAnimationCallback"
 
 private const val NO_VALUE = -1L
 
 @RequiresApi(30)
-private val cacheThreadLocal = object : ThreadLocal<InsetsReflectCache>() {
-    override fun initialValue(): InsetsReflectCache = InsetsReflectCache()
-}
-
-@UiThread
-@RequiresApi(30)
-private class InsetsReflectCache {
+@SuppressLint("PrivateApi")
+private object InsetsReflectCache : ReflectHelper {
     var insetsAnimation: WindowInsetsAnimationCache? = null; private set
     var insetsAnimationCompat: WindowInsetsAnimationCompatCache? = null; private set
     var insetsController: InsetsControllerCache? = null; private set
     var insetsAnimationRunner: InsetsAnimationControlImplCache? = null; private set
     var animationControlListener: InternalAnimationControlListenerCache? = null; private set
+    var reflectSucceed: Boolean = false; private set
 
-    fun ensureInsetsAnimation(obj: WindowInsetsAnimation?) {
-        if (insetsAnimation != null) return
-        val fields = obj?.javaClass?.let(::getInstanceFields)
+    init {
+        runCatching {
+            reflectInsetsAnimation()
+            reflectInsetsAnimationCompat()
+            reflectInsetsController()
+            reflectInsetsAnimationRunner()
+            reflectAnimationControlListener()
+            reflectSucceed = true
+        }.onFailure {
+            insetsAnimation = null
+            insetsAnimationCompat = null
+            insetsController = null
+            insetsAnimationRunner = null
+            animationControlListener = null
+        }
+    }
+
+    private fun reflectInsetsAnimation() {
+        val fields = WindowInsetsAnimation::class.java.declaredInstanceFields
         insetsAnimation = WindowInsetsAnimationCache(
-            mInterpolatorField = fields?.find(name = "mInterpolator").let(::FieldCache),
-            mDurationMillisField = fields?.find(name = "mDurationMillis").let(::FieldCache)
+            mInterpolatorField = fields.find(name = "mInterpolator").toCache(),
+            mDurationMillisField = fields.find(name = "mDurationMillis").toCache()
         )
     }
 
-    fun ensureInsetsAnimationCompat(obj: WindowInsetsAnimationCompat?) {
-        if (insetsAnimationCompat != null) return
-        val mImplField = runCatching {
-            obj?.javaClass?.getDeclaredField("mImpl")
-        }.getOrNull().let(::FieldCache)
+    private fun reflectInsetsAnimationCompat() {
+        val mImplField = WindowInsetsAnimationCompat::class.java
+            .getDeclaredField("mImpl").toCache()
+        val impl30Class = Class.forName(
+            "androidx.core.view.WindowInsetsAnimationCompat\$Impl30"
+        )
         insetsAnimationCompat = WindowInsetsAnimationCompatCache(
             mImplField = mImplField,
-            mWrappedField = runCatching {
-                mImplField.get(obj)?.javaClass?.getDeclaredField("mWrapped")
-            }.getOrNull().let(::FieldCache)
+            mWrappedField = impl30Class.getDeclaredField("mWrapped").toCache()
         )
     }
 
-    fun ensureInsetsController(obj: WindowInsetsController?) {
-        if (insetsController != null) return
-        val mRunningAnimationsField = obj?.javaClass?.let(::getInstanceFields)
-            ?.find(name = "mRunningAnimations").let(::FieldCache)
-        val runningAnimation = mRunningAnimationsField.get(obj)
-            ?.let { it as? ArrayList<*> }?.firstOrNull()
+    private fun reflectInsetsController() {
+        val insetsControllerClass = Class.forName("android.view.InsetsController")
+        val runningAnimationClass = Class.forName("android.view.InsetsController\$RunningAnimation")
+        val mRunningAnimationsField = insetsControllerClass
+            .declaredInstanceFields.find(name = "mRunningAnimations").toCache()
         insetsController = InsetsControllerCache(
-            syncImeInterpolator = obj?.javaClass?.let(::getStaticFields)
-                ?.find(name = "SYNC_IME_INTERPOLATOR").let(::FieldCache),
+            syncImeInterpolatorField = insetsControllerClass
+                .declaredStaticFields.find(name = "SYNC_IME_INTERPOLATOR").toCache(),
             mRunningAnimationsField = mRunningAnimationsField,
-            runnerField = runningAnimation?.javaClass?.let(::getInstanceFields)
-                ?.find(name = "runner").let(::FieldCache)
+            runnerField = runningAnimationClass
+                .declaredInstanceFields.find(name = "runner").toCache()
         )
     }
 
-    fun ensureInsetsAnimationRunner(obj: Any?) {
-        if (insetsAnimationRunner != null) return
-        val fields = obj?.javaClass?.let(::getInstanceFields)
+    private fun reflectInsetsAnimationRunner() {
+        val insetsAnimationRunnerClass = Class.forName(
+            "android.view.InsetsAnimationControlImpl"
+        )
+        val fields = insetsAnimationRunnerClass.declaredInstanceFields
         insetsAnimationRunner = InsetsAnimationControlImplCache(
-            mListenerField = fields?.find(name = "mListener").let(::FieldCache),
-            mAnimationField = fields?.find(name = "mAnimation").let(::FieldCache)
+            mListenerField = fields.find(name = "mListener").toCache(),
+            mAnimationField = fields.find(name = "mAnimation").toCache()
         )
     }
 
-    fun ensureAnimationControlListener(obj: Any?) {
-        if (animationControlListener != null) return
+    fun reflectAnimationControlListener() {
+        val animationControlListenerClass = Class.forName(
+            "android.view.InsetsController\$InternalAnimationControlListener"
+        )
         animationControlListener = InternalAnimationControlListenerCache(
-            mDurationMsField = obj?.javaClass?.let(::getInstanceFields)
-                ?.find(name = "mDurationMs").let(::FieldCache)
+            mDurationMsField = animationControlListenerClass
+                .declaredInstanceFields.find(name = "mDurationMs").toCache()
         )
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun getStaticFields(clazz: Class<*>): List<Field> {
-        val fields = runCatching { HiddenApiBypass.getStaticFields(clazz) }
-        return (fields.getOrNull() ?: emptyList<Field>()) as List<Field>
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun getInstanceFields(clazz: Class<*>): List<Field> {
-        val fields = runCatching { HiddenApiBypass.getInstanceFields(clazz) }
-        return (fields.getOrNull() ?: emptyList<Field>()) as List<Field>
-    }
-
-    private fun List<Field>.find(name: String): Field? = find { it.name == name }
-}
-
-private class FieldCache(private val field: Field?) {
-    init {
-        field?.isAccessible = true
-    }
-
-    fun get(obj: Any?): Any? {
-        return runCatching { field?.get(obj) }.getOrNull()
-    }
-
-    fun set(obj: Any?, value: Any?) {
-        runCatching { field?.set(obj, value) }
     }
 }
 
@@ -444,12 +420,10 @@ private class WindowInsetsAnimationCache(
  * ```
  * public final class WindowInsetsAnimationCompat {
  *     private Impl mImpl;
- * }
  *
- * @RequiresApi(30)
- * private static class Impl30 extends Impl {
- *     @NonNull
- *     private final WindowInsetsAnimation mWrapped;
+ *     private static class Impl30 extends Impl {
+ *         private final WindowInsetsAnimation mWrapped;
+ *     }
  * }
  * ```
  */
@@ -464,20 +438,20 @@ private class WindowInsetsAnimationCompatCache(
  *     private static final Interpolator SYNC_IME_INTERPOLATOR =
  *             new PathInterpolator(0.2f, 0f, 0f, 1f);
  *     private final ArrayList<RunningAnimation> mRunningAnimations = new ArrayList<>();
- * }
  *
- * private static class RunningAnimation {
- *     final InsetsAnimationControlRunner runner;
+ *     private static class RunningAnimation {
+ *         final InsetsAnimationControlRunner runner;
+ *     }
  * }
  * ```
  */
 @RequiresApi(30)
 private class InsetsControllerCache(
-    val syncImeInterpolator: FieldCache,
+    val syncImeInterpolatorField: FieldCache,
     val mRunningAnimationsField: FieldCache,
     val runnerField: FieldCache
 ) {
-    val initialSyncImeInterpolator: Any? = syncImeInterpolator.get(null)
+    val initialSyncImeInterpolator: Any? = syncImeInterpolatorField.get(null)
 }
 
 /**
