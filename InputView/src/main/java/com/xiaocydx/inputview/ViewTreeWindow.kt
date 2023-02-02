@@ -9,6 +9,7 @@ import android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
 import android.view.animation.Interpolator
 import androidx.core.view.*
 import androidx.core.view.WindowInsetsCompat.Type.*
+import com.xiaocydx.inputview.compat.isDispatchApplyInsetsFullscreenCompatEnabled
 import com.xiaocydx.inputview.compat.modifyImeAnimationCompat
 import com.xiaocydx.inputview.compat.restoreImeAnimationCompat
 import java.lang.ref.WeakReference
@@ -69,7 +70,7 @@ fun InputView.Companion.init(
  *
  * 该函数用于兼容已有的insets分发处理方案，例如单Activity多Fragment结构。
  *
- * **注意**：[window]需要通过[Window.checkDispatchApplyWindowInsetsCompatibility]的检查。
+ * **注意**：[window]需要通过[Window.checkDispatchApplyInsetsCompatibility]的检查。
  *
  * @param window [Activity.getWindow]或[Dialog.getWindow]。
  * @param inputView [Activity]或[Dialog]视图树的[InputView]。
@@ -92,28 +93,31 @@ fun InputView.Companion.init(
  * 进而调用`DisplayPolicy.layoutWindowLw()`计算各项`insets`。
  *
  * 2. `window.attributes.flags`包含[FLAG_FULLSCREEN]，
- * 或`window.attributes.softInputMode`不是[SOFT_INPUT_ADJUST_RESIZE]，
+ * 或`window.attributes.softInputMode`不包含[SOFT_INPUT_ADJUST_RESIZE]，
  * `DisplayPolicy.layoutWindowLw()`计算的`contentInsets`不会减去IME的数值。
  *
  * 3. `WindowManagerService`通知应用进程的`ViewRootImpl`重新设置`mPendingContentInsets`的数值，
  * 并申请下一帧布局，下一帧由于`mPendingContentInsets`跟`mAttachInfo.mContentInsets`的数值相等，
  * 因此不调用`ViewRootImpl.dispatchApplyInsets()`。
  */
-private fun Window.checkDispatchApplyWindowInsetsCompatibility() {
+private fun Window.checkDispatchApplyInsetsCompatibility() {
     check(!isFloating) {
         "InputView需要主题的windowIsFloating = false，" +
                 "否则会导致视图树无法自行处理WindowInsets分发"
     }
     @Suppress("DEPRECATION")
-    check(attributes.flags and FLAG_FULLSCREEN == 0) {
+    check(isDispatchApplyInsetsFullscreenCompatEnabled
+            || (attributes.flags and FLAG_FULLSCREEN == 0)) {
         "InputView需要主题的windowFullscreen = false，" +
                 "或window.attributes.flags不包含FLAG_FULLSCREEN，" +
-                "否则会导致Android 11以下显示或隐藏IME不进行WindowInsets分发"
+                "否则会导致Android 11以下显示或隐藏IME不进行WindowInsets分发，" +
+                "可以尝试Window.enableDispatchApplyInsetsFullscreenCompat()的兼容方案"
     }
     @Suppress("DEPRECATION")
-    check(attributes.softInputMode == SOFT_INPUT_ADJUST_RESIZE) {
-        "InputView需要window.attributes.softInputMode = SOFT_INPUT_ADJUST_RESIZE，" +
-                "否则会导致Android 11以下显示或隐藏IME不进行WindowInsets分发"
+    check(attributes.softInputMode and SOFT_INPUT_ADJUST_RESIZE != 0) {
+        "InputView需要window.attributes.softInputMode包含SOFT_INPUT_ADJUST_RESIZE，" +
+                "否则会导致Android 11以下显示或隐藏IME不进行WindowInsets分发，" +
+                "可以通过Window.setSoftInputMode()设置SOFT_INPUT_ADJUST_RESIZE"
     }
 }
 
@@ -152,16 +156,18 @@ internal class ViewTreeWindow(
     val gestureNavBarEdgeToEdge: Boolean
 ) : EdgeToEdgeHelper {
     private val decorView = window.decorView as ViewGroup
+    private val initialized: Boolean
+        get() = decorView.viewTreeWindow != null
 
     fun attachToDecorView(
         statusBarEdgeToEdge: Boolean,
         @InsetsType alwaysConsumeTypeMask: Int,
         dispatchApplyWindowInsetsRoot: View?
     ) {
-        check(decorView.viewTreeWindow == null) { "InputView.init()只能调用一次" }
+        check(!initialized) { "InputView.init()只能调用一次" }
         @Suppress("DEPRECATION")
         window.setSoftInputMode(SOFT_INPUT_ADJUST_RESIZE)
-        window.checkDispatchApplyWindowInsetsCompatibility()
+        window.checkDispatchApplyInsetsCompatibility()
 
         val contentRef = decorView.children
             .firstOrNull { it is ViewGroup }?.let(::WeakReference)
@@ -169,6 +175,7 @@ internal class ViewTreeWindow(
             ?.takeIf { it !== decorView }?.let(::WeakReference)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         ViewCompat.setOnApplyWindowInsetsListener(decorView) { v, insets ->
+            window.checkDispatchApplyInsetsCompatibility()
             val applyInsets = insets.consume(alwaysConsumeTypeMask)
             val decorInsets = applyInsets.toDecorInsets(statusBarEdgeToEdge)
             ViewCompat.onApplyWindowInsets(v, decorInsets)
@@ -186,16 +193,18 @@ internal class ViewTreeWindow(
     }
 
     fun attachToInputView(inputView: InputView) {
-        check(inputView.viewTreeWindow == null) { "InputView.init()只能调用一次" }
-        window.checkDispatchApplyWindowInsetsCompatibility()
+        check(!initialized) { "InputView.init()只能调用一次" }
+        window.checkDispatchApplyInsetsCompatibility()
         WindowCompat.setDecorFitsSystemWindows(window, false)
         ViewCompat.setOnApplyWindowInsetsListener(inputView) { v, insets ->
+            window.checkDispatchApplyInsetsCompatibility()
             v.updateMargins(bottom = when {
                 insets.supportGestureNavBarEdgeToEdge(v) -> 0
                 else -> insets.navigationBarHeight
             })
             insets
         }
+        decorView.viewTreeWindow = this
         inputView.viewTreeWindow = this
     }
 
