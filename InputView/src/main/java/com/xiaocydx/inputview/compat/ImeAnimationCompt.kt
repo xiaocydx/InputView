@@ -29,7 +29,7 @@ import com.xiaocydx.inputview.R
  * 调用[WindowInsetsAnimationControllerCompat.setInsetsAndAlpha]实现手势拖动显示IME。
  *
  * **注意**：若要对`window.decorView`设置[WindowInsetsAnimationCompat.Callback]，
- * 则调用[setWindowInsetsAnimationCallbackCompat]进行设置，能避免跟此函数产生冲突。
+ * 则调用[setWindowInsetsAnimationCallbackCompat]进行设置，避免跟该函数产生冲突。
  *
  * @param durationMillis IME动画的时长，默认值[NO_VALUE]表示保持系统原本的时长，
  * Android 11以下兼容代码的`durationMillis = 160ms`，
@@ -75,7 +75,7 @@ internal fun Window.restoreImeAnimationCompat() {
 
 /**
  * 对`window.decorView`设置[WindowInsetsAnimationCompat.Callback]，
- * 此函数能避免跟[modifyImeAnimationCompat]产生冲突，实际效果等同于：
+ * 该函数能避免跟[modifyImeAnimationCompat]产生冲突，实际效果等同于：
  * ```
  * ViewCompat.setWindowInsetsAnimationCallback(window.decorView, callback)
  * ```
