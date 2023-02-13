@@ -2,6 +2,7 @@ package com.xiaocydx.inputview
 
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.CallSuper
 
 /**
  * [InputView]编辑区的[Editor]适配器，负责创建和通知显示[Editor]的视图
@@ -30,6 +31,7 @@ import android.view.ViewGroup
 abstract class EditorAdapter<T : Editor> {
     private val listeners = ArrayList<EditorChangedListener<T>>(2)
     internal var host: EditorHost? = null
+        private set
 
     /**
      * 表示IME的`editor`
@@ -40,16 +42,6 @@ abstract class EditorAdapter<T : Editor> {
      * 创建[editor]的视图，返回`null`表示不需要视图，当[editor]表示IME时，该函数不会被调用
      */
     abstract fun onCreateView(parent: ViewGroup, editor: T): View?
-
-    /**
-     * 当前[EditorAdapter]添加到[inputView]
-     */
-    open fun onAttachToInputView(inputView: InputView) = Unit
-
-    /**
-     * 当前[EditorAdapter]从[inputView]移除
-     */
-    open fun onDetachFromInputView(inputView: InputView) = Unit
 
     /**
      * 添加[EditorChangedListener]
@@ -65,6 +57,21 @@ abstract class EditorAdapter<T : Editor> {
      */
     fun removeEditorChangedListener(listener: EditorChangedListener<T>) {
         listeners.remove(listener)
+    }
+
+    @CallSuper
+    internal open fun onAttachToEditorHost(host: EditorHost) {
+        this.host = host
+    }
+
+    @CallSuper
+    internal open fun onDetachFromEditorHost(host: EditorHost) {
+        this.host = null
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    internal fun forEachListener(action: (EditorChangedListener<Editor>) -> Unit) {
+        listeners.forEach { action(it as EditorChangedListener<Editor>) }
     }
 
     internal fun onEditorChanged(previous: T?, current: T?) {

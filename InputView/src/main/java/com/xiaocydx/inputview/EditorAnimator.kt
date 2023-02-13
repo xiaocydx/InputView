@@ -124,6 +124,10 @@ abstract class EditorAnimator(
         }
     }
 
+    internal fun forEachCallback(action: (AnimationCallback) -> Unit) {
+        callbacks.forEach(action)
+    }
+
     private fun resetAnimationRecord(record: AnimationRecord) {
         endAnimation()
         assert(animationRecord == null) { "animationRecord未被置空" }
@@ -207,7 +211,7 @@ abstract class EditorAnimator(
     }
 
     private inner class AnimationDispatcher :
-            EditorChangedListener<Editor>, OnApplyWindowInsetsListenerCompat,
+            ReplicableEditorChangedListener, OnApplyWindowInsetsListenerCompat,
             WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_STOP) {
         private var imeHeight = 0
 

@@ -98,6 +98,16 @@ internal interface EditorHost {
     fun removeEditorChangedListener(listener: EditorChangedListener<Editor>)
 
     /**
+     * 添加[AnimationCallback]
+     */
+    fun addAnimationCallback(callback: AnimationCallback)
+
+    /**
+     * 移除[AnimationCallback]
+     */
+    fun removeAnimationCallback(callback: AnimationCallback)
+
+    /**
      * 添加绘制帧draw之前的任务，[OneShotPreDrawListener.removeListener]移除任务
      */
     fun addPreDrawAction(action: () -> Unit): OneShotPreDrawListener
@@ -119,5 +129,11 @@ internal interface EditorHost {
         callback: WindowInsetsAnimationCompat.Callback?
     )
 }
+
+internal interface Replicable
+
+internal interface ReplicableAnimationCallback : AnimationCallback, Replicable
+
+internal interface ReplicableEditorChangedListener : EditorChangedListener<Editor>, Replicable
 
 internal typealias OnApplyWindowInsetsListenerCompat = androidx.core.view.OnApplyWindowInsetsListener

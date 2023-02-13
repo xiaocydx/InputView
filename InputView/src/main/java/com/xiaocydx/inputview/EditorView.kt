@@ -15,8 +15,12 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     private var editText: EditTextHolder? = null
     var ime: Editor? = null; private set
     var current: Editor? = null; private set
-    var adapter: EditorAdapter<*>? = null; private set
     var changeRecord = ChangeRecord(); private set
+    lateinit var adapter: EditorAdapter<*>; private set
+
+    init {
+        setAdapter(ImeAdapter())
+    }
 
     fun setAdapter(adapter: EditorAdapter<*>) {
         this.adapter = adapter
@@ -30,7 +34,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
             changeRecord = ChangeRecord()
         }
 
-        ime = checkedAdapter()?.ime
+        ime = checkedAdapter().ime
         current = null
     }
 
@@ -40,7 +44,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
 
     fun showChecked(editor: Editor, controlIme: Boolean = true): Boolean {
         val adapter = checkedAdapter()
-        if (adapter == null || current === editor) return false
+        if (current === editor) return false
         val currentChild: View?
         val previous = current
         val previousChild = views[previous]
@@ -68,7 +72,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
 
     fun hideChecked(editor: Editor, controlIme: Boolean = true): Boolean {
         val adapter = checkedAdapter()
-        if (adapter != null && current === editor) {
+        if (current === editor) {
             val previousChild = views[editor]
             removeAllViews()
             current = null
@@ -101,8 +105,8 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun checkedAdapter(): EditorAdapter<Editor>? {
-        return adapter as? EditorAdapter<Editor>
+    private fun checkedAdapter(): EditorAdapter<Editor> {
+        return adapter as EditorAdapter<Editor>
     }
 
     class ChangeRecord(val previousChild: View? = null, val currentChild: View? = null)

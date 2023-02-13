@@ -50,9 +50,9 @@ class InputViewTest {
 
             val host = inputView.getEditorHost()
             assertThat(host.editorOffset).isEqualTo(0)
-            verify(exactly = 1) { adapter1.onAttachToInputView(inputView) }
-            verify(exactly = 1) { adapter1.onDetachFromInputView(inputView) }
-            verify(exactly = 1) { adapter2.onAttachToInputView(inputView) }
+            verify(exactly = 1) { adapter1.onAttachToEditorHost(host) }
+            verify(exactly = 1) { adapter1.onDetachFromEditorHost(host) }
+            verify(exactly = 1) { adapter2.onAttachToEditorHost(host) }
         }
     }
 

@@ -90,17 +90,12 @@ class InputView @JvmOverloads constructor(
      * [EdgeToEdgeHelper]提供了实现手势导航栏边到边的函数。
      */
     var editorAdapter: EditorAdapter<*>
-        get() = requireNotNull(editorView.adapter) { "未初始化EditorAdapter" }
+        get() = editorView.adapter
         set(value) {
             val previous = editorView.adapter
             if (previous === value) return
-            editorAnimator.onDetachFromEditorHost(host)
-            previous?.host = null
-            previous?.onDetachFromInputView(this)
+            host.onEditorAdapterChanged(previous, value)
             editorView.setAdapter(value)
-            value.host = host
-            value.onAttachToInputView(this)
-            editorAnimator.onAttachToEditorHost(host)
             editorOffset = 0
             requestLayout()
         }
@@ -113,16 +108,17 @@ class InputView @JvmOverloads constructor(
      */
     var editorAnimator: EditorAnimator = FadeEditorAnimator()
         set(value) {
-            if (field === value) return
-            field.onDetachFromEditorHost(host)
+            val previous = field
+            if (previous === value) return
+            host.onEditorAnimatorChanged(previous, value)
             field = value
-            field.onAttachToEditorHost(host)
         }
 
     init {
         isFocusable = true
         isFocusableInTouchMode = true
-        editorAdapter = ImeAdapter()
+        host.onEditorAdapterChanged(previous = null, editorAdapter)
+        host.onEditorAnimatorChanged(previous = null, editorAnimator)
     }
 
     override fun shouldDelayChildPressedState(): Boolean = false
@@ -315,6 +311,19 @@ class InputView @JvmOverloads constructor(
             pending?.apply { setWindowInsetsAnimationCallback(durationMillis, interpolator, callback) }
         }
 
+        fun onEditorAdapterChanged(previous: EditorAdapter<*>?, current: EditorAdapter<*>) {
+            editorAnimator.endAnimation()
+            previous?.onDetachFromEditorHost(this)
+            current.onAttachToEditorHost(this)
+            previous?.forEachListener { if (it is Replicable) current.addEditorChangedListener(it) }
+        }
+
+        fun onEditorAnimatorChanged(previous: EditorAnimator?, current: EditorAnimator) {
+            previous?.onDetachFromEditorHost(this)
+            current.onAttachToEditorHost(this)
+            previous?.forEachCallback { if (it is Replicable) current.addAnimationCallback(it) }
+        }
+
         override fun addView(view: View) {
             editorView.addView(view)
         }
@@ -339,12 +348,20 @@ class InputView @JvmOverloads constructor(
             editorView.hideChecked(editor)
         }
 
+        override fun addAnimationCallback(callback: AnimationCallback) {
+            editorAnimator.addAnimationCallback(callback)
+        }
+
+        override fun removeAnimationCallback(callback: AnimationCallback) {
+            editorAnimator.removeAnimationCallback(callback)
+        }
+
         override fun addEditorChangedListener(listener: EditorChangedListener<Editor>) {
-            editorView.adapter?.addEditorChangedListener(listener)
+            editorAdapter.addEditorChangedListener(listener)
         }
 
         override fun removeEditorChangedListener(listener: EditorChangedListener<Editor>) {
-            editorView.adapter?.removeEditorChangedListener(listener)
+            editorAdapter.removeEditorChangedListener(listener)
         }
 
         override fun addPreDrawAction(action: () -> Unit): OneShotPreDrawListener {
