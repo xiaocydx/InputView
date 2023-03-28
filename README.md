@@ -6,8 +6,8 @@ InputView是一个通用的输入控件
 * 支持调整IME高度的过渡动画。
 * 支持实现Edge-to-Edge并提供相关的辅助函数。
 * 支持修改Android 11及以上IME动画的时长和插值器。
+* 解决EditText的水滴状指示器导致动画卡顿的问题。  
 * 提供Android 11以下Window属性包含FLAG_FULLSCREEN的兼容方案。
-* 解决EditText的水滴状指示器在120Hz刷新率下导致动画卡顿的问题。  
 
 &nbsp;
 ### 示例代码在Android 12上的效果
