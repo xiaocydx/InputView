@@ -226,7 +226,7 @@ abstract class EditorAnimator(
     }
 
     private fun enableWindowInsetsAnimation(): Boolean {
-        return canRunAnimation && (Build.VERSION.SDK_INT >= 30 || ENABLE_INSETS_ANIMATION_BELOW_Q)
+        return canRunAnimation && (Build.VERSION.SDK_INT >= 30 || ENABLE_INSETS_ANIMATION_BELOW_R)
     }
 
     private inner class AnimationDispatcher :
@@ -500,7 +500,7 @@ abstract class EditorAnimator(
 
     companion object {
         private const val NO_VALUE = -1
-        private const val ENABLE_INSETS_ANIMATION_BELOW_Q = true
+        private const val ENABLE_INSETS_ANIMATION_BELOW_R = true
         internal const val ANIMATION_DURATION_MILLIS = 200L
         internal val ANIMATION_INTERPOLATOR = DecelerateInterpolator()
     }
