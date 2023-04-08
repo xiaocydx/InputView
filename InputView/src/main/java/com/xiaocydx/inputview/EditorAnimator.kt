@@ -17,6 +17,7 @@
 package com.xiaocydx.inputview
 
 import android.animation.ValueAnimator
+import android.os.Build
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.DecelerateInterpolator
@@ -211,19 +212,21 @@ abstract class EditorAnimator(
         this.host = host
         host.addEditorChangedListener(animationDispatcher)
         host.setOnApplyWindowInsetsListener(animationDispatcher)
-        host.takeIf { canRunAnimation }?.setWindowInsetsAnimationCallback(
-            durationMillis, interpolator, animationDispatcher
-        )
+        host.takeIf { enableWindowInsetsAnimation() }
+            ?.setWindowInsetsAnimationCallback(durationMillis, interpolator, animationDispatcher)
     }
 
     internal fun onDetachFromEditorHost(host: EditorHost) {
         endAnimation()
         host.removeEditorChangedListener(animationDispatcher)
         host.setOnApplyWindowInsetsListener(null)
-        host.takeIf { canRunAnimation }?.setWindowInsetsAnimationCallback(
-            durationMillis, interpolator, callback = null
-        )
+        host.takeIf { enableWindowInsetsAnimation() }
+            ?.setWindowInsetsAnimationCallback(durationMillis, interpolator, callback = null)
         this.host = null
+    }
+
+    private fun enableWindowInsetsAnimation(): Boolean {
+        return canRunAnimation && (Build.VERSION.SDK_INT >= 30 || ENABLE_INSETS_ANIMATION_BELOW_Q)
     }
 
     private inner class AnimationDispatcher :
@@ -497,6 +500,7 @@ abstract class EditorAnimator(
 
     companion object {
         private const val NO_VALUE = -1
+        private const val ENABLE_INSETS_ANIMATION_BELOW_Q = true
         internal const val ANIMATION_DURATION_MILLIS = 200L
         internal val ANIMATION_INTERPOLATOR = DecelerateInterpolator()
     }
