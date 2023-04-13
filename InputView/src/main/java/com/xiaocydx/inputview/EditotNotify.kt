@@ -29,42 +29,42 @@ val <T : Editor> EditorAdapter<T>.current: T?
 fun <T : Editor> EditorAdapter<T>.isShowing(editor: T): Boolean = current === editor
 
 /**
- * 通知显示[editor]，若未对[InputView]设置当前[EditorAdapter]，则调用无效
+ * 通知显示[editor]，若当前[EditorAdapter]未关联[InputView]，则调用无效
  */
 fun <T : Editor> EditorAdapter<T>.notifyShow(editor: T) {
     host?.showChecked(editor)
 }
 
 /**
- * 通知隐藏[editor]，若未对[InputView]设置当前[EditorAdapter]，则调用无效
+ * 通知隐藏[editor]，若当前[EditorAdapter]未关联[InputView]，则调用无效
  */
 fun <T : Editor> EditorAdapter<T>.notifyHide(editor: T) {
     host?.hideChecked(editor)
 }
 
 /**
- * 通知隐藏当前[Editor]，若未对[InputView]设置当前[EditorAdapter]，则调用无效
+ * 通知隐藏当前[Editor]，若当前[EditorAdapter]未关联[InputView]，则调用无效
  */
 fun <T : Editor> EditorAdapter<T>.notifyHideCurrent() {
     current?.let(::notifyHide)
 }
 
 /**
- * 通知显示IME，若未对[InputView]设置当前[EditorAdapter]，则调用无效
+ * 通知显示IME，若当前[EditorAdapter]未关联[InputView]，则调用无效
  */
 fun EditorAdapter<*>.notifyShowIme() {
     host?.apply { ime?.let(::showChecked) }
 }
 
 /**
- * 通知隐藏IME，若未对[InputView]设置当前[EditorAdapter]，则调用无效
+ * 通知隐藏IME，若当前[EditorAdapter]未关联[InputView]，则调用无效
  */
 fun EditorAdapter<*>.notifyHideIme() {
     host?.apply { ime?.let(::hideChecked) }
 }
 
 /**
- * 通知切换显示[Editor]，若未对[InputView]设置当前[EditorAdapter]，则调用无效
+ * 通知切换显示[Editor]，若当前[EditorAdapter]未关联[InputView]，则调用无效
  *
  * 1. 当前未显示[editor]，则显示[editor]。
  * 2. 当前已显示[editor]，则显示IME。

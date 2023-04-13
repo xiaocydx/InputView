@@ -180,8 +180,7 @@ class InputView @JvmOverloads constructor(
     /**
      * 更新编辑区的偏移值
      *
-     * 若调用该函数之前，已申请重新布局，例如[EditorAdapter.onEditorChanged]的分发过程，
-     * 则不处理[editorView]和[contentView]的尺寸和位置，否则：
+     * 若调用该函数之前已申请重新布局，则不处理[editorView]和[contentView]的尺寸和位置，否则：
      * 1. 若[editorMode]为[EditorMode.ADJUST_PAN]，则偏移[editorView]和[contentView]。
      * 2. 若[editorMode]为[EditorMode.ADJUST_RESIZE]，则申请重新measure和layout。
      */
@@ -190,7 +189,6 @@ class InputView @JvmOverloads constructor(
         val current = offset.coerceAtLeast(0)
         if (editorOffset == current) return
         val previous = editorOffset
-        val editorDiff = previous - current
         editorOffset = current
 
         val contentView = contentView
@@ -201,6 +199,7 @@ class InputView @JvmOverloads constructor(
 
         when (editorMode) {
             EditorMode.ADJUST_PAN -> {
+                val editorDiff = previous - current
                 editorView.offsetTopAndBottom(editorDiff)
                 val threshold = navBarOffset
                 val contentDiff = when {
