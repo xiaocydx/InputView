@@ -47,7 +47,7 @@ internal class InputViewTest {
     }
 
     @Test
-    fun viewTreeWindow_Init_Success() {
+    fun initViewTreeWindow() {
         scenario.onActivity { activity ->
             val inputView = activity.inputView
             assertThat(inputView.findViewTreeWindow()).isNotNull()
@@ -55,7 +55,7 @@ internal class InputViewTest {
     }
 
     @Test
-    fun editorAdapter_AttachAndDetach_Success() {
+    fun editorAdapterAttachAndDetach() {
         scenario.onActivity { activity ->
             val inputView = activity.inputView
 
@@ -73,7 +73,7 @@ internal class InputViewTest {
     }
 
     @Test
-    fun editorAnimator_AttachAndDetach_Success() {
+    fun editorAnimatorAttachAndDetach() {
         scenario.onActivity { activity ->
             val inputView = activity.inputView
 
@@ -90,7 +90,7 @@ internal class InputViewTest {
     }
 
     @Test
-    fun adjustPan_UpdateEditorOffset_Success() {
+    fun adjustPanUpdateEditorOffset() {
         scenario.moveToState(State.RESUMED).onActivity { activity ->
             val inputView = activity.inputView
             inputView.editorMode = EditorMode.ADJUST_PAN

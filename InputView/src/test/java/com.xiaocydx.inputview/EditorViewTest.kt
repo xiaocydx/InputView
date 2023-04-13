@@ -49,7 +49,7 @@ internal class EditorViewTest {
     }
 
     @Test
-    fun showChecked_Success() {
+    fun showChecked() {
         scenario.onActivity {
             val editorView = EditorView(it)
             val adapter = spyk(TestEditorAdapter())
@@ -77,7 +77,7 @@ internal class EditorViewTest {
     }
 
     @Test
-    fun hideChecked_Success() {
+    fun hideChecked() {
         scenario.onActivity {
             val editorView = EditorView(it)
             val adapter = spyk(TestEditorAdapter())
@@ -100,7 +100,7 @@ internal class EditorViewTest {
     }
 
     @Test
-    fun repeat_ShowChecked() {
+    fun repeatShowChecked() {
         scenario.onActivity {
             val editorView = EditorView(it)
             val adapter = spyk(TestEditorAdapter())
@@ -112,7 +112,7 @@ internal class EditorViewTest {
     }
 
     @Test
-    fun repeat_HideChecked() {
+    fun repeatHideChecked() {
         scenario.onActivity {
             val editorView = EditorView(it)
             val adapter = spyk(TestEditorAdapter())
