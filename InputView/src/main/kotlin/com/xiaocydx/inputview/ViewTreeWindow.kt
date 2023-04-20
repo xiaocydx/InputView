@@ -119,7 +119,7 @@ fun InputView.Companion.init(
 private fun Window.checkDispatchApplyInsetsCompatibility() {
     check(!isFloating) {
         "InputView需要主题的windowIsFloating = false，" +
-                "否则会导致视图树无法自行处理WindowInsets分发"
+                "否则会导致视图树没有WindowInsets分发"
     }
     @Suppress("DEPRECATION")
     check(isDispatchApplyInsetsFullscreenCompatEnabled
