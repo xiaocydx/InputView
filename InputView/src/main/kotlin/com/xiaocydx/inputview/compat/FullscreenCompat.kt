@@ -53,7 +53,7 @@ import com.xiaocydx.inputview.compat.DispatchApplyInsetsFullscreenCompat.Compani
  * 根据情况申请WindowInsets分发，确保下一帧`ViewRooImpl.performTraversals()`调用
  * `ViewRootImpl.dispatchApplyInsets()`。
  *
- * 2. 替换`ViewRootImpl.mScroller`，禁止滚动到焦点位置，让视图树自行处理WindowInsets。
+ * 2. 替换`ViewRootImpl.mScroller`，禁止滚动到焦点可见的位置，让视图树自行处理WindowInsets。
  *
  * **注意**：Android 9.0和Android 10，若`window.attributes.flags`包含[FLAG_FULLSCREEN]，
  * 则[ViewCompat.setWindowInsetsAnimationCallback]设置的回调对象，其函数可能不会被调用，
@@ -129,7 +129,7 @@ private class DispatchApplyInsetsFullscreenCompat(private val window: Window) {
 
     /**
      * 1. 在[startScroll]和[abortAnimation]标记`mScrollY`可能已更改，
-     * 2. 在[computeScrollOffset]将`mScrollY`恢复为0，禁止滚动到焦点位置。
+     * 2. 在[computeScrollOffset]将`mScrollY`恢复为0，禁止滚动到焦点可见的位置。
      *
      * ```
      * public final class ViewRootImpl implements ViewParent {
