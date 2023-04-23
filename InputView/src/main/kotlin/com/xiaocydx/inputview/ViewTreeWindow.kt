@@ -110,7 +110,7 @@ fun InputView.Companion.init(
  *
  * 2. `window.attributes.flags`包含[FLAG_FULLSCREEN]，
  * 或`window.attributes.softInputMode`不包含[SOFT_INPUT_ADJUST_RESIZE]，
- * `DisplayPolicy.layoutWindowLw()`计算的`contentInsets`不会减去IME的数值。
+ * `DisplayPolicy.layoutWindowLw()`计算的`contentInsets`不会包含IME的数值。
  *
  * 3. `WindowManagerService`通知应用进程的`ViewRootImpl`重新设置`mPendingContentInsets`的数值，
  * 并申请下一帧布局，下一帧由于`mPendingContentInsets`跟`mAttachInfo.mContentInsets`的数值相等，
@@ -133,7 +133,7 @@ private fun Window.checkDispatchApplyInsetsCompatibility() {
     check(attributes.softInputMode and SOFT_INPUT_ADJUST_RESIZE != 0) {
         "InputView需要window.attributes.softInputMode包含SOFT_INPUT_ADJUST_RESIZE，" +
                 "否则会导致Android 11以下显示或隐藏IME不进行WindowInsets分发，" +
-                "可以通过Window.setSoftInputMode()设置SOFT_INPUT_ADJUST_RESIZE"
+                "可以调用Window.setSoftInputMode()设置SOFT_INPUT_ADJUST_RESIZE"
     }
 }
 
