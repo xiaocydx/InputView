@@ -223,8 +223,7 @@ private class DispatchApplyInsetsFullscreenCompat(private val window: Window) {
 }
 
 @RequiresApi(21)
-@Suppress("UNCHECKED_CAST")
-@SuppressLint("PrivateApi", "DiscouragedPrivateApi")
+@SuppressLint("PrivateApi")
 private object ViewRootReflectCache : ReflectHelper {
     var mCallbackField: FieldCache? = null; private set
     var mScrollYField: FieldCache? = null; private set

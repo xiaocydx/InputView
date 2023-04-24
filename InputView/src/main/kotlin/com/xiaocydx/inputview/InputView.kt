@@ -27,6 +27,8 @@ import android.widget.EditText
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.PRIVATE
 import androidx.core.view.*
+import com.xiaocydx.inputview.compat.setOnApplyWindowInsetsListenerCompat
+import com.xiaocydx.inputview.compat.setWindowInsetsAnimationCallbackCompat
 
 /**
  * 输入控件
@@ -384,7 +386,7 @@ class InputView @JvmOverloads constructor(
         }
 
         override fun setOnApplyWindowInsetsListener(listener: OnApplyWindowInsetsListenerCompat?) {
-            ViewCompat.setOnApplyWindowInsetsListener(editorView, listener)
+            editorView.setOnApplyWindowInsetsListenerCompat(listener)
         }
 
         override fun setWindowInsetsAnimationCallback(
@@ -403,7 +405,7 @@ class InputView @JvmOverloads constructor(
                 } else {
                     window.modifyImeAnimation(durationMillis, interpolator)
                 }
-                ViewCompat.setWindowInsetsAnimationCallback(editorView, callback)
+                editorView.setWindowInsetsAnimationCallbackCompat(callback)
             }
         }
     }

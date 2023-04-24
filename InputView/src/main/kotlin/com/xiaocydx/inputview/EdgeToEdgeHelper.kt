@@ -24,6 +24,8 @@ import androidx.core.graphics.Insets
 import androidx.core.view.*
 import androidx.core.view.WindowInsetsCompat.Type.*
 import androidx.recyclerview.widget.RecyclerView
+import com.xiaocydx.inputview.compat.requestApplyInsetsCompat
+import com.xiaocydx.inputview.compat.setOnApplyWindowInsetsListenerCompat
 
 /**
  * 提供实现边到边的辅助函数
@@ -110,7 +112,7 @@ interface EdgeToEdgeHelper {
         block: (view: View, insets: WindowInsetsCompat, initialState: ViewState) -> Unit
     ) {
         val initialState = ViewState(this)
-        ViewCompat.setOnApplyWindowInsetsListener(this) { view, insets ->
+        setOnApplyWindowInsetsListenerCompat { view, insets ->
             block(view, insets, initialState)
             insets
         }
@@ -124,12 +126,12 @@ interface EdgeToEdgeHelper {
      */
     fun View.requestApplyInsetsOnAttach() {
         if (isAttachedToWindow) {
-            ViewCompat.requestApplyInsets(this)
+            requestApplyInsetsCompat()
         }
         removeRequestApplyInsetsOnAttach()
         val listener = object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(view: View) {
-                ViewCompat.requestApplyInsets(view)
+                view.requestApplyInsetsCompat()
             }
 
             override fun onViewDetachedFromWindow(view: View) = Unit

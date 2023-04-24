@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AndroidX core -->
+    <item name="tag_window_insets_animation_callback" type="id" />
+</resources>

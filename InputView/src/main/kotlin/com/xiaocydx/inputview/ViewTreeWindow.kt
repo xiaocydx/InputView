@@ -25,9 +25,11 @@ import android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
 import android.view.animation.Interpolator
 import androidx.core.view.*
 import androidx.core.view.WindowInsetsCompat.Type.*
+import com.xiaocydx.inputview.compat.*
 import com.xiaocydx.inputview.compat.isDispatchApplyInsetsFullscreenCompatEnabled
 import com.xiaocydx.inputview.compat.modifyImeAnimationCompat
 import com.xiaocydx.inputview.compat.restoreImeAnimationCompat
+import com.xiaocydx.inputview.compat.setOnApplyWindowInsetsListenerCompat
 import java.lang.ref.WeakReference
 
 /**
@@ -189,19 +191,19 @@ internal class ViewTreeWindow(
             .firstOrNull { it is ViewGroup }?.let(::WeakReference)
         val rootRef = dispatchApplyWindowInsetsRoot
             ?.takeIf { it !== decorView }?.let(::WeakReference)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        ViewCompat.setOnApplyWindowInsetsListener(decorView) { v, insets ->
+        window.setDecorFitsSystemWindowsCompat(false)
+        decorView.setOnApplyWindowInsetsListenerCompat { v, insets ->
             window.checkDispatchApplyInsetsCompatibility()
             val applyInsets = insets.consume(alwaysConsumeTypeMask)
             val decorInsets = applyInsets.toDecorInsets(statusBarEdgeToEdge)
-            ViewCompat.onApplyWindowInsets(v, decorInsets)
+            v.onApplyWindowInsetsCompat(decorInsets)
             contentRef?.get()?.updateMargins(
                 top = decorInsets.statusBarHeight,
                 bottom = decorInsets.navigationBarHeight
             )
 
             rootRef?.get()?.let { root ->
-                ViewCompat.dispatchApplyWindowInsets(root, applyInsets)
+                root.dispatchApplyWindowInsetsCompat(applyInsets)
                 WindowInsetsCompat.CONSUMED
             } ?: applyInsets
         }
@@ -211,8 +213,8 @@ internal class ViewTreeWindow(
     fun attachToInputView(inputView: InputView) {
         check(!initialized) { "InputView.init()只能调用一次" }
         window.checkDispatchApplyInsetsCompatibility()
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        ViewCompat.setOnApplyWindowInsetsListener(inputView) { v, insets ->
+        window.setDecorFitsSystemWindowsCompat(false)
+        inputView.setOnApplyWindowInsetsListenerCompat { v, insets ->
             window.checkDispatchApplyInsetsCompatibility()
             v.updateMargins(bottom = when {
                 insets.supportGestureNavBarEdgeToEdge(v) -> 0
@@ -267,7 +269,7 @@ internal class ViewTreeWindow(
     }
 
     fun getRootWindowInsets(): WindowInsetsCompat? {
-        return ViewCompat.getRootWindowInsets(decorView)
+        return decorView.getWindowInsetsCompat()
     }
 
     fun createWindowInsetsController(editText: View): WindowInsetsControllerCompat {

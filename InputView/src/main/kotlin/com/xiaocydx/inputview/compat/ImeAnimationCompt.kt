@@ -98,7 +98,7 @@ internal fun Window.restoreImeAnimationCompat() {
  */
 internal fun Window.setWindowInsetsAnimationCallbackCompat(callback: WindowInsetsAnimationCompat.Callback?) {
     if (!supportModifyImeAnimation) {
-        return ViewCompat.setWindowInsetsAnimationCallback(decorView, callback)
+        return decorView.setWindowInsetsAnimationCallbackCompat(callback)
     }
     val proxyCallback = if (callback == null) null else {
         InsetsReflectCache.insetsAnimationCompat?.proxyCallbackConstructor
