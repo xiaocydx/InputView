@@ -21,6 +21,7 @@ import android.os.Build
 import android.util.Log
 import android.view.*
 import android.view.animation.Interpolator
+import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.RequiresApi
 import androidx.core.view.*
 import androidx.core.view.WindowInsetsCompat.Type.ime
@@ -59,12 +60,13 @@ internal fun Window.modifyImeAnimationCompat(
     durationMillis: Long = NO_VALUE,
     interpolator: Interpolator? = null,
 ) {
-    if (Build.VERSION.SDK_INT < 30) return
+    if (!supportModifyImeAnimation) return
     decorView.doOnAttach {
         // doOnAttach()确保insetsController是InsetsController，而不是PendingInsetsController
         val controller = requireNotNull(insetsController) { "InsetsController为null" }
         imeAnimationCallback = ImeAnimationCallback(
-            durationMillis, interpolator, controller, insetsAnimationCallback
+            durationMillis, interpolator,
+            controller, insetsAnimationCallback
         )
         // 对视图树的根View（排除ViewRootImpl）decorView设置imeAnimationCallback，
         // 目的是避免WindowInsetsAnimationCompat.Callback的分发逻辑产生歧义，例如：
@@ -75,7 +77,7 @@ internal fun Window.modifyImeAnimationCompat(
         // 若对childView设置imeAnimationCallback，则imeAnimationCallback修改IME动画的属性，
         // 会影响到decorView的callback函数，callback.onPrepare()获取的是IME动画原本的属性，
         // 而callback.onStart()获取的却是IME动画修改后的属性，分发逻辑产生歧义。
-        ViewCompat.setWindowInsetsAnimationCallback(decorView, imeAnimationCallback)
+        decorView.setWindowInsetsAnimationCallback(imeAnimationCallback)
     }
 }
 
@@ -83,10 +85,8 @@ internal fun Window.modifyImeAnimationCompat(
  * 恢复[modifyImeAnimationCompat]修改的`durationMillis`和`interpolator`
  */
 internal fun Window.restoreImeAnimationCompat() {
-    if (Build.VERSION.SDK_INT < 30) return
-    decorView.doOnAttach {
-        ViewCompat.setWindowInsetsAnimationCallback(decorView, insetsAnimationCallback)
-    }
+    if (!supportModifyImeAnimation) return
+    decorView.doOnAttach { decorView.setWindowInsetsAnimationCallback(insetsAnimationCallback) }
 }
 
 /**
@@ -97,19 +97,31 @@ internal fun Window.restoreImeAnimationCompat() {
  * ```
  */
 internal fun Window.setWindowInsetsAnimationCallbackCompat(callback: WindowInsetsAnimationCompat.Callback?) {
-    insetsAnimationCallback = callback
+    if (!supportModifyImeAnimation) {
+        return ViewCompat.setWindowInsetsAnimationCallback(decorView, callback)
+    }
+    val proxyCallback = if (callback == null) null else {
+        InsetsReflectCache.insetsAnimationCompat?.proxyCallbackConstructor
+            ?.newInstance(callback) as? WindowInsetsAnimation.Callback
+    }
+    insetsAnimationCallback = proxyCallback
     imeAnimationCallback?.apply { modifyImeAnimationCompat(durationMillis, interpolator) }
-            ?: run { ViewCompat.setWindowInsetsAnimationCallback(decorView, insetsAnimationCallback) }
+            ?: run { decorView.setWindowInsetsAnimationCallback(insetsAnimationCallback) }
 }
 
+@ChecksSdkIntAtLeast(api = 30)
+private val supportModifyImeAnimation = Build.VERSION.SDK_INT >= 30
+
+@get:RequiresApi(30)
 private var Window.imeAnimationCallback: ImeAnimationCallback?
     get() = decorView.getTag(R.id.tag_decor_view_ime_animation_callback) as? ImeAnimationCallback
     set(value) {
         decorView.setTag(R.id.tag_decor_view_ime_animation_callback, value)
     }
 
-private var Window.insetsAnimationCallback: WindowInsetsAnimationCompat.Callback?
-    get() = decorView.getTag(R.id.tag_decor_view_insets_animation_callback) as? WindowInsetsAnimationCompat.Callback
+@get:RequiresApi(30)
+private var Window.insetsAnimationCallback: WindowInsetsAnimation.Callback?
+    get() = decorView.getTag(R.id.tag_decor_view_insets_animation_callback) as? WindowInsetsAnimation.Callback
     set(value) {
         decorView.setTag(R.id.tag_decor_view_insets_animation_callback, value)
     }
@@ -125,12 +137,12 @@ private var Window.insetsAnimationCallback: WindowInsetsAnimationCompat.Callback
  * 3. `InsetsController.InsetsAnimationControlImpl`的构造函数调用`InsetsController.startAnimation()`。
  *
  * 4. `InsetsController.startAnimation()`调用至`WindowInsetsAnimationCompat.Callback.onPrepare()`，
- * 然后添加doOnPreDraw，在下一帧调用至`WindowInsetsAnimationCompat.Callback.onStart()`。
+ * 然后添加`doOnPreDraw()`，在下一帧调用至`WindowInsetsAnimationCompat.Callback.onStart()`。
  *
  * 5. `InsetsController.mRunningAnimations.add()`添加`RunningAnimation`，
  * `RunningAnimation`包含第2步构建的`InsetsController.InsetsAnimationControlImpl`.
  *
- * 6. 下一帧doOnPreDraw执行，调用至`WindowInsetsAnimationCompat.Callback.onStart()`，
+ * 6. 下一帧`doOnPreDraw()`执行，调用至`WindowInsetsAnimationCompat.Callback.onStart()`，
  * 然后调用`InsetsController.InternalAnimationControlListener.onReady()`构建属性动画。
  *
  * [onPrepare]修改第4步的[WindowInsetsAnimation]，[onStart]修改第6步构建的属性动画。
@@ -140,30 +152,28 @@ private class ImeAnimationCallback(
     val durationMillis: Long,
     val interpolator: Interpolator?,
     private val controller: WindowInsetsController,
-    private val delegate: WindowInsetsAnimationCompat.Callback?,
+    private val delegate: WindowInsetsAnimation.Callback?,
     dispatchMode: Int = delegate?.dispatchMode ?: DISPATCH_MODE_CONTINUE_ON_SUBTREE
-) : WindowInsetsAnimationCompat.Callback(dispatchMode) {
-    private val trackers = mutableMapOf<WindowInsetsAnimationCompat, Tracker>()
+) : WindowInsetsAnimation.Callback(dispatchMode) {
+    private val trackers = mutableMapOf<WindowInsetsAnimation, Tracker>()
 
     /**
-     * 修改[WindowInsetsAnimationCompat]中[WindowInsetsAnimation]的属性值，
-     * 确保接下来对视图树分发的[WindowInsetsAnimation]，是修改后的属性值。
+     * 对视图树分发[animation]之前，修改[animation]的属性值
      */
-    override fun onPrepare(animation: WindowInsetsAnimationCompat) {
+    override fun onPrepare(animation: WindowInsetsAnimation) {
         val tracker = getTracker(animation)
         if (tracker.step === Step.ON_PREPARE) {
-            val wrapped = animation.getWrapped()
             InsetsReflectCache.insetsAnimation?.apply {
-                tracker.modifyInterpolatorIfNecessary { mInterpolatorField.set(wrapped, it) }
-                tracker.modifyDurationMillisIfNecessary { mDurationMillisField.set(wrapped, it) }
+                tracker.modifyInterpolatorIfNecessary { mInterpolatorField.set(animation, it) }
+                tracker.modifyDurationMillisIfNecessary { mDurationMillisField.set(animation, it) }
             }
-            tracker.checkOnPrepare(wrapped)
+            tracker.checkOnPrepare(animation)
         }
         delegate?.onPrepare(animation)
     }
 
     /**
-     * 由于[onStart]是在下一帧doOnPreDraw执行，因此：
+     * 由于[onStart]是在下一帧`doOnPreDraw()`执行，因此：
      * 1. 此时`InsetsController.mRunningAnimations`已添加`RunningAnimation`。
      *
      * 2. 从`RunningAnimation`获取`InsetsController.InsetsAnimationControlImpl`，即`runner`。
@@ -181,12 +191,11 @@ private class ImeAnimationCallback(
      * 再恢复`InsetsController.SYNC_IME_INTERPOLATOR`，尽可能减少修改静态变量造成的影响。
      */
     override fun onStart(
-        animation: WindowInsetsAnimationCompat,
-        bounds: WindowInsetsAnimationCompat.BoundsCompat
-    ): WindowInsetsAnimationCompat.BoundsCompat = with(InsetsReflectCache) {
+        animation: WindowInsetsAnimation,
+        bounds: WindowInsetsAnimation.Bounds
+    ): WindowInsetsAnimation.Bounds = with(InsetsReflectCache) {
         val tracker = getTracker(animation)
         if (tracker.step === Step.ON_START) {
-            val wrapped = animation.getWrapped()
             val runningAnimations = insetsController?.mRunningAnimationsField
                 ?.get(controller)?.let { it as? ArrayList<*> } ?: emptyList<Any>()
 
@@ -195,7 +204,7 @@ private class ImeAnimationCallback(
                 val runningAnimation = runningAnimations[index]
                 val runner = insetsController?.runnerField?.get(runningAnimation)
                 val target = insetsAnimationRunner?.mAnimationField?.get(runner)
-                if (target !== wrapped) continue
+                if (target !== animation) continue
 
                 listener = insetsAnimationRunner?.mListenerField?.get(runner) ?: continue
                 tracker.modifyInterpolatorIfNecessary {
@@ -206,24 +215,24 @@ private class ImeAnimationCallback(
                 }
                 break
             }
-            tracker.checkOnStart(wrapped, listener)
+            tracker.checkOnStart(animation, listener)
         }
         return delegate?.onStart(animation, bounds) ?: bounds
     }
 
     override fun onProgress(
-        insets: WindowInsetsCompat,
-        runningAnimations: MutableList<WindowInsetsAnimationCompat>
-    ): WindowInsetsCompat {
+        insets: WindowInsets,
+        runningAnimations: MutableList<WindowInsetsAnimation>
+    ): WindowInsets {
         return delegate?.onProgress(insets, runningAnimations) ?: insets
     }
 
-    override fun onEnd(animation: WindowInsetsAnimationCompat) {
+    override fun onEnd(animation: WindowInsetsAnimation) {
         trackers.remove(animation)
         delegate?.onEnd(animation)
     }
 
-    private fun getTracker(animation: WindowInsetsAnimationCompat): Tracker {
+    private fun getTracker(animation: WindowInsetsAnimation): Tracker {
         var tracker: Tracker? = trackers[animation]
         if (tracker == null) {
             tracker = Tracker(animation)
@@ -232,16 +241,10 @@ private class ImeAnimationCallback(
         return tracker
     }
 
-    private fun WindowInsetsAnimationCompat.getWrapped() = InsetsReflectCache.run {
-        val animation = this@getWrapped
-        val impl = insetsAnimationCompat?.mImplField?.get(animation) ?: return null
-        insetsAnimationCompat?.mWrappedField?.get(impl) as? WindowInsetsAnimation
-    }
-
     /**
      * 跟踪[animation]的回调函数，检查每一步是否修改成功，若修改失败，则恢复初始值
      */
-    private inner class Tracker(private val animation: WindowInsetsAnimationCompat) {
+    private inner class Tracker(private val animation: WindowInsetsAnimation) {
         private val initialInterpolator = animation.interpolator
         private val initialDurationMillis = animation.durationMillis
         private var modifyInterpolatorOutcome = false
@@ -293,7 +296,9 @@ private class ImeAnimationCallback(
                 restoreSyncImeInterpolator()
             } else {
                 // 将恢复操作插到下一帧动画更新之前，尽可能减少修改静态变量造成的影响
-                Choreographer.getInstance().postFrameCallback { restoreSyncImeInterpolator() }
+                Choreographer.getInstance().postFrameCallbackDelayed({
+                    restoreSyncImeInterpolator()
+                }, Long.MIN_VALUE)
             }
             step = Step.COMPLETED
             val outcome = if (succeed) "成功" else "失败"
@@ -355,7 +360,6 @@ private object InsetsReflectCache : ReflectHelper {
             reflectSucceed = true
         }.onFailure {
             insetsAnimation = null
-            insetsAnimationCompat = null
             insetsController = null
             insetsAnimationRunner = null
             animationControlListener = null
@@ -371,15 +375,11 @@ private object InsetsReflectCache : ReflectHelper {
     }
 
     private fun reflectInsetsAnimationCompat() {
-        val mImplField = WindowInsetsAnimationCompat::class.java
-            .getDeclaredField("mImpl").toCache()
-        val impl30Class = Class.forName(
-            "androidx.core.view.WindowInsetsAnimationCompat\$Impl30"
-        )
-        insetsAnimationCompat = WindowInsetsAnimationCompatCache(
-            mImplField = mImplField,
-            mWrappedField = impl30Class.getDeclaredField("mWrapped").toCache()
-        )
+        val proxyCallbackClass = Class.forName(
+            "androidx.core.view.WindowInsetsAnimationCompat\$Impl30\$ProxyCallback")
+        val proxyCallbackConstructor = proxyCallbackClass
+            .getDeclaredConstructor(WindowInsetsAnimationCompat.Callback::class.java).toCache()
+        insetsAnimationCompat = WindowInsetsAnimationCompatCache(proxyCallbackConstructor)
     }
 
     private fun reflectInsetsController() {
@@ -398,8 +398,7 @@ private object InsetsReflectCache : ReflectHelper {
 
     private fun reflectInsetsAnimationRunner() {
         val insetsAnimationRunnerClass = Class.forName(
-            "android.view.InsetsAnimationControlImpl"
-        )
+            "android.view.InsetsAnimationControlImpl")
         val fields = insetsAnimationRunnerClass.declaredInstanceFields
         insetsAnimationRunner = InsetsAnimationControlImplCache(
             mListenerField = fields.find(name = "mListener").toCache(),
@@ -409,8 +408,7 @@ private object InsetsReflectCache : ReflectHelper {
 
     fun reflectAnimationControlListener() {
         val animationControlListenerClass = Class.forName(
-            "android.view.InsetsController\$InternalAnimationControlListener"
-        )
+            "android.view.InsetsController\$InternalAnimationControlListener")
         animationControlListener = InternalAnimationControlListenerCache(
             mDurationMsField = animationControlListenerClass
                 .declaredInstanceFields.find(name = "mDurationMs").toCache()
@@ -435,17 +433,18 @@ private class WindowInsetsAnimationCache(
 /**
  * ```
  * public final class WindowInsetsAnimationCompat {
- *     private Impl mImpl;
  *
  *     private static class Impl30 extends Impl {
- *         private final WindowInsetsAnimation mWrapped;
+ *         private static class ProxyCallback extends WindowInsetsAnimation.Callback {
+ *             ProxyCallback(@NonNull final WindowInsetsAnimationCompat.Callback compat)
+ *         }
  *     }
  * }
  * ```
  */
+@RequiresApi(30)
 private class WindowInsetsAnimationCompatCache(
-    val mImplField: FieldCache,
-    val mWrappedField: FieldCache
+    val proxyCallbackConstructor: ConstructorCache
 )
 
 /**

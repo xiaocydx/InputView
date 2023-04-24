@@ -18,6 +18,7 @@ package com.xiaocydx.inputview.compat
 
 import android.os.Build
 import org.lsposed.hiddenapibypass.HiddenApiBypass
+import java.lang.reflect.Constructor
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 
@@ -57,6 +58,8 @@ internal interface ReflectHelper {
 
     fun Field.toCache() = FieldCache(this)
 
+    fun Constructor<*>.toCache() = ConstructorCache(this)
+
     fun List<Field>.find(name: String): Field = first { it.name == name }
 
     fun List<Field>.findOrNull(name: String): Field? = find { it.name == name }
@@ -73,5 +76,15 @@ internal class FieldCache(private val field: Field) {
 
     fun set(obj: Any?, value: Any?): Boolean {
         return runCatching { field.set(obj, value) }.isSuccess
+    }
+}
+
+internal class ConstructorCache(private val constructor: Constructor<*>) {
+    init {
+        constructor.isAccessible = true
+    }
+
+    fun newInstance(vararg initargs: Any): Any? {
+        return runCatching { constructor.newInstance(*initargs) }.getOrNull()
     }
 }
