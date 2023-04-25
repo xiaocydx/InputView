@@ -58,7 +58,7 @@ import com.xiaocydx.inputview.compat.DispatchApplyInsetsFullscreenCompat.Compani
  * **注意**：Android 9.0和Android 10，若`window.attributes.flags`包含[FLAG_FULLSCREEN]，
  * 则[ViewCompat.setWindowInsetsAnimationCallback]设置的回调对象，其函数可能不会被调用，
  * 这个问题跟`WindowInsetsAnimationCompat.Impl21`的兼容代码有关，该函数不负责兼容这种情况，
- * 若实际场景需要设置回调对象以实现其他需求，则可以参考[EditorAnimator]实现兼容代码。
+ * 若实际场景需要设置回调对象以实现其他需求，则可以参考[EditorAnimator]的兼容方案。
  */
 fun Window.enableDispatchApplyInsetsFullscreenCompat() {
     if (isDispatchApplyInsetsFullscreenCompatEnabled) return
@@ -77,33 +77,10 @@ private class DispatchApplyInsetsFullscreenCompat(private val window: Window) {
     private val decorView = window.decorView
     private var listener: View.OnAttachStateChangeListener? = null
 
-    fun attach() {
-        if (Build.VERSION.SDK_INT !in 21..29) return
-        if (!ViewRootReflectCache.reflectSucceed) return
+    fun attach(): Unit = with(ViewRootReflection) {
+        if (Build.VERSION.SDK_INT !in 21..29 || !reflectSucceed) return
         removeListener()
-        doOnAttach {
-            @Suppress("DEPRECATION")
-            if (window.attributes.flags and FLAG_FULLSCREEN == 0) return@doOnAttach
-            val viewRootImpl = decorView.parent ?: return@doOnAttach
-            val viewRootHandler = decorView.handler ?: return@doOnAttach
-            ViewRootReflectCache.mScrollerField?.set(viewRootImpl, ViewRootScroller())
-            ViewRootReflectCache.mCallbackField?.set(viewRootHandler, ViewRootHandlerCallback())
-        }
-    }
-
-    fun detach() {
-        if (Build.VERSION.SDK_INT !in 21..29) return
-        if (!ViewRootReflectCache.reflectSucceed) return
-        removeListener()
-        val viewRootImpl = decorView.parent ?: return
-        val viewRootHandler = decorView.handler ?: return
-        ViewRootReflectCache.mScrollerField?.takeIf {
-            it.get(viewRootImpl) is ViewRootScroller
-        }?.set(viewRootImpl, null)
-
-        ViewRootReflectCache.mCallbackField?.takeIf {
-            it.get(viewRootHandler) is ViewRootHandlerCallback
-        }?.set(viewRootHandler, null)
+        doOnAttach { window.replaceViewRootOf(ViewRootScroller(), ViewRootHandlerCallback()) }
     }
 
     private inline fun doOnAttach(crossinline action: () -> Unit) {
@@ -167,9 +144,8 @@ private class DispatchApplyInsetsFullscreenCompat(private val window: Window) {
         }
 
         override fun computeScrollOffset(): Boolean {
-            val viewRootImpl = decorView.parent
-            if (maybeScrollYChanged && viewRootImpl != null) {
-                ViewRootReflectCache.mScrollYField?.set(viewRootImpl, 0)
+            if (maybeScrollYChanged) {
+                ViewRootReflection.apply { window.setViewRootScrollY(0) }
             }
             maybeScrollYChanged = false
             return false
@@ -224,10 +200,10 @@ private class DispatchApplyInsetsFullscreenCompat(private val window: Window) {
 
 @RequiresApi(21)
 @SuppressLint("PrivateApi")
-private object ViewRootReflectCache : ReflectHelper {
-    var mCallbackField: FieldCache? = null; private set
-    var mScrollYField: FieldCache? = null; private set
-    var mScrollerField: FieldCache? = null; private set
+private object ViewRootReflection : ReflectHelper {
+    private var mCallbackField: FieldCache? = null
+    private var mScrollYField: FieldCache? = null
+    private var mScrollerField: FieldCache? = null
     var reflectSucceed: Boolean = false; private set
 
     init {
@@ -244,5 +220,19 @@ private object ViewRootReflectCache : ReflectHelper {
             mScrollerField = null
             mCallbackField = null
         }
+    }
+
+    fun Window.replaceViewRootOf(scroller: Scroller, callback: Handler.Callback) {
+        @Suppress("DEPRECATION")
+        if (attributes.flags and FLAG_FULLSCREEN == 0) return
+        val viewRootImpl = decorView.parent ?: return
+        val viewRootHandler = decorView.handler ?: return
+        mScrollerField?.set(viewRootImpl, scroller)
+        mCallbackField?.set(viewRootHandler, callback)
+    }
+
+    fun Window.setViewRootScrollY(scrollY: Int) {
+        val viewRootImpl = decorView.parent ?: return
+        mScrollYField?.set(viewRootImpl, scrollY)
     }
 }

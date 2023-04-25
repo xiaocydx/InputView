@@ -29,6 +29,7 @@ import androidx.annotation.VisibleForTesting.PRIVATE
 import androidx.core.view.*
 import com.xiaocydx.inputview.compat.setOnApplyWindowInsetsListenerCompat
 import com.xiaocydx.inputview.compat.setWindowInsetsAnimationCallbackCompat
+import com.xiaocydx.inputview.compat.toCompat
 
 /**
  * 输入控件

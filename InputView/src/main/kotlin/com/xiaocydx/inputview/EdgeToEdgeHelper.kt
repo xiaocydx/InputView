@@ -36,13 +36,13 @@ import com.xiaocydx.inputview.compat.setOnApplyWindowInsetsListenerCompat
 interface EdgeToEdgeHelper {
 
     /**
-     * 获取状态栏高度
+     * 状态栏高度
      */
     val WindowInsetsCompat.statusBarHeight: Int
         get() = getInsets(statusBars()).top
 
     /**
-     * 获取导航栏高度
+     * 导航栏高度
      */
     val WindowInsetsCompat.navigationBarHeight: Int
         get() = getInsets(navigationBars()).bottom

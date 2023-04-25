@@ -84,6 +84,7 @@ internal class ConstructorCache(private val constructor: Constructor<*>) {
         constructor.isAccessible = true
     }
 
+    @Suppress("SpellCheckingInspection")
     fun newInstance(vararg initargs: Any): Any? {
         return runCatching { constructor.newInstance(*initargs) }.getOrNull()
     }

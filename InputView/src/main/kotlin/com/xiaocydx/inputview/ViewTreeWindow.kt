@@ -26,10 +26,6 @@ import android.view.animation.Interpolator
 import androidx.core.view.*
 import androidx.core.view.WindowInsetsCompat.Type.*
 import com.xiaocydx.inputview.compat.*
-import com.xiaocydx.inputview.compat.isDispatchApplyInsetsFullscreenCompatEnabled
-import com.xiaocydx.inputview.compat.modifyImeAnimationCompat
-import com.xiaocydx.inputview.compat.restoreImeAnimationCompat
-import com.xiaocydx.inputview.compat.setOnApplyWindowInsetsListenerCompat
 import java.lang.ref.WeakReference
 
 /**
@@ -192,11 +188,11 @@ internal class ViewTreeWindow(
         val rootRef = dispatchApplyWindowInsetsRoot
             ?.takeIf { it !== decorView }?.let(::WeakReference)
         window.setDecorFitsSystemWindowsCompat(false)
-        decorView.setOnApplyWindowInsetsListenerCompat { v, insets ->
+        decorView.setOnApplyWindowInsetsListenerCompat { _, insets ->
             window.checkDispatchApplyInsetsCompatibility()
             val applyInsets = insets.consume(alwaysConsumeTypeMask)
             val decorInsets = applyInsets.toDecorInsets(statusBarEdgeToEdge)
-            v.onApplyWindowInsetsCompat(decorInsets)
+            decorView.onApplyWindowInsetsCompat(decorInsets)
             contentRef?.get()?.updateMargins(
                 top = decorInsets.statusBarHeight,
                 bottom = decorInsets.navigationBarHeight
@@ -214,10 +210,10 @@ internal class ViewTreeWindow(
         check(!initialized) { "InputView.init()只能调用一次" }
         window.checkDispatchApplyInsetsCompatibility()
         window.setDecorFitsSystemWindowsCompat(false)
-        inputView.setOnApplyWindowInsetsListenerCompat { v, insets ->
+        inputView.setOnApplyWindowInsetsListenerCompat { _, insets ->
             window.checkDispatchApplyInsetsCompatibility()
-            v.updateMargins(bottom = when {
-                insets.supportGestureNavBarEdgeToEdge(v) -> 0
+            inputView.updateMargins(bottom = when {
+                insets.supportGestureNavBarEdgeToEdge(inputView) -> 0
                 else -> insets.navigationBarHeight
             })
             insets
@@ -229,10 +225,6 @@ internal class ViewTreeWindow(
     private fun WindowInsetsCompat.toDecorInsets(statusBarEdgeToEdge: Boolean): WindowInsetsCompat {
         var insets = this
         if (statusBarEdgeToEdge) {
-            if (window.statusBarColor != Color.TRANSPARENT) {
-                // Color.TRANSPARENT用于兼容部分设备仍然绘制背景色的问题
-                window.statusBarColor = Color.TRANSPARENT
-            }
             insets = insets.consume(statusBars())
         }
         if (supportGestureNavBarEdgeToEdge(decorView)) {
@@ -257,24 +249,8 @@ internal class ViewTreeWindow(
         return gestureNavBarEdgeToEdge && isGestureNavigationBar(view)
     }
 
-    /**
-     * 传入[view]是为了确保转换出的[WindowInsetsCompat]是正确的结果
-     */
-    fun WindowInsets.toCompat(view: View): WindowInsetsCompat {
-        return WindowInsetsCompat.toWindowInsetsCompat(this, view)
-    }
-
-    fun WindowInsetsAnimationCompat.containsImeType(): Boolean {
-        return typeMask and ime() == ime()
-    }
-
-    fun getRootWindowInsets(): WindowInsetsCompat? {
-        return decorView.getWindowInsetsCompat()
-    }
-
-    fun createWindowInsetsController(editText: View): WindowInsetsControllerCompat {
-        return WindowInsetsControllerCompat(window, editText)
-    }
+    fun createWindowInsetsController(editText: View) =
+            window.createWindowInsetsControllerCompat(editText)
 
     fun modifyImeAnimation(durationMillis: Long, interpolator: Interpolator) {
         window.modifyImeAnimationCompat(durationMillis, interpolator)

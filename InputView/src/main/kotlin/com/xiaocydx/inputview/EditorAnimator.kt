@@ -30,6 +30,8 @@ import androidx.core.animation.addListener
 import androidx.core.view.OneShotPreDrawListener
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsCompat.Type.ime
+import com.xiaocydx.inputview.compat.contains
 
 /**
  * [InputView]编辑区的[Editor]过渡动画
@@ -254,11 +256,13 @@ abstract class EditorAnimator(
             val record = AnimationRecord(previous, current)
             resetAnimationRecord(record)
             record.setStartViewAndEndView()
-            // 由于insetsAnimation的回调可能不会执行（Android 8.0首次显示IME可复现），因此做以下处理：
+            // Android 9.0以下的WindowInsets可变（InputView已兼容），
+            // Android 9.0、Android 10的window包含FLAG_FULLSCREEN，
+            // 可能导致insetsAnimation的回调不会执行，因此做以下处理：
             // 1. 预测是否将要运行insetsAnimation。
             // 2. 若不会运行insetsAnimation，则立即添加PreDrawRunSimpleAnimation。
-            // 3. 若将要运行insetsAnimation，则不立即添加PreDrawRunSimpleAnimation，
-            // 而是在onApplyWindowInsets()显示或隐藏IME时，才添加PreDrawRunSimpleAnimation，
+            // 3. 若将要运行insetsAnimation，则推迟添加PreDrawRunSimpleAnimation，
+            // 在onApplyWindowInsets()判断为显示或隐藏IME时，才添加PreDrawRunSimpleAnimation，
             // 这样做的目的是确保PreDrawRunSimpleAnimation在insetsAnimation的onStart()之后执行，
             // 当执行PreDrawRunSimpleAnimation时，若没有insetsAnimation，则运行simpleAnimation。
             record.setPreDrawRunSimpleAnimation action@{
@@ -275,8 +279,8 @@ abstract class EditorAnimator(
                 //    -> AnimationRecord.addPreDrawRunSimpleAnimation()
                 // 3. WindowInsetsAnimationCompat.Callback.onStart()
                 // 4. PreDrawRunSimpleAnimation.invoke()
-                // 若执行过程缺少第1、3步，则可能是insetsAnimation的内部逻辑出了问题，
-                // 第4步判断没有insetsAnimation，运行的simpleAnimation能修复这个问题。
+                // 若执行过程缺少第1、3步，则可能是没有运行insetsAnimation，
+                // 第4步判断没有insetsAnimation，运行simpleAnimation进行兼容。
             }
         }
 
@@ -318,9 +322,9 @@ abstract class EditorAnimator(
         override fun onStart(
             animation: WindowInsetsAnimationCompat,
             bounds: WindowInsetsAnimationCompat.BoundsCompat
-        ): WindowInsetsAnimationCompat.BoundsCompat = host?.window?.run {
+        ): WindowInsetsAnimationCompat.BoundsCompat {
             val record = animationRecord?.takeIf { it.simpleAnimation == null }
-            if (record == null || !animation.containsImeType()) return bounds
+            if (record == null || !animation.contains(ime())) return bounds
             record.apply {
                 setInsetsAnimation(animation)
                 setAnimationOffsetForCurrent()
@@ -330,18 +334,18 @@ abstract class EditorAnimator(
             if (record.startOffset == record.endOffset) {
                 dispatchAnimationEnd(record)
             }
-            bounds
-        } ?: bounds
+            return bounds
+        }
 
         override fun onProgress(
             insets: WindowInsetsCompat,
             runningAnimations: List<WindowInsetsAnimationCompat>
-        ): WindowInsetsCompat = host?.window?.run {
+        ): WindowInsetsCompat {
             animationRecord?.takeIf { it.handleInsetsAnimation }
                 ?.takeIf { runningAnimations.contains(it.insetsAnimation) }
                 ?.let(::dispatchAnimationUpdate)
-            insets
-        } ?: insets
+            return insets
+        }
 
         override fun onEnd(animation: WindowInsetsAnimationCompat) {
             animationRecord?.takeIf { it.handleInsetsAnimation }
