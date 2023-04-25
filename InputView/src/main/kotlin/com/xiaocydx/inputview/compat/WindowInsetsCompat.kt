@@ -32,30 +32,36 @@ import androidx.core.view.*
 import androidx.core.view.WindowInsetsCompat.Type.InsetsType
 import com.xiaocydx.inputview.R
 
-internal fun View.setOnApplyWindowInsetsListenerCompat(
+internal fun View.setOnApplyWindowInsetsListenerImmutableCompat(
     listener: OnApplyWindowInsetsListener? = defaultOnApplyWindowInsetsListener
 ): Unit = with(InsetsCompatReflection) {
-    val view = this@setOnApplyWindowInsetsListenerCompat
-    ViewCompat.setOnApplyWindowInsetsListener(view, listener)
+    setOnApplyWindowInsetsListenerCompat(listener)
     if (!isImmutableCompatNeeded || !reflectSucceed) return
     // 确保View.OnApplyWindowInsetsListener分发的WindowInsets不可变
-    immutableListenerCompat = listener?.run { view.setupImmutableListenerCompat() }
+    immutableListenerCompat = listener?.run { setupImmutableListenerCompat() }
 }
 
-internal fun View.setWindowInsetsAnimationCallbackCompat(
+internal fun View.setWindowInsetsAnimationCallbackImmutableCompat(
     callback: WindowInsetsAnimationCompat.Callback?
 ): Unit = with(InsetsCompatReflection) {
-    val view = this@setWindowInsetsAnimationCallbackCompat
-    ViewCompat.setWindowInsetsAnimationCallback(view, callback)
+    setWindowInsetsAnimationCallbackCompat(callback)
     if (!isImmutableCompatNeeded || !reflectSucceed) return
     if (isAttachedToWindow) {
-        // 确保Impl21OnApplyWindowInsetsListener构造函数创建的mLastInsets不可变
-        getLastInsetsFromProxyListener()?.toImmutable()
+        // 确保Impl21OnApplyWindowInsetsListener构造函数创建的mLastInsets生成缓存insets
+        getLastInsetsFromProxyListener()?.ensureCreateCacheInsets()
     }
     if (immutableListenerCompat == null) {
         // 确保Impl21OnApplyWindowInsetsListener分发的WindowInsets不可变
-        setOnApplyWindowInsetsListenerCompat()
+        setOnApplyWindowInsetsListenerImmutableCompat()
     }
+}
+
+internal fun View.setOnApplyWindowInsetsListenerCompat(listener: OnApplyWindowInsetsListener?) {
+    ViewCompat.setOnApplyWindowInsetsListener(this, listener)
+}
+
+internal fun View.setWindowInsetsAnimationCallbackCompat(callback: WindowInsetsAnimationCompat.Callback?) {
+    ViewCompat.setWindowInsetsAnimationCallback(this, callback)
 }
 
 /**
@@ -67,18 +73,19 @@ internal fun WindowInsets.toCompat(view: View) =
 @Suppress("DEPRECATION")
 internal fun WindowInsets.toImmutable(): WindowInsets = InsetsCompatReflection.run {
     if (!isImmutableCompatNeeded || !reflectSucceed) return this@toImmutable
-    // WindowInsetsCompat不兼容WindowInsets.mWindowDecorInsets，因此不需要修改
-    setStableInsets(stableInsetLeft, stableInsetTop, stableInsetRight, stableInsetBottom)
-    return replaceSystemWindowInsets(
+    val insets = replaceSystemWindowInsets(
         systemWindowInsetLeft, systemWindowInsetTop,
         systemWindowInsetRight, systemWindowInsetBottom
     )
+    // WindowInsetsCompat不兼容WindowInsets.mWindowDecorInsets，因此不需要修改
+    insets.setStableInsets(stableInsetLeft, stableInsetTop, stableInsetRight, stableInsetBottom)
+    return insets
 }
 
 @Suppress("DEPRECATION")
-internal fun WindowInsetsCompat.toImmutable(): WindowInsetsCompat {
-    if (!isImmutableCompatNeeded) return this
-    return apply { stableInsets }.apply { systemWindowInsets }
+internal fun WindowInsetsCompat.ensureCreateCacheInsets() {
+    if (!isImmutableCompatNeeded) return
+    apply { stableInsets }.apply { systemWindowInsets }
 }
 
 internal fun Window.setDecorFitsSystemWindowsCompat(decorFitsSystemWindows: Boolean) {
@@ -90,21 +97,16 @@ internal fun Window.createWindowInsetsControllerCompat(editText: View) =
 
 internal fun View.getRootWindowInsetsCompat() = ViewCompat.getRootWindowInsets(this)
 
-internal fun View.requestApplyInsetsCompat() {
-    ViewCompat.requestApplyInsets(this)
-}
+internal fun View.requestApplyInsetsCompat() = ViewCompat.requestApplyInsets(this)
 
-internal fun View.dispatchApplyWindowInsetsCompat(insets: WindowInsetsCompat) {
-    ViewCompat.dispatchApplyWindowInsets(this, insets)
-}
+internal fun View.dispatchApplyWindowInsetsCompat(insets: WindowInsetsCompat) =
+        ViewCompat.dispatchApplyWindowInsets(this, insets)
 
-internal fun View.onApplyWindowInsetsCompat(insets: WindowInsetsCompat) {
-    ViewCompat.onApplyWindowInsets(this, insets)
-}
+internal fun View.onApplyWindowInsetsCompat(insets: WindowInsetsCompat) =
+        ViewCompat.onApplyWindowInsets(this, insets)
 
-internal fun WindowInsetsAnimationCompat.contains(@InsetsType typeMask: Int): Boolean {
-    return this.typeMask and typeMask == typeMask
-}
+internal fun WindowInsetsAnimationCompat.contains(@InsetsType typeMask: Int) =
+        this.typeMask and typeMask == typeMask
 
 /**
  * Android 9.0及以上，[WindowInsets]不可变，不需要兼容
@@ -114,7 +116,7 @@ private val isImmutableCompatNeeded = Build.VERSION.SDK_INT in 21 until 28
 
 @RequiresApi(21)
 private val defaultOnApplyWindowInsetsListener =
-        OnApplyWindowInsetsListener { v, insets -> ViewCompat.onApplyWindowInsets(v, insets) }
+        OnApplyWindowInsetsListener { v, insets -> v.onApplyWindowInsetsCompat(insets) }
 
 @get:RequiresApi(21)
 private var View.immutableListenerCompat: WindowInsetsImmutableListenerCompat?
