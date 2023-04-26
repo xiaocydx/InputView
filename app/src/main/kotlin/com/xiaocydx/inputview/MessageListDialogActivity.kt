@@ -56,7 +56,7 @@ private const val statusBarEdgeToEdge = true
 private const val gestureNavBarEdgeToEdge = true
 
 /**
- * [R.style.MessageListDialog]最重要的是`windowIsFloating = false`，这能让Dialog的视图树有insets分发，
+ * [R.style.MessageListDialog]最重要的是`windowIsFloating = false`，这能让Dialog的视图树有WindowInsets分发，
  * 例如[BottomSheetDialog]的默认主题包含`windowIsFloating = false`，布局文件是`design_bottom_sheet_dialog.xml`
  * id为`coordinator`和`design_bottom_sheet`的View实现边到边，id为`touch_outside`的View实现`canceledOnTouchOutside`。
  */
@@ -106,10 +106,9 @@ class MessageListBottomSheetDialog(
 ) : BottomSheetDialog(context, theme) {
 
     /**
-     * `InputView.init()`不对`decorView`到`binding.root`之间的View分发insets，
-     * 作用是去除[BottomSheetDialog]的边到边实现，自行实现状态栏和导航栏边到边，
-     * 以及确保`binding.root`的insets分发正常和Android 11以下insets动画回调正常，
-     * 自行实现边到边虽然有点麻烦，但是会更加灵活，能满足实际场景不同的需求。
+     * `InputView.init()`不对`decorView`到`binding.root`之间的View分发WindowInsets，
+     * 目的是去除[BottomSheetDialog]的边到边实现，自行实现状态栏和导航栏边到边（虽然麻烦，但是灵活），
+     * 以及确保`binding.root`的WindowInsets分发正常和Android 11以下WindowInsets动画回调正常。
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

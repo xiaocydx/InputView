@@ -116,13 +116,13 @@ interface EdgeToEdgeHelper {
             block(view, insets, initialState)
             insets
         }
-        // 当view首次或再次附加到window时，可能错过insets分发,
-        // 因此主动申请insets分发，确保调用block完成视图初始化。
+        // 当view首次或再次附加到window时，可能错过WindowInsets分发,
+        // 因此主动申请WindowInsets分发，确保调用block完成视图初始化。
         requestApplyInsetsOnAttach()
     }
 
     /**
-     * 当附加到window时，申请insets分发
+     * 当附加到window时，申请WindowInsets分发
      */
     fun View.requestApplyInsetsOnAttach() {
         if (isAttachedToWindow) {

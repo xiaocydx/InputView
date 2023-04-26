@@ -63,9 +63,8 @@ import java.lang.ref.WeakReference
  * }
  * ```
  * 不对`window.decorView`到`root`之间的View分发`applyInsets`，
- * 作用是去除中间View的边到边实现，自行实现状态栏和导航栏边到边，
- * 以及确保`root`的insets分发正常和Android 11以下insets动画回调正常，
- * 自行实现边到边虽然有点麻烦，但是会更加灵活，能满足实际场景不同的需求。
+ * 目的是去除中间View的边到边实现，自行实现状态栏和导航栏边到边（虽然麻烦，但是灵活），
+ * 以及确保`root`的WindowInsets分发正常和Android 11以下WindowInsets动画回调正常。
  */
 fun InputView.Companion.init(
     window: Window,
@@ -82,7 +81,7 @@ fun InputView.Companion.init(
 /**
  * 初始化[InputView]所需的配置
  *
- * 该函数用于兼容已有的insets分发处理方案，例如单Activity多Fragment结构。
+ * 该函数用于兼容已有的WindowInsets分发处理方案，例如单Activity多Fragment结构。
  *
  * **注意**：[window]需要通过[Window.checkDispatchApplyInsetsCompatibility]的检查。
  *
