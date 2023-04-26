@@ -18,6 +18,7 @@ package com.xiaocydx.inputview
 
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowInsets
 import androidx.annotation.CheckResult
 import androidx.annotation.Px
 import androidx.core.graphics.Insets
@@ -122,7 +123,7 @@ interface EdgeToEdgeHelper {
     }
 
     /**
-     * 当附加到window时，申请WindowInsets分发
+     * 当附加到window时，申请[WindowInsets]分发
      */
     fun View.requestApplyInsetsOnAttach() {
         if (isAttachedToWindow) {
@@ -131,6 +132,7 @@ interface EdgeToEdgeHelper {
         removeRequestApplyInsetsOnAttach()
         val listener = object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(view: View) {
+                if (!canRequestApplyInsetsOnAttach(view)) return
                 view.requestApplyInsetsCompat()
             }
 
@@ -147,6 +149,7 @@ interface EdgeToEdgeHelper {
         getTag(R.id.tag_view_request_apply_insets)
             ?.let { it as? View.OnAttachStateChangeListener }
             ?.let(::removeOnAttachStateChangeListener)
+        clearSkipOnceRequestApplyInsetsOnAttach(this)
     }
 
     /**
@@ -173,6 +176,25 @@ interface EdgeToEdgeHelper {
  */
 @Suppress("FunctionName")
 inline fun <R> EdgeToEdgeHelper(block: EdgeToEdgeHelper.() -> R): R = with(EdgeToEdgeHelper, block)
+
+/**
+ * [EditorAnimator]的切换逻辑跟[EdgeToEdgeHelper.requestApplyInsetsOnAttach]产生冲突，
+ * 当全部[Editor]使用[EdgeToEdgeHelper.requestApplyInsetsOnAttach]时，才不会产生冲突，
+ * 目前这种处理方式能避免申请冗余的[WindowInsets]分发，若有了更好的处理方式，则进行替换。
+ */
+internal fun EdgeToEdgeHelper.Companion.skipOnceRequestApplyInsetsOnAttach(view: View) {
+    view.setTag(R.id.tag_view_request_apply_insets_skip, true)
+}
+
+private fun EdgeToEdgeHelper.Companion.clearSkipOnceRequestApplyInsetsOnAttach(view: View) {
+    view.setTag(R.id.tag_view_request_apply_insets_skip, false)
+}
+
+private fun EdgeToEdgeHelper.Companion.canRequestApplyInsetsOnAttach(view: View): Boolean {
+    val skip = view.getTag(R.id.tag_view_request_apply_insets_skip)
+    clearSkipOnceRequestApplyInsetsOnAttach(view)
+    return skip != true
+}
 
 /**
  * 视图的初始状态

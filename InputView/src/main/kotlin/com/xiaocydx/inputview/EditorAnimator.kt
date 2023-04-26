@@ -405,6 +405,8 @@ abstract class EditorAnimator(
             }
             val view = host.previousView
             if (view != null && view.parent == null) {
+                // 动画结束时就移除startView，因此添加不需要申请WindowInsets分发
+                EdgeToEdgeHelper.skipOnceRequestApplyInsetsOnAttach(view)
                 startView = view
                 host.addView(view)
             }
