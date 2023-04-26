@@ -23,6 +23,7 @@ import android.view.*
 import android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
 import android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
 import android.view.animation.Interpolator
+import androidx.annotation.CheckResult
 import androidx.core.view.*
 import androidx.core.view.WindowInsetsCompat.Type.*
 import com.xiaocydx.inputview.compat.*
@@ -52,12 +53,12 @@ import java.lang.ref.WeakReference
  * ）
  * ```
  *
- * @param dispatchApplyWindowInsetsRoot 直接分发insets的`root`。
- * 若`root != null`，则实际效果等同于：
+ * @param dispatchApplyWindowInsetsRoot 直接分发WindowInsets的`root`。
+ * 当`root != null`时，实际效果可以理解为：
  * ```
  * val root = dispatchApplyWindowInsetsRoot
  * ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
- *     val applyInsets = insets.consume(alwaysConsumeTypeMask)
+ *     val applyInsets = ViewCompat.onApplyWindowInsets(window.decorView, insets)
  *     ViewCompat.dispatchApplyWindowInsets(root, applyInsets)
  *     WindowInsetsCompat.CONSUMED
  * }
@@ -180,35 +181,46 @@ internal class ViewTreeWindow(
         check(!initialized) { "InputView.init()只能调用一次" }
         @Suppress("DEPRECATION")
         window.setSoftInputMode(SOFT_INPUT_ADJUST_RESIZE)
+        window.setDecorFitsSystemWindowsCompat(false)
         window.checkDispatchApplyInsetsCompatibility()
 
-        val contentRef = decorView.children
+        val contentRootRef = decorView.children
             .firstOrNull { it is ViewGroup }?.let(::WeakReference)
-        val rootRef = dispatchApplyWindowInsetsRoot
+        val contentViewRef = dispatchApplyWindowInsetsRoot
             ?.takeIf { it !== decorView }?.let(::WeakReference)
-        window.setDecorFitsSystemWindowsCompat(false)
         decorView.setOnApplyWindowInsetsListenerCompat { _, insets ->
             window.checkDispatchApplyInsetsCompatibility()
-            val applyInsets = insets.consume(alwaysConsumeTypeMask)
-            val decorInsets = applyInsets.toDecorInsets(statusBarEdgeToEdge)
-            decorView.onApplyWindowInsetsCompat(decorInsets)
-            contentRef?.get()?.updateMargins(
-                top = decorInsets.statusBarHeight,
-                bottom = decorInsets.navigationBarHeight
+
+            var applyInsets = insets.consume(alwaysConsumeTypeMask)
+            val edgeToEdgeInsets = applyInsets.consumeSystemBars(statusBarEdgeToEdge)
+            val decorInsets = decorView.onApplyWindowInsetsCompat(edgeToEdgeInsets)
+
+            // 在DecorView处理完ContentRoot的Margins后，再设置Margins
+            contentRootRef?.get()?.updateMargins(
+                top = edgeToEdgeInsets.statusBarHeight,
+                bottom = edgeToEdgeInsets.navigationBarHeight
             )
 
-            rootRef?.get()?.let { root ->
-                root.dispatchApplyWindowInsetsCompat(applyInsets)
+            if (!WINDOW_INSETS_IMMUTABLE_DEBUG) {
+                // 对子View分发DecorView处理后的结果，确保WindowInsets不可变，
+                // 补充EdgeToEdge消费的Insets，子View的间距需要适应这些Insets。
+                applyInsets = decorInsets.replaceSystemBars(applyInsets)
+            }
+
+            contentViewRef?.get()?.let { contentView ->
+                contentView.dispatchApplyWindowInsetsCompat(applyInsets)
                 WindowInsetsCompat.CONSUMED
             } ?: applyInsets
         }
+
         decorView.viewTreeWindow = this
     }
 
     fun attachToInputView(inputView: InputView) {
         check(!initialized) { "InputView.init()只能调用一次" }
-        window.checkDispatchApplyInsetsCompatibility()
         window.setDecorFitsSystemWindowsCompat(false)
+        window.checkDispatchApplyInsetsCompatibility()
+
         inputView.setOnApplyWindowInsetsListenerCompat { _, insets ->
             window.checkDispatchApplyInsetsCompatibility()
             inputView.updateMargins(bottom = when {
@@ -217,11 +229,13 @@ internal class ViewTreeWindow(
             })
             insets
         }
+
         decorView.viewTreeWindow = this
         inputView.viewTreeWindow = this
     }
 
-    private fun WindowInsetsCompat.toDecorInsets(statusBarEdgeToEdge: Boolean): WindowInsetsCompat {
+    @CheckResult
+    private fun WindowInsetsCompat.consumeSystemBars(statusBarEdgeToEdge: Boolean): WindowInsetsCompat {
         var insets = this
         if (statusBarEdgeToEdge) {
             insets = insets.consume(statusBars())
@@ -230,6 +244,23 @@ internal class ViewTreeWindow(
             insets = insets.consume(navigationBars())
         }
         return insets
+    }
+
+    @CheckResult
+    private fun WindowInsetsCompat.replaceSystemBars(target: WindowInsetsCompat): WindowInsetsCompat {
+        val currentStatusBars = this.getInsets(statusBars())
+        val currentNavigationBars = this.getInsets(navigationBars())
+        val targetStatusBars = target.getInsets(statusBars())
+        val targetNavigationBars = target.getInsets(navigationBars())
+
+        if (currentStatusBars != targetStatusBars
+                || currentNavigationBars != targetNavigationBars) {
+            return WindowInsetsCompat.Builder(this)
+                .setInsets(statusBars(), targetStatusBars)
+                .setInsets(navigationBars(), targetNavigationBars)
+                .build()
+        }
+        return this
     }
 
     val WindowInsetsCompat.imeHeight
@@ -252,10 +283,10 @@ internal class ViewTreeWindow(
             window.createWindowInsetsControllerCompat(editText)
 
     fun modifyImeAnimation(durationMillis: Long, interpolator: Interpolator) {
-        window.modifyImeAnimationCompat(durationMillis, interpolator)
+        window.modifyImeAnimation(durationMillis, interpolator)
     }
 
     fun restoreImeAnimation() {
-        window.restoreImeAnimationCompat()
+        window.restoreImeAnimation()
     }
 }

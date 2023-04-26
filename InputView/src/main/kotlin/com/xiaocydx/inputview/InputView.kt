@@ -27,8 +27,8 @@ import android.widget.EditText
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.PRIVATE
 import androidx.core.view.*
-import com.xiaocydx.inputview.compat.setOnApplyWindowInsetsListenerImmutableCompat
-import com.xiaocydx.inputview.compat.setWindowInsetsAnimationCallbackImmutableCompat
+import com.xiaocydx.inputview.compat.setOnApplyWindowInsetsListenerImmutable
+import com.xiaocydx.inputview.compat.setWindowInsetsAnimationCallbackImmutable
 import com.xiaocydx.inputview.compat.toCompat
 
 /**
@@ -387,7 +387,7 @@ class InputView @JvmOverloads constructor(
         }
 
         override fun setOnApplyWindowInsetsListener(listener: OnApplyWindowInsetsListenerCompat?) {
-            editorView.setOnApplyWindowInsetsListenerImmutableCompat(listener)
+            editorView.setOnApplyWindowInsetsListenerImmutable(listener)
         }
 
         override fun setWindowInsetsAnimationCallback(
@@ -406,7 +406,7 @@ class InputView @JvmOverloads constructor(
                 } else {
                     window.modifyImeAnimation(durationMillis, interpolator)
                 }
-                editorView.setWindowInsetsAnimationCallbackImmutableCompat(callback)
+                editorView.setWindowInsetsAnimationCallbackImmutable(callback)
             }
         }
     }

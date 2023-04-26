@@ -56,7 +56,7 @@ import com.xiaocydx.inputview.R
  * Android 11以下兼容代码的`interpolator = DecelerateInterpolator()`，
  * Android 11及以上系统代码的`interpolator = PathInterpolator(0.2f, 0f, 0f, 1f)`。
  */
-internal fun Window.modifyImeAnimationCompat(
+internal fun Window.modifyImeAnimation(
     durationMillis: Long = NO_VALUE,
     interpolator: Interpolator? = null,
 ) {
@@ -82,16 +82,16 @@ internal fun Window.modifyImeAnimationCompat(
 }
 
 /**
- * 恢复[modifyImeAnimationCompat]修改的`durationMillis`和`interpolator`
+ * 恢复[modifyImeAnimation]修改的`durationMillis`和`interpolator`
  */
-internal fun Window.restoreImeAnimationCompat() {
+internal fun Window.restoreImeAnimation() {
     if (!supportModifyImeAnimation) return
     decorView.doOnAttach { decorView.setWindowInsetsAnimationCallback(insetsAnimationCallback) }
 }
 
 /**
  * 对`window.decorView`设置[WindowInsetsAnimationCompat.Callback]，
- * 该函数能避免跟[modifyImeAnimationCompat]产生冲突，实际效果等同于：
+ * 该函数能避免跟[modifyImeAnimation]产生冲突，实际效果等同于：
  * ```
  * ViewCompat.setWindowInsetsAnimationCallback(window.decorView, callback)
  * ```
@@ -104,7 +104,7 @@ internal fun Window.setWindowInsetsAnimationCallbackCompat(callback: WindowInset
         InsetsAnimationReflection.insetsAnimationCompat?.createProxyCallback(callback)
     }
     insetsAnimationCallback = proxyCallback
-    imeAnimationCallback?.apply { modifyImeAnimationCompat(durationMillis, interpolator) }
+    imeAnimationCallback?.apply { modifyImeAnimation(durationMillis, interpolator) }
             ?: run { decorView.setWindowInsetsAnimationCallback(insetsAnimationCallback) }
 }
 
