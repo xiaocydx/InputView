@@ -1,7 +1,6 @@
 package com.xiaocydx.inputview
 
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.os.Bundle
 import android.view.*
 import android.view.MotionEvent.ACTION_DOWN
@@ -16,11 +15,6 @@ import com.xiaocydx.inputview.databinding.MessageListBinding
 import com.xiaocydx.sample.onClick
 
 /**
- * [InputView]的消息列表Activity示例代码
- *
- * **注意**：需要确保`androidx.appcompat`的版本足够高，因为高版本修复了[WindowInsetsCompat]常见的问题，
- * 例如高版本修复了应用退至后台，再重新显示，调用[WindowInsetsControllerCompat.show]显示IME无效的问题。
- *
  * @author xcc
  * @date 2023/1/8
  */
@@ -30,10 +24,7 @@ class MessageListActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         // 1. 初始化InputView所需的配置
         InputView.init(window, gestureNavBarEdgeToEdge = true)
-        setContentView(MessageListBinding.inflate(layoutInflater).init(window).apply {
-            // MessageListDialogActivity是消息列表Dialog示例代码
-            tvTitle.onClick { startActivity(Intent(root.context, MessageListDialogActivity::class.java)) }
-        }.root)
+        setContentView(MessageListBinding.inflate(layoutInflater).init(window).root)
     }
 }
 

@@ -8,7 +8,6 @@ import android.os.Bundle
 import android.view.View
 import android.view.Window
 import androidx.annotation.StyleRes
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDialog
 import androidx.core.graphics.Insets
 import androidx.core.view.*
@@ -17,41 +16,8 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.bottomsheet.SimpleBottomSheetCallback
-import com.xiaocydx.inputview.databinding.ActivityMessageListDialogBinding
 import com.xiaocydx.inputview.databinding.MessageListBinding
-import com.xiaocydx.sample.onClick
 import com.xiaocydx.sample.suppressLayoutCompat
-
-/**
- * [InputView]的消息列表Dialog示例代码
- *
- * **注意**：需要确保`androidx.appcompat`的版本足够高，因为高版本修复了[WindowInsetsCompat]常见的问题，
- * 例如高版本修复了应用退至后台，再重新显示，调用[WindowInsetsControllerCompat.show]显示IME无效的问题。
- *
- * @author xcc
- * @date 2023/1/26
- */
-class MessageListDialogActivity : AppCompatActivity() {
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        val binding = ActivityMessageListDialogBinding.inflate(layoutInflater)
-        binding.apply {
-            val context = root.context
-            btnDialog.onClick { MessageListDialog(context).show() }
-            btnDialogFragment.onClick {
-                MessageListDialogFragment().show(supportFragmentManager, null)
-            }
-            btnBottomSheetDialog.onClick {
-                MessageListBottomSheetDialog(context).show()
-            }
-            btnBottomSheetDialogFragment.onClick {
-                MessageListBottomSheetDialogFragment().show(supportFragmentManager, null)
-            }
-        }
-        setContentView(binding.root)
-    }
-}
 
 private const val statusBarEdgeToEdge = true
 private const val gestureNavBarEdgeToEdge = true
