@@ -10,6 +10,7 @@ import android.view.Window
 import androidx.annotation.StyleRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDialog
+import androidx.core.graphics.Insets
 import androidx.core.view.*
 import androidx.fragment.app.DialogFragment
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -144,19 +145,16 @@ class MessageListBottomSheetDialog(
         private val color: Int,
         private val binding: MessageListBinding
     ) : OnApplyWindowInsetsListener, SimpleBottomSheetCallback() {
+        private var lastStatusBars = Insets.NONE
         private var background: Drawable? = null
-        private var lastInsets = WindowInsetsCompat.CONSUMED
         private val controller = WindowInsetsControllerCompat(window, window.decorView)
 
         init {
             controller.isAppearanceLightStatusBars = true
         }
 
-        /**
-         * [lastInsets]用于减少[ViewCompat.getRootWindowInsets]的调用次数
-         */
         override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
-            lastInsets = insets
+            lastStatusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             return insets
         }
 
@@ -181,8 +179,7 @@ class MessageListBottomSheetDialog(
             if (background == null) {
                 background = object : ColorDrawable(color) {
                     override fun setBounds(left: Int, top: Int, right: Int, bottom: Int) {
-                        val statusBars = lastInsets.getInsets(WindowInsetsCompat.Type.statusBars())
-                        val finalBottom = bottom.coerceAtMost(statusBars.top)
+                        val finalBottom = bottom.coerceAtMost(lastStatusBars.top)
                         super.setBounds(left, top, right, finalBottom)
                     }
                 }
@@ -206,10 +203,9 @@ class MessageListBottomSheetDialog(
         }
 
         private fun updatePadding(bottomSheet: View) {
-            val statusBars = lastInsets.getInsets(WindowInsetsCompat.Type.statusBars())
-            if (bottomSheet.top < statusBars.top) {
+            if (bottomSheet.top < lastStatusBars.top) {
                 controller.isAppearanceLightStatusBars = true
-                bottomSheet.updatePadding(top = statusBars.top - bottomSheet.top)
+                bottomSheet.updatePadding(top = lastStatusBars.top - bottomSheet.top)
             } else {
                 controller.isAppearanceLightStatusBars = false
                 bottomSheet.updatePadding(top = 0)
