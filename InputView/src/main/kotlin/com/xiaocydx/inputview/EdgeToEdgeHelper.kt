@@ -25,6 +25,7 @@ import androidx.core.graphics.Insets
 import androidx.core.view.*
 import androidx.core.view.WindowInsetsCompat.Type.*
 import androidx.recyclerview.widget.RecyclerView
+import com.xiaocydx.inputview.EdgeToEdgeHelper.Companion.requestApplyInsetsOnAttach
 import com.xiaocydx.inputview.compat.requestApplyInsetsCompat
 import com.xiaocydx.inputview.compat.setOnApplyWindowInsetsListenerCompat
 
@@ -59,11 +60,13 @@ interface EdgeToEdgeHelper {
 
     /**
      * 是否为手势导航栏
+     *
+     * **注意**：若导航栏被隐藏，则该函数返回`true`，此时导航栏高度为0，
+     * 实际场景可以将隐藏的导航栏，当作手势导航栏来处理，一般不会有问题。
      */
     fun WindowInsetsCompat.isGestureNavigationBar(view: View): Boolean {
         val threshold = (24 * view.resources.displayMetrics.density).toInt()
-        val stableHeight = getInsetsIgnoringVisibility(navigationBars()).bottom
-        return stableHeight <= threshold.coerceAtLeast(66)
+        return navigationBarHeight <= threshold.coerceAtLeast(66)
     }
 
     /**
