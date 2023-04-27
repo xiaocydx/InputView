@@ -192,7 +192,7 @@ internal class ViewTreeWindow(
             window.checkDispatchApplyInsetsCompatibility()
 
             val applyInsets = insets.consume(alwaysConsumeTypeMask)
-            val edgeToEdgeInsets = applyInsets.consumeSystemBars(statusBarEdgeToEdge)
+            val edgeToEdgeInsets = applyInsets.edgeToEdge(statusBarEdgeToEdge)
             decorView.onApplyWindowInsetsCompat(edgeToEdgeInsets)
 
             // 在DecorView处理完ContentRoot的Margins后，再设置Margins
@@ -201,14 +201,6 @@ internal class ViewTreeWindow(
                 bottom = edgeToEdgeInsets.navigationBarHeight
             )
 
-            // TODO: 2023/4/27
-            //  返回DecorView处理的结果，无法处理BottomSheetDialog不实现EdgeToEdge的情况，
-            //  目前未确定问题的具体原因，等确定原因了，再决定是否保留这段代码，暂时注释掉。
-            // if (!WINDOW_INSETS_IMMUTABLE_DEBUG) {
-            //     // 对子View分发DecorView处理后的结果，确保WindowInsets不可变，
-            //     // 补充EdgeToEdge消费的Insets，子View的间距需要适应这些Insets。
-            //     applyInsets = decorInsets.replaceSystemBars(applyInsets)
-            // }
             contentViewRef?.get()?.let { contentView ->
                 contentView.dispatchApplyWindowInsetsCompat(applyInsets)
                 WindowInsetsCompat.CONSUMED
@@ -237,7 +229,7 @@ internal class ViewTreeWindow(
     }
 
     @CheckResult
-    private fun WindowInsetsCompat.consumeSystemBars(statusBarEdgeToEdge: Boolean): WindowInsetsCompat {
+    private fun WindowInsetsCompat.edgeToEdge(statusBarEdgeToEdge: Boolean): WindowInsetsCompat {
         var insets = this
         if (statusBarEdgeToEdge) {
             insets = insets.consume(statusBars())
@@ -247,23 +239,6 @@ internal class ViewTreeWindow(
         }
         return insets
     }
-
-    // @CheckResult
-    // private fun WindowInsetsCompat.replaceSystemBars(target: WindowInsetsCompat): WindowInsetsCompat {
-    //     val currentStatusBars = this.getInsets(statusBars())
-    //     val currentNavigationBars = this.getInsets(navigationBars())
-    //     val targetStatusBars = target.getInsets(statusBars())
-    //     val targetNavigationBars = target.getInsets(navigationBars())
-    //
-    //     if (currentStatusBars != targetStatusBars
-    //             || currentNavigationBars != targetNavigationBars) {
-    //         return WindowInsetsCompat.Builder(this)
-    //             .setInsets(statusBars(), targetStatusBars)
-    //             .setInsets(navigationBars(), targetNavigationBars)
-    //             .build()
-    //     }
-    //     return this
-    // }
 
     val WindowInsetsCompat.imeHeight
         get() = getInsets(ime()).bottom

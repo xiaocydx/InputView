@@ -32,21 +32,12 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import com.xiaocydx.inputview.R
-import com.xiaocydx.inputview.ViewTreeWindow
-
-/**
- * 当该常量为`true`时：
- * 1. [ViewTreeWindow]不返回DecorView处理[WindowInsets]后的结果。确保在调试状态下不受DecorView影响。
- * 2. [setOnApplyWindowInsetsListenerImmutable]和[setWindowInsetsAnimationCallbackImmutable]不启用兼容方案。
- */
-internal const val WINDOW_INSETS_IMMUTABLE_DEBUG = false
 
 /**
  * Android 9.0及以上，[WindowInsets]不可变，不需要兼容
  */
 @ChecksSdkIntAtLeast(api = 21)
-private val isImmutableNeeded = !WINDOW_INSETS_IMMUTABLE_DEBUG
-        && Build.VERSION.SDK_INT in 21 until 28
+private val isImmutableNeeded = Build.VERSION.SDK_INT in 21 until 28
 
 /**
  * 兼容Android 9.0以下[WindowInsets]可变的问题
