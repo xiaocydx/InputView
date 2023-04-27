@@ -30,12 +30,11 @@ import java.lang.ref.WeakReference
  * @author xcc
  * @date 2023/1/18
  */
-internal class EditTextHolder(
-    editText: EditText,
-    private var window: ViewTreeWindow?
-) {
+internal class EditTextHolder(editText: EditText, window: ViewTreeWindow?) {
     private val location = IntArray(2)
     private val editTextRef = WeakReference(editText)
+    private val callback = HideTextSelectHandleWhileAnimationStart()
+    private var host: EditorHost? = null
     private var controller: WindowInsetsControllerCompat? = null
     private val editText: EditText?
         get() {
@@ -65,28 +64,21 @@ internal class EditTextHolder(
     }
 
     fun onAttachedToWindow(window: ViewTreeWindow) {
-        this.window = window
         val editText = editText
         if (controller == null && editText != null) {
             controller = window.createWindowInsetsController(editText)
         }
     }
 
-    var showSoftInputOnFocus: Boolean
-        get() = editText?.showSoftInputOnFocus ?: false
-        set(value) {
-            val editText = editText ?: return
-            // 虽然源码是单纯的赋值逻辑，但是出于稳妥起见，做差异对比
-            if (editText.showSoftInputOnFocus != value) {
-                editText.showSoftInputOnFocus = value
-            }
-        }
+    fun onAttachToEditorHost(host: EditorHost) {
+        this.host = host
+        host.addAnimationCallback(callback)
+    }
 
-    val hasTextSelectHandleLeftToRight: Boolean
-        get() {
-            val editText = editText ?: return false
-            return editText.selectionStart != editText.selectionEnd
-        }
+    fun onDetachFromEditorHost(host: EditorHost) {
+        this.host = null
+        host.removeAnimationCallback(callback)
+    }
 
     fun hasFocus(): Boolean {
         return editText?.hasFocus() ?: false
@@ -108,22 +100,75 @@ internal class EditTextHolder(
         controller?.hide(WindowInsetsCompat.Type.ime())
     }
 
-    fun hideTextSelectHandle(keepFocus: Boolean = true) {
+    /**
+     * 重置[afterDispatchTouchEvent]的处理
+     */
+    fun beforeDispatchTouchEvent(ev: MotionEvent) {
+        if (ev.action == MotionEvent.ACTION_DOWN) {
+            // 按下时，将EditText重置为获得焦点显示IME
+            editText?.showSoftInputOnFocus = true
+        }
+    }
+
+    /**
+     * 点击[EditText]显示IME，需要隐藏水滴状指示器，避免动画运行时不断跨进程通信，进而造成卡顿。
+     */
+    fun afterDispatchTouchEvent(ev: MotionEvent) {
+        val editText = editText ?: return
+        val ime = host?.ime ?: return
+        val current = host?.current
+        if (ev.action == MotionEvent.ACTION_UP && current !== ime
+                && editText.showSoftInputOnFocus && editText.isTouched(ev)) {
+            // 点击EditText显示IME，手指抬起时隐藏水滴状指示器
+            hideTextSelectHandle()
+        }
+        if (ev.action != MotionEvent.ACTION_DOWN) {
+            // 若EditText有左右水滴状指示器，则表示文本被选中，此时不显示IME
+            editText.showSoftInputOnFocus = !editText.hasTextSelectHandleLeftRight()
+        }
+    }
+
+    /**
+     * 由于`textSelectHandleXXX`是Android 10才有的属性，即[EditText]的水滴状指示器，
+     * 因此通过[clearFocus]隐藏水滴状指示器，若[keepFocus]为`true`，则重新获得焦点。
+     */
+    private fun hideTextSelectHandle(keepFocus: Boolean = true) {
         if (!hasFocus()) return
         clearFocus()
         if (keepFocus) requestFocus()
     }
 
-    fun isTouched(ev: MotionEvent): Boolean {
-        val editText = editText
-        if (editText == null || !editText.isVisible) return false
-        editText.getLocationOnScreen(location)
+    /**
+     * 由于`textSelectHandleLeft`和`textSelectHandleRight`是Android 10才有的属性，
+     * 因此用`selectionStart != selectionEnd`为`true`表示当前有左右水滴状指示器。
+     */
+    private fun EditText.hasTextSelectHandleLeftRight(): Boolean {
+        return selectionStart != selectionEnd
+    }
+
+    private fun EditText.isTouched(ev: MotionEvent): Boolean {
+        if (!isVisible) return false
+        getLocationOnScreen(location)
         val left = location[0]
         val top = location[1]
-        val right = left + editText.width
-        val bottom = top + editText.height
+        val right = left + width
+        val bottom = top + height
         val isContainX = ev.rawX in left.toFloat()..right.toFloat()
         val isContainY = ev.rawY in top.toFloat()..bottom.toFloat()
         return isContainX && isContainY
+    }
+
+    /**
+     * 在实际场景中，交互可能是先选中[EditText]的文本内容，再点击其它地方切换[Editor]，
+     * 当动画开始时，隐藏左右水滴状指示器，避免动画运行时不断跨进程通信，进而造成卡顿。
+     */
+    private inner class HideTextSelectHandleWhileAnimationStart : ReplicableAnimationCallback {
+
+        override fun onAnimationStart(state: AnimationState) {
+            val editText = editText ?: return
+            if (editText.selectionStart != editText.selectionEnd) {
+                hideTextSelectHandle(keepFocus = state.isIme(state.current))
+            }
+        }
     }
 }

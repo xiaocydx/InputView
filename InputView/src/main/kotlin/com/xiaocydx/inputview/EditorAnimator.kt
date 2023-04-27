@@ -18,12 +18,10 @@ package com.xiaocydx.inputview
 
 import android.animation.ValueAnimator
 import android.os.Build
-import android.view.MotionEvent
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.Interpolator
 import android.view.animation.LinearInterpolator
-import android.widget.EditText
 import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
 import androidx.core.animation.addListener
@@ -112,37 +110,6 @@ abstract class EditorAnimator(
         host?.updateEditorOffset(currentOffset)
     }
 
-    /**
-     * 重置[afterDispatchTouchEvent]的处理
-     */
-    internal fun beforeDispatchTouchEvent(ev: MotionEvent) {
-        if (ev.action == MotionEvent.ACTION_DOWN) {
-            // 按下时，将EditText重置为获得焦点显示IME
-            host?.editText?.showSoftInputOnFocus = true
-        }
-    }
-
-    /**
-     * 点击[EditText]显示IME，需要隐藏`textSelectHandle`，避免动画运行时不断跨进程通信，从而造成卡顿。
-     * 由于`textSelectHandle`是Android 10的属性，因此先清除焦点再获得焦点，实现隐藏`textSelectHandle`。
-     *
-     * **注意**：`textSelectHandle`指的是[EditText.getTextSelectHandle]，即[EditText]的水滴状指示器。
-     */
-    internal fun afterDispatchTouchEvent(ev: MotionEvent) {
-        val editText = host?.editText ?: return
-        val ime = host?.ime ?: return
-        val current = host?.current
-        if (ev.action == MotionEvent.ACTION_UP && current !== ime
-                && editText.showSoftInputOnFocus && editText.isTouched(ev)) {
-            // 点击EditText显示IME，抬起时隐藏textSelectHandle
-            editText.hideTextSelectHandle()
-        }
-        if (ev.action != MotionEvent.ACTION_DOWN) {
-            // 选中EditText的内容时，不显示IME
-            editText.showSoftInputOnFocus = !editText.hasTextSelectHandleLeftToRight
-        }
-    }
-
     internal fun forEachCallback(action: (AnimationCallback) -> Unit) {
         callbacks.forEach(action)
     }
@@ -175,10 +142,6 @@ abstract class EditorAnimator(
     }
 
     private fun dispatchAnimationStart(record: AnimationRecord) {
-        val editText = host?.editText
-        if (editText?.hasTextSelectHandleLeftToRight == true) {
-            editText.hideTextSelectHandle(keepFocus = record.isIme(record.current))
-        }
         if (!record.checkAnimationOffset()) return
         dispatchAnimationCallback { onAnimationStart(record) }
     }

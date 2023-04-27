@@ -18,7 +18,6 @@ package com.xiaocydx.inputview
 
 import android.view.View
 import android.view.animation.Interpolator
-import android.widget.EditText
 import androidx.annotation.IntRange
 import androidx.core.view.OneShotPreDrawListener
 import androidx.core.view.WindowInsetsAnimationCompat
@@ -35,11 +34,6 @@ internal interface EditorHost {
      * 视图树的[ViewTreeWindow]
      */
     val window: ViewTreeWindow?
-
-    /**
-     * 用于兼容Android各版本显示和隐藏IME的[EditText]
-     */
-    val editText: EditTextHolder?
 
     /**
      * 编辑区的偏移值

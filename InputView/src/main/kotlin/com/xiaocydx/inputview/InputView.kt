@@ -81,9 +81,11 @@ class InputView @JvmOverloads constructor(
     var editText: EditText?
         get() = editTextHolder?.value as? EditText
         set(value) {
-            editTextHolder = value
-                ?.let { EditTextHolder(it, window) }
-                .also(editorView::setEditText)
+            val previous = editTextHolder
+            val current = value?.let { EditTextHolder(value, window) }
+            host.onEditTextHolderChanged(previous, current)
+            editorView.setEditText(current)
+            editTextHolder = current
         }
 
     /**
@@ -152,15 +154,14 @@ class InputView @JvmOverloads constructor(
             window = requireNotNull(findViewTreeWindow()) {
                 "需要调用InputView.init()初始化InputView所需的配置"
             }
-            window?.also(host::onAttachedToWindow)
-            window?.also { editTextHolder?.onAttachedToWindow(it) }
+            window?.let(host::onAttachedToWindow)
         }
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-        editorAnimator.beforeDispatchTouchEvent(ev)
+        editTextHolder?.beforeDispatchTouchEvent(ev)
         val consumed = super.dispatchTouchEvent(ev)
-        editorAnimator.afterDispatchTouchEvent(ev)
+        editTextHolder?.afterDispatchTouchEvent(ev)
         return consumed
     }
 
@@ -310,8 +311,6 @@ class InputView @JvmOverloads constructor(
         private var pending: PendingInsetsAnimationCallback? = null
         override val window: ViewTreeWindow?
             get() = this@InputView.window
-        override val editText: EditTextHolder?
-            get() = this@InputView.editTextHolder
         override val editorOffset: Int
             get() = this@InputView.editorOffset
         override val navBarOffset: Int
@@ -326,6 +325,7 @@ class InputView @JvmOverloads constructor(
             get() = editorView.changeRecord.currentChild
 
         fun onAttachedToWindow(window: ViewTreeWindow) {
+            editTextHolder?.onAttachedToWindow(window)
             pending?.apply { setWindowInsetsAnimationCallback(durationMillis, interpolator, callback) }
         }
 
@@ -340,6 +340,11 @@ class InputView @JvmOverloads constructor(
             previous?.onDetachFromEditorHost(this)
             current.onAttachToEditorHost(this)
             previous?.forEachCallback { if (it is Replicable) current.addAnimationCallback(it) }
+        }
+
+        fun onEditTextHolderChanged(previous: EditTextHolder?, current: EditTextHolder?) {
+            previous?.onDetachFromEditorHost(this)
+            current?.onAttachToEditorHost(this)
         }
 
         override fun addView(view: View) {
