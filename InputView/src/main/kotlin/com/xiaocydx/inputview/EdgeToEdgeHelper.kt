@@ -50,12 +50,25 @@ interface EdgeToEdgeHelper {
         get() = getInsets(navigationBars()).bottom
 
     /**
-     * 消费指定的[InsetsType]类型集
+     * 消费指定[InsetsType]类型集的`Insets`
+     *
+     * ```
+     * val typeMask = WindowInsetsCompat.Type.statusBars()
+     * val outcome = insets.consume(typeMask)
+     * outcome.getInsets(typeMask) // Insets.NONE
+     * outcome.getInsetsIgnoringVisibility() // Insets.NONE
+     * outcome.isVisible(typeMask) // 不改变可见结果
+     * ```
      */
     @CheckResult
     fun WindowInsetsCompat.consume(@InsetsType typeMask: Int): WindowInsetsCompat {
         if (typeMask <= 0) return this
-        return WindowInsetsCompat.Builder(this).setInsets(typeMask, Insets.NONE).build()
+        val builder = WindowInsetsCompat.Builder(this)
+        if (typeMask != ime()) {
+            // typeMask等于IME会抛出IllegalArgumentException
+            builder.setInsetsIgnoringVisibility(typeMask, Insets.NONE)
+        }
+        return builder.setInsets(typeMask, Insets.NONE).build()
     }
 
     /**
@@ -115,7 +128,7 @@ interface EdgeToEdgeHelper {
     fun View.doOnApplyWindowInsets(
         block: (view: View, insets: WindowInsetsCompat, initialState: ViewState) -> Unit
     ) {
-        val initialState = ViewState(this)
+        val initialState = recordCurrentState()
         setOnApplyWindowInsetsListenerCompat { view, insets ->
             block(view, insets, initialState)
             insets
@@ -124,6 +137,12 @@ interface EdgeToEdgeHelper {
         // 因此主动申请WindowInsets分发，确保调用block完成视图初始化。
         requestApplyInsetsOnAttach()
     }
+
+    /**
+     * 记录[View]当前的状态，可用于记录初始状态
+     */
+    @CheckResult
+    fun View.recordCurrentState() = ViewState(this)
 
     /**
      * 当附加到window时，申请[WindowInsets]分发
@@ -200,16 +219,16 @@ private fun EdgeToEdgeHelper.Companion.canRequestApplyInsetsOnAttach(view: View)
 }
 
 /**
- * 视图的初始状态
+ * [View]的状态，可用于记录初始状态
  */
 data class ViewState internal constructor(
     /**
-     * 视图的初始params
+     * [View]的params
      */
     val params: ViewParams,
 
     /**
-     * 视图的初始paddings
+     * [View]的paddings
      */
     val paddings: ViewPaddings,
 ) {
@@ -217,7 +236,7 @@ data class ViewState internal constructor(
 }
 
 /**
- * 视图的初始params
+ * [View]的params
  */
 data class ViewParams internal constructor(
     @Px val width: Int,
@@ -238,7 +257,7 @@ data class ViewParams internal constructor(
 }
 
 /**
- * 视图的初始paddings
+ * [View]的paddings
  */
 data class ViewPaddings internal constructor(
     @Px val left: Int,

@@ -228,16 +228,20 @@ internal class ViewTreeWindow(
         inputView.viewTreeWindow = this
     }
 
+    /**
+     * 不调用[Window.setStatusBarColor]和[Window.setNavigationBarColor]将背景颜色设为透明，
+     * 通过消费状态栏和导航栏的`Insets`实现不绘制背景，这种处理方式的通用性更强，侵入性更低。
+     */
     @CheckResult
     private fun WindowInsetsCompat.edgeToEdge(statusBarEdgeToEdge: Boolean): WindowInsetsCompat {
-        var insets = this
+        var typeMask = 0
         if (statusBarEdgeToEdge) {
-            insets = insets.consume(statusBars())
+            typeMask = typeMask or statusBars()
         }
         if (supportGestureNavBarEdgeToEdge(decorView)) {
-            insets = insets.consume(navigationBars())
+            typeMask = typeMask or navigationBars()
         }
-        return insets
+        return consume(typeMask)
     }
 
     val WindowInsetsCompat.imeHeight
