@@ -32,6 +32,9 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import com.xiaocydx.inputview.R
+import com.xiaocydx.inputview.compat.InsetsCompatReflection.getLastInsetsFromProxyListener
+import com.xiaocydx.inputview.compat.InsetsCompatReflection.setStableInsets
+import com.xiaocydx.inputview.compat.InsetsCompatReflection.setupImmutableListener
 
 /**
  * Android 9.0及以上，[WindowInsets]不可变，不需要兼容
@@ -62,9 +65,9 @@ private val isImmutableNeeded = Build.VERSION.SDK_INT in 21 until 28
  */
 internal fun View.setOnApplyWindowInsetsListenerImmutable(
     listener: OnApplyWindowInsetsListener? = defaultOnApplyWindowInsetsListener
-): Unit = with(InsetsCompatReflection) {
+) {
     setOnApplyWindowInsetsListenerCompat(listener)
-    if (!isImmutableNeeded || !reflectSucceed) return
+    if (!isImmutableNeeded || !InsetsCompatReflection.reflectSucceed) return
     // 确保对匿名View.OnApplyWindowInsetsListener分发不可变的WindowInsets
     immutableListener = listener?.run { setupImmutableListener() }
 }
@@ -78,11 +81,9 @@ internal fun View.setOnApplyWindowInsetsListenerImmutable(
  *
  * **注意**：内部使用该函数提高兼容稳定性，实际场景可能不需要。
  */
-internal fun View.setWindowInsetsAnimationCallbackImmutable(
-    callback: WindowInsetsAnimationCompat.Callback?
-): Unit = with(InsetsCompatReflection) {
+internal fun View.setWindowInsetsAnimationCallbackImmutable(callback: WindowInsetsAnimationCompat.Callback?) {
     setWindowInsetsAnimationCallbackCompat(callback)
-    if (!isImmutableNeeded || !reflectSucceed) return
+    if (!isImmutableNeeded || !InsetsCompatReflection.reflectSucceed) return
     if (isAttachedToWindow) {
         // 确保Impl21OnApplyWindowInsetsListener构造函数创建的mLastInsets生成缓存
         getLastInsetsFromProxyListener()?.ensureCreateCache()
@@ -94,8 +95,8 @@ internal fun View.setWindowInsetsAnimationCallbackImmutable(
 }
 
 @Suppress("DEPRECATION")
-private fun WindowInsets.toImmutable(): WindowInsets = InsetsCompatReflection.run {
-    if (!isImmutableNeeded || !reflectSucceed) return this@toImmutable
+private fun WindowInsets.toImmutable(): WindowInsets {
+    if (!isImmutableNeeded || !InsetsCompatReflection.reflectSucceed) return this
     // 先创建新的WindowInsets，再反射修改mStableInsets，避免对当前WindowInsets造成影响
     val insets = replaceSystemWindowInsets(
         systemWindowInsetLeft, systemWindowInsetTop,

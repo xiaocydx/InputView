@@ -372,6 +372,7 @@ private object InsetsAnimationReflection : ReflectHelper {
             reflectSucceed = true
         }.onFailure {
             insetsAnimation = null
+            insetsAnimationCompat = null
             insetsController = null
             insetsAnimationRunner = null
             animationControlListener = null
