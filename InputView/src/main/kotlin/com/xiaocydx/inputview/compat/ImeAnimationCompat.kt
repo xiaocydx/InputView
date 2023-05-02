@@ -61,24 +61,9 @@ internal fun Window.modifyImeAnimation(
     interpolator: Interpolator? = null,
 ) {
     if (!supportModifyImeAnimation) return
-    decorView.doOnAttach {
-        // doOnAttach()确保insetsController是InsetsController，而不是PendingInsetsController
-        val controller = requireNotNull(insetsController) { "InsetsController为null" }
-        imeAnimationCallback = ImeAnimationCallback(
-            durationMillis, interpolator,
-            controller, insetsAnimationCallback
-        )
-        // 对视图树的根View（排除ViewRootImpl）decorView设置imeAnimationCallback，
-        // 目的是避免WindowInsetsAnimationCompat.Callback的分发逻辑产生歧义，例如：
-        // ViewCompat.setWindowInsetsAnimationCallback(decorView, callback)
-        // ViewCompat.setWindowInsetsAnimationCallback(childView, imeAnimationCallback)
-        // 1. childView是decorView的间接子View。
-        // 2. callback的dispatchMode是DISPATCH_MODE_CONTINUE_ON_SUBTREE。
-        // 若对childView设置imeAnimationCallback，则imeAnimationCallback修改IME动画的属性，
-        // 会影响到decorView的callback函数，callback.onPrepare()获取的是IME动画原本的属性，
-        // 而callback.onStart()获取的却是IME动画修改后的属性，分发逻辑产生歧义。
-        decorView.setWindowInsetsAnimationCallback(imeAnimationCallback)
-    }
+    imeAnimationCompat?.detach()
+    val compat = ImeAnimationCompat(this, durationMillis, interpolator)
+    imeAnimationCompat = compat.apply { attach() }
 }
 
 /**
@@ -86,7 +71,8 @@ internal fun Window.modifyImeAnimation(
  */
 internal fun Window.restoreImeAnimation() {
     if (!supportModifyImeAnimation) return
-    decorView.doOnAttach { decorView.setWindowInsetsAnimationCallback(insetsAnimationCallback) }
+    imeAnimationCompat?.detach()
+    imeAnimationCompat = null
 }
 
 /**
@@ -104,18 +90,19 @@ internal fun Window.setWindowInsetsAnimationCallbackCompat(callback: WindowInset
         InsetsAnimationReflection.insetsAnimationCompat?.createProxyCallback(callback)
     }
     insetsAnimationCallback = proxyCallback
-    imeAnimationCallback?.apply { modifyImeAnimation(durationMillis, interpolator) }
-            ?: run { decorView.setWindowInsetsAnimationCallback(insetsAnimationCallback) }
+    imeAnimationCompat?.reattach() ?: run {
+        decorView.setWindowInsetsAnimationCallback(insetsAnimationCallback)
+    }
 }
 
 @ChecksSdkIntAtLeast(api = 30)
 private val supportModifyImeAnimation = Build.VERSION.SDK_INT >= 30
 
 @get:RequiresApi(30)
-private var Window.imeAnimationCallback: ImeAnimationCallback?
-    get() = decorView.getTag(R.id.tag_decor_view_ime_animation_callback) as? ImeAnimationCallback
+private var Window.imeAnimationCompat: ImeAnimationCompat?
+    get() = decorView.getTag(R.id.tag_decor_view_ime_animation_compat) as? ImeAnimationCompat
     set(value) {
-        decorView.setTag(R.id.tag_decor_view_ime_animation_callback, value)
+        decorView.setTag(R.id.tag_decor_view_ime_animation_compat, value)
     }
 
 @get:RequiresApi(30)
@@ -124,6 +111,37 @@ private var Window.insetsAnimationCallback: WindowInsetsAnimation.Callback?
     set(value) {
         decorView.setTag(R.id.tag_decor_view_insets_animation_callback, value)
     }
+
+@RequiresApi(30)
+private class ImeAnimationCompat(
+    window: Window,
+    private val durationMillis: Long,
+    private val interpolator: Interpolator?,
+) : WindowAttachCompat(window) {
+
+    override fun onAttach() {
+        // onAttach()确保insetsController是InsetsController，而不是PendingInsetsController
+        val controller = requireNotNull(window.insetsController) { "InsetsController为null" }
+        val callback = ImeAnimationCallback(
+            durationMillis, interpolator,
+            controller, window.insetsAnimationCallback
+        )
+        // 对视图树的根View（排除ViewRootImpl）decorView设置imeAnimationCallback，
+        // 目的是避免WindowInsetsAnimationCompat.Callback的分发逻辑产生歧义，例如：
+        // ViewCompat.setWindowInsetsAnimationCallback(decorView, callback)
+        // ViewCompat.setWindowInsetsAnimationCallback(childView, imeAnimationCallback)
+        // 1. childView是decorView的间接子View。
+        // 2. callback的dispatchMode是DISPATCH_MODE_CONTINUE_ON_SUBTREE。
+        // 若对childView设置imeAnimationCallback，则imeAnimationCallback修改IME动画的属性，
+        // 会影响到decorView的callback函数，callback.onPrepare()获取的是IME动画原本的属性，
+        // 而callback.onStart()获取的却是IME动画修改后的属性，分发逻辑产生歧义。
+        decorView.setWindowInsetsAnimationCallback(callback)
+    }
+
+    override fun onDetach() {
+        decorView.setWindowInsetsAnimationCallback(window.insetsAnimationCallback)
+    }
+}
 
 /**
  * 修改Android 11及以上IME动画的`durationMillis`和`interpolator`

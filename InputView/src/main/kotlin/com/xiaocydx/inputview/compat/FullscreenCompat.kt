@@ -30,8 +30,8 @@ import androidx.annotation.RequiresApi
 import androidx.core.view.ViewCompat
 import com.xiaocydx.inputview.EditorAnimator
 import com.xiaocydx.inputview.R
-import com.xiaocydx.inputview.compat.DispatchApplyInsetsFullscreenCompat.Companion.MSG_RESIZED
-import com.xiaocydx.inputview.compat.DispatchApplyInsetsFullscreenCompat.Companion.MSG_RESIZED_REPORT
+import com.xiaocydx.inputview.compat.FullscreenCompat.Companion.MSG_RESIZED
+import com.xiaocydx.inputview.compat.FullscreenCompat.Companion.MSG_RESIZED_REPORT
 
 /**
  * 启用Android 11以下`window.attributes.flags`包含[FLAG_FULLSCREEN]的兼容方案
@@ -61,47 +61,23 @@ import com.xiaocydx.inputview.compat.DispatchApplyInsetsFullscreenCompat.Compani
  * 若实际场景需要设置回调对象以实现其他需求，则可以参考[EditorAnimator]的兼容方案。
  */
 fun Window.enableDispatchApplyInsetsFullscreenCompat() {
-    if (isDispatchApplyInsetsFullscreenCompatEnabled) return
-    val compat = DispatchApplyInsetsFullscreenCompat(this).apply { attach() }
-    decorView.setTag(R.id.tag_dispatch_apply_insets_full_screen_compat, compat)
+    if (isFullscreenCompatEnabled) return
+    if (Build.VERSION.SDK_INT in 21..29) FullscreenCompat(this).attach()
+    decorView.setTag(R.id.tag_dispatch_apply_insets_full_screen_enabled, true)
 }
 
 /**
  * 是否已启用[enableDispatchApplyInsetsFullscreenCompat]的兼容方案
  */
-internal val Window.isDispatchApplyInsetsFullscreenCompatEnabled: Boolean
-    get() = decorView.getTag(R.id.tag_dispatch_apply_insets_full_screen_compat)
-        ?.let { it as? DispatchApplyInsetsFullscreenCompat } != null
+internal val Window.isFullscreenCompatEnabled: Boolean
+    get() = decorView.getTag(R.id.tag_dispatch_apply_insets_full_screen_enabled) == true
 
-private class DispatchApplyInsetsFullscreenCompat(private val window: Window) {
-    private val decorView = window.decorView
-    private var listener: View.OnAttachStateChangeListener? = null
+@RequiresApi(21)
+private class FullscreenCompat(window: Window) : WindowAttachCompat(window) {
 
-    fun attach(): Unit = with(ViewRootReflection) {
-        if (Build.VERSION.SDK_INT !in 21..29 || !reflectSucceed) return
-        removeListener()
-        doOnAttach { window.replaceViewRootOf(ViewRootScroller(), ViewRootHandlerCallback()) }
-    }
-
-    private inline fun doOnAttach(crossinline action: () -> Unit) {
-        if (ViewCompat.isAttachedToWindow(decorView)) {
-            action()
-        } else {
-            listener = object : View.OnAttachStateChangeListener {
-                override fun onViewAttachedToWindow(view: View) {
-                    removeListener()
-                    action()
-                }
-
-                override fun onViewDetachedFromWindow(view: View) = Unit
-            }
-            listener?.let(decorView::addOnAttachStateChangeListener)
-        }
-    }
-
-    private fun removeListener() {
-        listener?.let(decorView::removeOnAttachStateChangeListener)
-        listener = null
+    override fun onAttach(): Unit = with(ViewRootReflection) {
+        if (!reflectSucceed) return
+        window.replaceViewRootOf(ViewRootScroller(), ViewRootHandlerCallback())
     }
 
     /**

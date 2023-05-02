@@ -120,8 +120,7 @@ private fun Window.checkDispatchApplyInsetsCompatibility() {
                 "否则会导致视图树没有WindowInsets分发"
     }
     @Suppress("DEPRECATION")
-    check(isDispatchApplyInsetsFullscreenCompatEnabled
-            || (attributes.flags and FLAG_FULLSCREEN == 0)) {
+    check(isFullscreenCompatEnabled || (attributes.flags and FLAG_FULLSCREEN == 0)) {
         "InputView需要主题的windowFullscreen = false，" +
                 "或window.attributes.flags不包含FLAG_FULLSCREEN，" +
                 "否则会导致Android 11以下显示或隐藏IME不进行WindowInsets分发，" +
