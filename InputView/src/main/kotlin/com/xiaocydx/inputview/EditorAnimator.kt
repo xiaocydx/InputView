@@ -30,6 +30,8 @@ import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsCompat.Type.ime
 import com.xiaocydx.inputview.compat.contains
+import java.lang.Integer.max
+import kotlin.math.min
 
 /**
  * [InputView]编辑区的[Editor]过渡动画
@@ -118,6 +120,7 @@ abstract class EditorAnimator(
         endAnimation()
         assert(animationRecord == null) { "animationRecord未被置空" }
         animationRecord = record
+        dispatchAnimationPrepare()
     }
 
     private fun runSimpleAnimationIfNecessary(record: AnimationRecord) {
@@ -139,6 +142,10 @@ abstract class EditorAnimator(
             record.setSimpleAnimation(this)
             start()
         }
+    }
+
+    private fun dispatchAnimationPrepare() {
+        dispatchAnimationCallback { onAnimationPrepare() }
     }
 
     private fun dispatchAnimationStart(record: AnimationRecord) {
@@ -218,6 +225,7 @@ abstract class EditorAnimator(
             val record = AnimationRecord(previous, current)
             resetAnimationRecord(record)
             record.setStartViewAndEndView()
+            record.setAnimationStartOffset()
             // Android 9.0以下的WindowInsets可变（InputView已兼容），
             // Android 9.0、Android 10的window包含FLAG_FULLSCREEN，
             // 可能导致insetsAnimation的回调不会执行，因此做以下处理：
@@ -229,7 +237,7 @@ abstract class EditorAnimator(
             // 当执行PreDrawRunSimpleAnimation时，若没有insetsAnimation，则运行simpleAnimation。
             record.setPreDrawRunSimpleAnimation action@{
                 if (record.insetsAnimation != null) return@action
-                record.setAnimationOffsetForCurrent()
+                record.setAnimationEndOffset()
                 runSimpleAnimationIfNecessary(record)
             }
             if (!record.willRunInsetsAnimation) {
@@ -276,7 +284,7 @@ abstract class EditorAnimator(
             val current = host?.current ?: return
             val record = AnimationRecord(current, current)
             resetAnimationRecord(record)
-            record.setAnimationOffsetForCurrent()
+            record.setAnimationStartOffset()
             record.setAnimationOffset(endOffset = endOffset)
             runSimpleAnimationIfNecessary(record)
         }
@@ -288,8 +296,8 @@ abstract class EditorAnimator(
             val record = animationRecord?.takeIf { it.simpleAnimation == null }
             if (record == null || !animation.contains(ime())) return bounds
             record.apply {
+                setAnimationEndOffset()
                 setInsetsAnimation(animation)
-                setAnimationOffsetForCurrent()
                 removePreDrawRunSimpleAnimation()
             }
             dispatchAnimationStart(record)
@@ -373,22 +381,27 @@ abstract class EditorAnimator(
         ) {
             this.startOffset = startOffset
             this.endOffset = endOffset
-            val min = startOffset.coerceAtMost(endOffset)
-            val max = startOffset.coerceAtLeast(endOffset)
+            val min = min(startOffset, endOffset)
+            val max = max(startOffset, endOffset)
             this.currentOffset = currentOffset.coerceAtLeast(min).coerceAtMost(max)
         }
 
-        fun setAnimationOffsetForCurrent() {
+        fun setAnimationStartOffset() {
             setAnimationOffset(NO_VALUE, NO_VALUE, NO_VALUE)
+            val host = host ?: return
+            val startOffset = host.editorOffset
+            setAnimationOffset(startOffset, endOffset, startOffset)
+        }
+
+        fun setAnimationEndOffset() {
             host?.window?.apply {
                 val host = host!!
-                val startOffset = host.editorOffset
                 val endOffset = if (isIme(current)) {
                     insets?.imeOffset ?: NO_VALUE
                 } else {
                     host.currentView?.height ?: 0
                 }
-                setAnimationOffset(startOffset, endOffset, startOffset)
+                setAnimationOffset(endOffset = endOffset)
             }
         }
 
@@ -539,6 +552,13 @@ interface AnimationState {
  * [EditorAnimator]的动画回调
  */
 interface AnimationCallback {
+
+    /**
+     * 动画准备
+     *
+     * 该函数在下一帧之前被调用，此时可以修改[InputView]的属性
+     */
+    fun onAnimationPrepare() = Unit
 
     /**
      * 动画开始
