@@ -1,10 +1,14 @@
 package com.xiaocydx.inputview
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import androidx.annotation.LayoutRes
+import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.view.setMargins
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
@@ -14,6 +18,7 @@ import com.xiaocydx.inputview.MessageEditor.*
 import com.xiaocydx.sample.dp
 import com.xiaocydx.sample.matchParent
 import com.xiaocydx.sample.withLayoutParams
+import com.xiaocydx.sample.wrapContent
 
 /**
  * @author xcc
@@ -24,8 +29,7 @@ class MessageEditorAdapter : EditorAdapter<MessageEditor>() {
 
     override fun onCreateView(parent: ViewGroup, editor: MessageEditor): View? = when (editor) {
         IME, VOICE -> null
-        // EMOJI -> GestureNavBarEdgeToEdgeRecyclerView(parent.context)
-        EMOJI -> createView(R.layout.message_editor_emoji, parent)
+        EMOJI -> EmojiRecyclerView(parent.context)
         EXTRA -> createView(R.layout.message_editor_extra, parent)
     }
 
@@ -38,32 +42,31 @@ enum class MessageEditor : Editor {
     IME, VOICE, EMOJI, EXTRA
 }
 
-/**
- * 实现[RecyclerView]的手势导航栏边到边示例代码
- */
-private class GestureNavBarEdgeToEdgeRecyclerView(context: Context) : RecyclerView(context) {
+private class EmojiRecyclerView(context: Context) : RecyclerView(context) {
 
     init {
+        val spanCount = 8
+        adapter = EmojiAdapter(spanCount)
+        layoutManager = GridLayoutManager(context, spanCount)
+        recycledViewPool.setMaxRecycledViews(0, 16)
+        isNestedScrollingEnabled = false
         withLayoutParams(matchParent, 350.dp)
-        adapter = object : Adapter<ViewHolder>() {
-            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-                val view = View(parent.context).apply {
-                    setBackgroundColor(0xFF8DAA95.toInt())
-                    withLayoutParams(matchParent, 100.dp) { setMargins(2.dp) }
-                }
-                return object : ViewHolder(view) {}
-            }
-
-            override fun onBindViewHolder(holder: ViewHolder, position: Int) = Unit
-
-            override fun getItemCount(): Int = 20
-        }
-        layoutManager = GridLayoutManager(context, 3)
         setupGestureNavBarEdgeToEdge()
     }
 
-    private fun setupGestureNavBarEdgeToEdge() = EdgeToEdgeHelper {
-        // layoutParams.height初始高度是350.dp
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(e: MotionEvent): Boolean {
+        if (e.actionMasked == MotionEvent.ACTION_DOWN) {
+            // 示例代码仅简单处理嵌套滚动冲突
+            parent?.requestDisallowInterceptTouchEvent(true)
+        }
+        return super.onTouchEvent(e)
+    }
+
+    /**
+     * 实现[RecyclerView]手势导航栏边到边的示例代码
+     */
+    private fun setupGestureNavBarEdgeToEdge() = EdgeToEdgeHelper { // layoutParams.height初始高度是350.dp
         doOnApplyWindowInsets { view, insets, initialState ->
             val navigationBarHeight = insets.navigationBarHeight
             val supportGestureNavBarEdgeToEdge = insets.supportGestureNavBarEdgeToEdge(view)
@@ -88,6 +91,45 @@ private class GestureNavBarEdgeToEdgeRecyclerView(context: Context) : RecyclerVi
             // 使得RecyclerView滚动时，能将内容绘制在paddingBottom区域，当滚动到底部时，
             // 留出paddingBottom区域，内容不会被手势导航栏遮挡。
             (view as? ViewGroup)?.clipToPadding = !supportGestureNavBarEdgeToEdge
+        }
+    }
+
+    private class EmojiAdapter(spanCount: Int) : Adapter<ViewHolder>() {
+        private val resIds = intArrayOf(
+            R.mipmap.ic_message_emoji_1, R.mipmap.ic_message_emoji_2,
+            R.mipmap.ic_message_emoji_3, R.mipmap.ic_message_emoji_4,
+        )
+        private val items = (0..147).map { resIds[it % resIds.size] }
+        private val margin = 8.dp
+        private val lastSpanGroupRange: IntRange
+
+        init {
+            var remainder = items.size % spanCount
+            if (remainder == 0) remainder = spanCount
+            val start = items.size - remainder
+            val end = items.lastIndex + (spanCount - remainder)
+            lastSpanGroupRange = start..end
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val view = AppCompatImageView(parent.context).apply {
+                withLayoutParams(matchParent, wrapContent)
+            }
+            return object : ViewHolder(view) {}
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            holder.itemView.updateLayoutParams<MarginLayoutParams> {
+                setMargins(margin)
+                if (holder.isLastSpanGroup()) bottomMargin = 0
+            }
+            (holder.itemView as ImageView).setImageResource(items[position])
+        }
+
+        override fun getItemCount(): Int = items.size
+
+        private fun ViewHolder.isLastSpanGroup(): Boolean {
+            return bindingAdapterPosition in lastSpanGroupRange
         }
     }
 }
