@@ -66,7 +66,8 @@ private class EmojiRecyclerView(context: Context) : RecyclerView(context) {
     /**
      * 实现[RecyclerView]手势导航栏边到边的示例代码
      */
-    private fun setupGestureNavBarEdgeToEdge() = EdgeToEdgeHelper { // layoutParams.height初始高度是350.dp
+    private fun setupGestureNavBarEdgeToEdge() = EdgeToEdgeHelper {
+        // layoutParams.height初始高度是350.dp
         doOnApplyWindowInsets { view, insets, initialState ->
             val navigationBarHeight = insets.navigationBarHeight
             val supportGestureNavBarEdgeToEdge = insets.supportGestureNavBarEdgeToEdge(view)
@@ -99,9 +100,11 @@ private class EmojiRecyclerView(context: Context) : RecyclerView(context) {
             R.mipmap.ic_message_emoji_1, R.mipmap.ic_message_emoji_2,
             R.mipmap.ic_message_emoji_3, R.mipmap.ic_message_emoji_4,
         )
-        private val items = (0..147).map { resIds[it % resIds.size] }
         private val margin = 8.dp
+        private val items = (0..147).map { resIds[it % resIds.size] }
         private val lastSpanGroupRange: IntRange
+        private val ViewHolder.isInLastSpanGroup: Boolean
+            get() = bindingAdapterPosition in lastSpanGroupRange
 
         init {
             var remainder = items.size % spanCount
@@ -121,15 +124,11 @@ private class EmojiRecyclerView(context: Context) : RecyclerView(context) {
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             holder.itemView.updateLayoutParams<MarginLayoutParams> {
                 setMargins(margin)
-                if (holder.isLastSpanGroup()) bottomMargin = 0
+                if (holder.isInLastSpanGroup) bottomMargin = 0
             }
             (holder.itemView as ImageView).setImageResource(items[position])
         }
 
         override fun getItemCount(): Int = items.size
-
-        private fun ViewHolder.isLastSpanGroup(): Boolean {
-            return bindingAdapterPosition in lastSpanGroupRange
-        }
     }
 }
