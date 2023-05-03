@@ -88,17 +88,14 @@ private fun MessageListBinding.handleScroll() {
     //endregion
 
     //region 更改显示的MessageEditor，rvMessage滚动到首位
-    inputView.editorAdapter.addEditorChangedListener { _, _ ->
-        if (inputView.editorMode === EditorMode.ADJUST_PAN) scrollToFirst()
-    }
+    inputView.editorAdapter.addEditorChangedListener { _, _ -> scrollToFirst() }
     //endregion
 
     //region 处理rvMessage可视区域未铺满时的动画偏移
     val initialMode = inputView.editorMode
     inputView.editorAnimator.addAnimationCallback(object : AnimationCallback {
-        override fun onAnimationStart(state: AnimationState) {
-            if (state.startOffset == 0 && state.endOffset != 0
-                    && initialMode !== EditorMode.ADJUST_RESIZE
+        override fun onAnimationPrepare() {
+            if (inputView.editorMode !== EditorMode.ADJUST_RESIZE
                     && calculateVerticalScrollRangeDiff() < 0) {
                 // 将editorMode动态调整为EditorMode.ADJUST_RESIZE相比于其它处理方式,
                 // 能确保EditorAnimator动画运行中、结束后，添加消息的item动画正常运行。
