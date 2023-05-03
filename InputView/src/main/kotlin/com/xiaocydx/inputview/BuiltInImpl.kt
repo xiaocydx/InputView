@@ -50,7 +50,7 @@ class ImeAdapter : EditorAdapter<Ime>() {
 /**
  * [Editor]的淡入淡出动画
  */
-open class FadeEditorAnimator(
+class FadeEditorAnimator(
     /**
      * 淡入淡出的原始分数进度阈值
      *

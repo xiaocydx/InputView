@@ -67,6 +67,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     fun showChecked(editor: Editor, controlIme: Boolean = true): Boolean {
         val adapter = checkedAdapter()
         if (current === editor) return false
+
         val currentChild: View?
         val previous = current
         val previousChild = views[previous]
@@ -79,6 +80,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         } else {
             currentChild = views[editor]
         }
+
         removePreviousBeforeChange(previousChild)
         currentChild?.let(::addView)
         current = editor
@@ -94,16 +96,15 @@ internal class EditorView(context: Context) : FrameLayout(context) {
 
     fun hideChecked(editor: Editor, controlIme: Boolean = true): Boolean {
         val adapter = checkedAdapter()
-        if (current === editor) {
-            val previousChild = views[editor]
-            removePreviousBeforeChange(previousChild)
-            current = null
-            changeRecord = ChangeRecord(previousChild, currentChild = null)
-            if (editor === ime) handleImeShown(shown = false, controlIme)
-            adapter.onEditorChanged(editor, current)
-            return true
-        }
-        return false
+        if (current !== editor) return false
+
+        val previousChild = views[editor]
+        removePreviousBeforeChange(previousChild)
+        current = null
+        changeRecord = ChangeRecord(previousChild, currentChild = null)
+        if (editor === ime) handleImeShown(shown = false, controlIme)
+        adapter.onEditorChanged(editor, current)
+        return true
     }
 
     private fun removePreviousBeforeChange(previousChild: View?) {

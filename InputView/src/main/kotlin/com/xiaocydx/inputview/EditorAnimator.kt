@@ -72,7 +72,7 @@ abstract class EditorAnimator(
     private val interpolator: Interpolator = ANIMATION_INTERPOLATOR
 ) {
     private var host: EditorHost? = null
-    private var insets: WindowInsetsCompat? = null
+    private var lastInsets: WindowInsetsCompat? = null
     private var animationRecord: AnimationRecord? = null
     private val animationDispatcher = AnimationDispatcher()
     private val callbacks = ArrayList<AnimationCallback>(2)
@@ -204,7 +204,7 @@ abstract class EditorAnimator(
     private inner class AnimationDispatcher :
             ReplicableEditorChangedListener, OnApplyWindowInsetsListenerCompat,
             WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_STOP) {
-        private var imeHeight = 0
+        private var lastImeHeight = 0
 
         /**
          * ### StartView和EndView
@@ -212,9 +212,9 @@ abstract class EditorAnimator(
          * 参与动画过程，动画结束时调用[AnimationRecord.removeStartViewIfNecessary]移除子View，
          * 之前[Editor]的子View作为StartView，当前[Editor]的子View作为EndView。
          *
-         * ### SimpleAnimation和InsetsAnimation
-         * 若[previous]和[current]不是IME，则调用[runSimpleAnimationIfNecessary]运行SimpleAnimation，
+         * ### InsetsAnimation和SimpleAnimation
          * 若[previous]和[current]其中一个是IME，则通过[AnimationDispatcher]运行InsetsAnimation。
+         * 若[previous]和[current]不是IME，则调用[runSimpleAnimationIfNecessary]运行SimpleAnimation，
          *
          * ### 主动更改和被动更改
          * 直接调用[EditorHost.showChecked]或[EditorHost.hideChecked]更改[Editor]属于主动更改，
@@ -259,23 +259,23 @@ abstract class EditorAnimator(
          */
         override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
             host?.window?.apply {
-                this@EditorAnimator.insets = insets
-                val lastImeHeight = insets.imeHeight
+                lastInsets = insets
+                val imeHeight = insets.imeHeight
                 when {
-                    imeHeight == 0 && lastImeHeight > 0 -> {
+                    lastImeHeight == 0 && imeHeight > 0 -> {
                         host?.dispatchImeShown(shown = true)
                         animationRecord?.addPreDrawRunSimpleAnimation()
                     }
-                    imeHeight > 0 && lastImeHeight == 0 -> {
+                    lastImeHeight > 0 && imeHeight == 0 -> {
                         host?.dispatchImeShown(shown = false)
                         animationRecord?.addPreDrawRunSimpleAnimation()
                     }
-                    imeHeight > 0 && lastImeHeight > 0 && imeHeight != lastImeHeight -> {
+                    lastImeHeight > 0 && imeHeight > 0 && lastImeHeight != imeHeight -> {
                         // 调整IME高度后，运行simpleAnimation修正editorOffset
                         runSimpleAnimationFixEditorOffset(endOffset = insets.imeOffset)
                     }
                 }
-                imeHeight = lastImeHeight
+                lastImeHeight = imeHeight
             }
             return insets
         }
@@ -358,7 +358,9 @@ abstract class EditorAnimator(
         }
 
         fun checkAnimationOffset(): Boolean {
-            return startOffset != NO_VALUE && endOffset != NO_VALUE && currentOffset != NO_VALUE
+            return startOffset != NO_VALUE
+                    && endOffset != NO_VALUE
+                    && currentOffset != NO_VALUE
         }
 
         fun setStartViewAndEndView() {
@@ -388,18 +390,16 @@ abstract class EditorAnimator(
 
         fun setAnimationStartOffset() {
             setAnimationOffset(NO_VALUE, NO_VALUE, NO_VALUE)
-            val host = host ?: return
-            val startOffset = host.editorOffset
+            val startOffset = host?.editorOffset ?: return
             setAnimationOffset(startOffset, endOffset, startOffset)
         }
 
         fun setAnimationEndOffset() {
             host?.window?.apply {
-                val host = host!!
                 val endOffset = if (isIme(current)) {
-                    insets?.imeOffset ?: NO_VALUE
+                    lastInsets?.imeOffset ?: NO_VALUE
                 } else {
-                    host.currentView?.height ?: 0
+                    host!!.currentView?.height ?: 0
                 }
                 setAnimationOffset(endOffset = endOffset)
             }
