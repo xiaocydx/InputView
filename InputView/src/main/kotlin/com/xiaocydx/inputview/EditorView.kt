@@ -117,6 +117,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
             // previousChild是Editor2，立即移除Editor2再添加Editor3
             previousChild?.let(::removeView)
         }
+        requestLayout()
     }
 
     private fun removeChangeRecordPrevious() {
