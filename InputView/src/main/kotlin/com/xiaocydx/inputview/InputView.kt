@@ -84,7 +84,6 @@ class InputView @JvmOverloads constructor(
             val previous = editTextHolder
             val current = value?.let { EditTextHolder(value, window) }
             host.onEditTextHolderChanged(previous, current)
-            editorView.setEditText(current)
             editTextHolder = current
         }
 
@@ -340,19 +339,17 @@ class InputView @JvmOverloads constructor(
             previous?.onDetachFromEditorHost(this)
             current.onAttachToEditorHost(this)
             previous?.forEachCallback { if (it is Replicable) current.addAnimationCallback(it) }
+            editorView.setRemovePreviousImmediately(!current.canRunAnimation)
         }
 
         fun onEditTextHolderChanged(previous: EditTextHolder?, current: EditTextHolder?) {
             previous?.onDetachFromEditorHost(this)
             current?.onAttachToEditorHost(this)
+            editorView.setEditTextHolder(current)
         }
 
-        override fun addView(view: View) {
-            editorView.addView(view)
-        }
-
-        override fun removeView(view: View) {
-            editorView.removeView(view)
+        override fun removeEditorView(view: View) {
+            view.takeIf { it.parent === editorView }?.let(editorView::removeView)
         }
 
         override fun updateEditorOffset(offset: Int) {

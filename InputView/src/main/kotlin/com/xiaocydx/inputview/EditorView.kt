@@ -29,6 +29,7 @@ import android.widget.FrameLayout
 internal class EditorView(context: Context) : FrameLayout(context) {
     private val views = mutableMapOf<Editor, View?>()
     private var editText: EditTextHolder? = null
+    private var removePreviousImmediately = true
     var ime: Editor? = null; private set
     var current: Editor? = null; private set
     var changeRecord = ChangeRecord(); private set
@@ -54,8 +55,13 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         current = null
     }
 
-    fun setEditText(editText: EditTextHolder?) {
+    fun setEditTextHolder(editText: EditTextHolder?) {
         this.editText = editText
+    }
+
+    fun setRemovePreviousImmediately(immediately: Boolean) {
+        removePreviousImmediately = immediately
+        if (removePreviousImmediately) removeChangeRecordPrevious()
     }
 
     fun showChecked(editor: Editor, controlIme: Boolean = true): Boolean {
@@ -73,7 +79,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         } else {
             currentChild = views[editor]
         }
-        removeAllViews()
+        removePreviousBeforeChange(previousChild)
         currentChild?.let(::addView)
         current = editor
         changeRecord = ChangeRecord(previousChild, currentChild)
@@ -90,7 +96,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
         val adapter = checkedAdapter()
         if (current === editor) {
             val previousChild = views[editor]
-            removeAllViews()
+            removePreviousBeforeChange(previousChild)
             current = null
             changeRecord = ChangeRecord(previousChild, currentChild = null)
             if (editor === ime) handleImeShown(shown = false, controlIme)
@@ -98,6 +104,24 @@ internal class EditorView(context: Context) : FrameLayout(context) {
             return true
         }
         return false
+    }
+
+    private fun removePreviousBeforeChange(previousChild: View?) {
+        // 举例说明：Editor1 -> Editor2 -> Editor3
+        if (changeRecord.currentChild === previousChild) {
+            // Editor1在Editor1 -> Editor2的流程可能没有被立即移除，
+            // previousChild是Editor2，确保移除Editor1再添加Editor3
+            removeChangeRecordPrevious()
+        }
+        if (removePreviousImmediately) {
+            // previousChild是Editor2，立即移除Editor2再添加Editor3
+            previousChild?.let(::removeView)
+        }
+    }
+
+    private fun removeChangeRecordPrevious() {
+        val view = changeRecord.previousChild
+        if (view?.parent === this) removeView(view)
     }
 
     fun dispatchImeShown(shown: Boolean): Boolean {

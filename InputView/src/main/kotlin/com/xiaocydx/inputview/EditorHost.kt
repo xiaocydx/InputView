@@ -68,14 +68,9 @@ internal interface EditorHost {
     val currentView: View?
 
     /**
-     * 添加[Editor]的视图
-     */
-    fun addView(view: View)
-
-    /**
      * 移除[Editor]的视图
      */
-    fun removeView(view: View)
+    fun removeEditorView(view: View)
 
     /**
      * 更新编辑区的偏移值

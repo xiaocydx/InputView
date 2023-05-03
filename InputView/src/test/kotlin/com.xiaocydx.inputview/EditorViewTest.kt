@@ -124,6 +124,36 @@ internal class EditorViewTest {
         }
     }
 
+    @Test
+    fun removePreviousNotImmediately() {
+        scenario.onActivity {
+            val editorView = EditorView(it)
+            editorView.setRemovePreviousImmediately(false)
+            val adapter = spyk(TestEditorAdapter())
+            editorView.setAdapter(adapter)
+            editorView.showChecked(TestEditor.A)
+            editorView.showChecked(TestEditor.B)
+            assertThat(editorView.childCount).isEqualTo(2)
+            assertThat(editorView.getChildAt(0)).isInstanceOf(TestViewA::class.java)
+            assertThat(editorView.getChildAt(1)).isInstanceOf(TestViewB::class.java)
+        }
+    }
+
+    @Test
+    fun resetRemovePreviousImmediately() {
+        scenario.onActivity {
+            val editorView = EditorView(it)
+            editorView.setRemovePreviousImmediately(false)
+            val adapter = spyk(TestEditorAdapter())
+            editorView.setAdapter(adapter)
+            editorView.showChecked(TestEditor.A)
+            editorView.showChecked(TestEditor.B)
+            editorView.setRemovePreviousImmediately(true)
+            assertThat(editorView.childCount).isEqualTo(1)
+            assertThat(editorView.getChildAt(0)).isInstanceOf(TestViewB::class.java)
+        }
+    }
+
     private enum class TestEditor : Editor {
         IME, A, B
     }

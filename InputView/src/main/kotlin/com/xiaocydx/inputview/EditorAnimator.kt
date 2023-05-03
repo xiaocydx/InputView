@@ -201,10 +201,9 @@ abstract class EditorAnimator(
 
         /**
          * ### StartView和EndView
-         * [EditorHost]更改[Editor]时会先移除全部子View，再添加当前[Editor]的子View，
-         * 运行动画之前调用[AnimationRecord.addStartViewIfNecessary]将移除的子View添加回来，
-         * 参与动画更新过程，动画结束时调用[AnimationRecord.removeStartViewIfNecessary]移除子View，
-         * 添加回来的子View作为StartView，当前[Editor]的子View作为EndView。
+         * 当[canRunAnimation]为`true`时，[EditorHost]更改[Editor]会保留之前[Editor]的子View，
+         * 参与动画过程，动画结束时调用[AnimationRecord.removeStartViewIfNecessary]移除子View，
+         * 之前[Editor]的子View作为StartView，当前[Editor]的子View作为EndView。
          *
          * ### SimpleAnimation和InsetsAnimation
          * 若[previous]和[current]不是IME，则调用[runSimpleAnimationIfNecessary]运行SimpleAnimation，
@@ -355,34 +354,16 @@ abstract class EditorAnimator(
         }
 
         fun setStartViewAndEndView() {
-            addStartViewIfNecessary()
+            startView = host?.previousView
             endView = host?.currentView
-        }
-
-        private fun addStartViewIfNecessary() {
-            val host = host
-            if (!canRunAnimation || host == null) return
-            if (startView !== host.previousView
-                    && startView !== host.currentView) {
-                removeStartViewIfNecessary()
-            }
-            val view = host.previousView
-            if (view != null && view.parent == null) {
-                // 动画结束时就移除startView，因此添加不需要申请WindowInsets分发
-                EdgeToEdgeHelper.skipOnceRequestApplyInsetsOnAttach(view)
-                startView = view
-                host.addView(view)
-            }
         }
 
         fun removeStartViewIfNecessary() {
             val host = host ?: return
             val view = startView
-            if (view != null && view.parent != null
-                    && view !== host.currentView) {
-                host.removeView(view)
+            if (view != null && view !== host.currentView) {
+                host.removeEditorView(view)
             }
-            startView = null
         }
 
         fun setAnimationOffset(
