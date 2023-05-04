@@ -52,31 +52,15 @@ import java.lang.ref.WeakReference
  *     alwaysConsumeTypeMask = WindowInsetsCompat.Type.navigationBars()
  * ）
  * ```
- *
- * @param dispatchApplyWindowInsetsRoot 直接分发WindowInsets的`root`。
- * 当`root != null`时，实际效果可以理解为：
- * ```
- * val root = dispatchApplyWindowInsetsRoot
- * ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
- *     val applyInsets = ViewCompat.onApplyWindowInsets(window.decorView, insets)
- *     ViewCompat.dispatchApplyWindowInsets(root, applyInsets)
- *     WindowInsetsCompat.CONSUMED
- * }
- * ```
- * 不对`window.decorView`到`root`之间的View分发`applyInsets`，
- * 目的是去除中间View的边到边实现，自行实现状态栏和导航栏边到边（虽然麻烦，但是灵活），
- * 以及确保`root`的WindowInsets分发正常和Android 11以下WindowInsets动画回调正常。
  */
 fun InputView.Companion.init(
     window: Window,
     statusBarEdgeToEdge: Boolean = false,
     gestureNavBarEdgeToEdge: Boolean = false,
-    @InsetsType alwaysConsumeTypeMask: Int = 0,
-    dispatchApplyWindowInsetsRoot: View? = null
+    @InsetsType alwaysConsumeTypeMask: Int = 0
 ) {
-    ViewTreeWindow(window, gestureNavBarEdgeToEdge).attachToDecorView(
-        statusBarEdgeToEdge, alwaysConsumeTypeMask, dispatchApplyWindowInsetsRoot
-    )
+    ViewTreeWindow(window, gestureNavBarEdgeToEdge)
+        .attachToDecorView(statusBarEdgeToEdge, alwaysConsumeTypeMask)
 }
 
 /**
@@ -172,11 +156,7 @@ internal class ViewTreeWindow(
     private val initialized: Boolean
         get() = decorView.viewTreeWindow != null
 
-    fun attachToDecorView(
-        statusBarEdgeToEdge: Boolean,
-        @InsetsType alwaysConsumeTypeMask: Int,
-        dispatchApplyWindowInsetsRoot: View?
-    ) {
+    fun attachToDecorView(statusBarEdgeToEdge: Boolean, @InsetsType alwaysConsumeTypeMask: Int) {
         check(!initialized) { "InputView.init()只能调用一次" }
         @Suppress("DEPRECATION")
         window.setSoftInputMode(SOFT_INPUT_ADJUST_RESIZE)
@@ -185,8 +165,6 @@ internal class ViewTreeWindow(
 
         val contentRootRef = decorView.children
             .firstOrNull { it is ViewGroup }?.let(::WeakReference)
-        val contentViewRef = dispatchApplyWindowInsetsRoot
-            ?.takeIf { it !== decorView }?.let(::WeakReference)
         decorView.setOnApplyWindowInsetsListenerCompat { _, insets ->
             window.checkDispatchApplyInsetsCompatibility()
 
@@ -199,11 +177,7 @@ internal class ViewTreeWindow(
                 top = edgeToEdgeInsets.statusBarHeight,
                 bottom = edgeToEdgeInsets.navigationBarHeight
             )
-
-            contentViewRef?.get()?.let { contentView ->
-                contentView.dispatchApplyWindowInsetsCompat(applyInsets)
-                WindowInsetsCompat.CONSUMED
-            } ?: applyInsets
+            applyInsets
         }
 
         decorView.viewTreeWindow = this
