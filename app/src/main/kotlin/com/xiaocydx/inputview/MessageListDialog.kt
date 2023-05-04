@@ -2,22 +2,13 @@ package com.xiaocydx.inputview
 
 import android.app.Dialog
 import android.content.Context
-import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.view.View
-import android.view.Window
 import androidx.annotation.StyleRes
 import androidx.appcompat.app.AppCompatDialog
-import androidx.core.graphics.Insets
 import androidx.core.view.*
 import androidx.fragment.app.DialogFragment
-import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.google.android.material.bottomsheet.SimpleBottomSheetCallback
 import com.xiaocydx.inputview.databinding.MessageListBinding
-import com.xiaocydx.sample.suppressLayoutCompat
 
 private const val statusBarEdgeToEdge = true
 private const val gestureNavBarEdgeToEdge = true
@@ -38,11 +29,7 @@ class MessageListDialog(
         val binding = MessageListBinding.inflate(layoutInflater)
 
         // 1. 初始化InputView所需的配置
-        InputView.init(
-            window = window,
-            statusBarEdgeToEdge = statusBarEdgeToEdge,
-            gestureNavBarEdgeToEdge = gestureNavBarEdgeToEdge
-        )
+        InputView.init(window, statusBarEdgeToEdge, gestureNavBarEdgeToEdge)
 
         binding.tvTitle.apply {
             setBackgroundColor(0xFFD5A7AE.toInt())
@@ -64,125 +51,5 @@ class MessageListDialogFragment : DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return MessageListDialog(requireContext(), R.style.MessageListDialog)
-    }
-}
-
-class MessageListBottomSheetDialog(
-    context: Context,
-    @StyleRes theme: Int = 0
-) : BottomSheetDialog(context, theme) {
-
-    /**
-     * `InputView.init()`不对`decorView`到`binding.root`之间的View分发WindowInsets，
-     * 目的是去除[BottomSheetDialog]的边到边实现，自行实现状态栏和导航栏边到边（虽然麻烦，但是灵活），
-     * 以及确保`binding.root`的WindowInsets分发正常和Android 11以下WindowInsets动画回调正常。
-     */
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        val window = window!!
-        val binding = MessageListBinding.inflate(layoutInflater)
-
-        // 1. 初始化InputView所需的配置
-        InputView.init(
-            window = window,
-            statusBarEdgeToEdge = statusBarEdgeToEdge,
-            gestureNavBarEdgeToEdge = gestureNavBarEdgeToEdge,
-            dispatchApplyWindowInsetsRoot = binding.root
-        )
-
-        val color = 0xFF8F9AD5.toInt()
-        binding.tvTitle.setBackgroundColor(color)
-        binding.root.doOnLayout {
-            val bottomSheet = binding.root.parent as View
-            behavior.peekHeight = bottomSheet.height
-            if (!statusBarEdgeToEdge) bottomSheet.background = null
-        }
-        if (statusBarEdgeToEdge) {
-            val callback = StatusBarEdgeToEdgeCallback(window, color, binding)
-            ViewCompat.setOnApplyWindowInsetsListener(binding.root, callback)
-            behavior.addBottomSheetCallback(callback)
-        }
-
-        setContentView(binding.init(window).root)
-    }
-
-    private class StatusBarEdgeToEdgeCallback(
-        window: Window,
-        private val color: Int,
-        private val binding: MessageListBinding
-    ) : OnApplyWindowInsetsListener, SimpleBottomSheetCallback() {
-        private var lastStatusBars = Insets.NONE
-        private var background: Drawable? = null
-        private val controller = WindowInsetsControllerCompat(window, window.decorView)
-
-        init {
-            controller.isAppearanceLightStatusBars = true
-        }
-
-        override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
-            lastStatusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
-            return insets
-        }
-
-        override fun onStateChanged(bottomSheet: View, newState: Int) {
-            suppressLayout(newState)
-            updatePadding(bottomSheet)
-        }
-
-        override fun onSlide(bottomSheet: View, slideOffset: Float) {
-            updatePadding(bottomSheet)
-        }
-
-        override fun onLayout(bottomSheet: View) {
-            updatePadding(bottomSheet)
-            setupBackground(bottomSheet)
-        }
-
-        /**
-         * 用[ColorDrawable]替换[bottomSheet]的默认`background`，并减小过度绘制范围
-         */
-        private fun setupBackground(bottomSheet: View) {
-            if (background == null) {
-                background = object : ColorDrawable(color) {
-                    override fun setBounds(left: Int, top: Int, right: Int, bottom: Int) {
-                        val finalBottom = bottom.coerceAtMost(lastStatusBars.top)
-                        super.setBounds(left, top, right, finalBottom)
-                    }
-                }
-            }
-            if (bottomSheet.background !== background) {
-                bottomSheet.background = background
-            }
-        }
-
-        /**
-         * 手势拖动`Dialog`会改变`binding.root`的高度，进而改变`binding.inputView`的高度，
-         * 重新布局`binding.rvMessage`和`binding.inputBar`，让手势拖动看起来像是产生了偏移，
-         * 当[newState]是`STATE_DRAGGING`或`STATE_SETTLING`时，抑制`binding.inputView`布局，
-         */
-        private fun suppressLayout(newState: Int) {
-            binding.inputView.suppressLayoutCompat(when (newState) {
-                BottomSheetBehavior.STATE_DRAGGING,
-                BottomSheetBehavior.STATE_SETTLING -> true
-                else -> false
-            })
-        }
-
-        private fun updatePadding(bottomSheet: View) {
-            if (bottomSheet.top < lastStatusBars.top) {
-                controller.isAppearanceLightStatusBars = true
-                bottomSheet.updatePadding(top = lastStatusBars.top - bottomSheet.top)
-            } else {
-                controller.isAppearanceLightStatusBars = false
-                bottomSheet.updatePadding(top = 0)
-            }
-        }
-    }
-}
-
-class MessageListBottomSheetDialogFragment : BottomSheetDialogFragment() {
-
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return MessageListBottomSheetDialog(requireContext(), theme)
     }
 }
