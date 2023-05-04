@@ -70,9 +70,15 @@ private class StatusBarEdgeToEdgeCallback(
     private var lastStatusBars = Insets.NONE
     private var background: Drawable? = null
     private val controller = WindowInsetsControllerCompat(window, window.decorView)
+    private var WindowInsetsControllerCompat.isDarkStyleStatusBars: Boolean
+        get() = isAppearanceLightStatusBars
+        set(value) {
+            if (isAppearanceLightStatusBars == value) return
+            isAppearanceLightStatusBars = value
+        }
 
     init {
-        controller.isAppearanceLightStatusBars = true
+        controller.isDarkStyleStatusBars = true
     }
 
     fun attach(behavior: BottomSheetBehavior<*>) {
@@ -131,10 +137,10 @@ private class StatusBarEdgeToEdgeCallback(
 
     private fun updatePadding(bottomSheet: View) {
         if (bottomSheet.top < lastStatusBars.top) {
-            controller.isAppearanceLightStatusBars = true
+            controller.isDarkStyleStatusBars = true
             bottomSheet.updatePadding(top = lastStatusBars.top - bottomSheet.top)
         } else {
-            controller.isAppearanceLightStatusBars = false
+            controller.isDarkStyleStatusBars = false
             bottomSheet.updatePadding(top = 0)
         }
     }
