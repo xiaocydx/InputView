@@ -34,14 +34,14 @@ import java.lang.ref.WeakReference
  *
  * @param window [Activity.getWindow]或[Dialog.getWindow]。
  *
- * @param statusBarEdgeToEdge 是否启用状态栏边到边。
- * 若启用状态栏边到边，则去除状态栏间距和背景色，[EdgeToEdgeHelper]提供了实现边到边的辅助函数。
+ * @param statusBarEdgeToEdge 是否启用状态栏EdgeToEdge。
+ * 若启用状态栏EdgeToEdge，则去除状态栏间距和背景色，[EdgeToEdgeHelper]提供了实现EdgeToEdge的辅助函数。
  *
- * @param gestureNavBarEdgeToEdge 是否启用手势导航栏边到边。
- * 若启用手势导航栏边到边，则去除手势导航栏间距和背景色，[EdgeToEdgeHelper]提供了实现边到边的辅助函数。
+ * @param gestureNavBarEdgeToEdge 是否启用手势导航栏EdgeToEdge。
+ * 若启用手势导航栏EdgeToEdge，则去除手势导航栏间距和背景色，[EdgeToEdgeHelper]提供了实现EdgeToEdge的辅助函数。
  *
  * @param alwaysConsumeTypeMask 总是消费的[InsetsType]类型集。
- * 例如隐藏导航栏且总是消费导航栏类型，视图树无需实现导航栏间距和手势导航栏边到边：
+ * 例如隐藏导航栏且总是消费导航栏类型，视图树无需实现导航栏间距和手势导航栏EdgeToEdge：
  * ```
  * val controller = WindowInsetsControllerCompat(window, window.decorView)
  * controller.systemBarsBehavior = BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -72,8 +72,8 @@ fun InputView.Companion.init(
  *
  * @param window [Activity.getWindow]或[Dialog.getWindow]。
  * @param inputView [Activity]或[Dialog]视图树的[InputView]。
- * @param gestureNavBarEdgeToEdge 是否启用手势导航栏边到边。
- * 若启用手势导航栏边到边，则去除手势导航栏间距，[EdgeToEdgeHelper]提供了实现边到边的辅助函数。
+ * @param gestureNavBarEdgeToEdge 是否启用手势导航栏EdgeToEdge。
+ * 若启用手势导航栏EdgeToEdge，则去除手势导航栏间距，[EdgeToEdgeHelper]提供了实现EdgeToEdge的辅助函数。
  */
 fun InputView.Companion.init(
     window: Window,

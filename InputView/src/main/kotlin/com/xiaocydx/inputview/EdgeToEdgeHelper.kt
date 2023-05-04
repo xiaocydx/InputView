@@ -29,7 +29,7 @@ import com.xiaocydx.inputview.compat.requestApplyInsetsCompat
 import com.xiaocydx.inputview.compat.setOnApplyWindowInsetsListenerCompat
 
 /**
- * 提供实现边到边的辅助函数
+ * 提供实现EdgeToEdge的辅助函数
  *
  * @author xcc
  * @date 2023/1/10
@@ -82,7 +82,7 @@ interface EdgeToEdgeHelper {
     }
 
     /**
-     * 是否支持手势导航栏边到边
+     * 是否支持手势导航栏EdgeToEdge
      *
      * @return 返回结果关联了`InputView.init()`的初始化配置。
      */
@@ -94,7 +94,7 @@ interface EdgeToEdgeHelper {
     /**
      * 当分发到[WindowInsetsCompat]时，调用[block]
      *
-     * 以实现RecyclerView手势导航栏边到边为例：
+     * 以实现RecyclerView手势导航栏EdgeToEdge为例：
      * ```
      * // recyclerView.layoutParams.height的初始高度是固定值
      *
@@ -102,7 +102,7 @@ interface EdgeToEdgeHelper {
      *     val navigationBarHeight = insets.navigationBarHeight
      *     val supportGestureNavBarEdgeToEdge = insets.supportGestureNavBarEdgeToEdge(recyclerView)
      *
-     *     // 1. 若支持手势导航栏边到边，则增加高度，否则保持初始高度
+     *     // 1. 若支持手势导航栏EdgeToEdge，则增加高度，否则保持初始高度
      *     val height = when {
      *         !supportGestureNavBarEdgeToEdge -> initialState.params.height
      *         else -> navigationBarHeight + initialState.params.height
@@ -111,13 +111,13 @@ interface EdgeToEdgeHelper {
      *         recyclerView.updateLayoutParams { this.height = height }
      *     }
      *
-     *     // 2. 若支持手势导航栏边到边，则增加paddingBottom，否则保持初始paddingBottom
+     *     // 2. 若支持手势导航栏EdgeToEdge，则增加paddingBottom，否则保持初始paddingBottom
      *     recyclerView.updatePadding(bottom = when {
      *         !supportGestureNavBarEdgeToEdge -> initialState.paddings.bottom
      *         else -> navigationBarHeight + initialState.paddings.bottom
      *     }
      *
-     *     // 3. 由于支持手势导航栏边到边会增加paddingBottom，因此将clipToPadding设为false，
+     *     // 3. 支持手势导航栏EdgeToEdge会增加paddingBottom，将clipToPadding设为false，
      *     // 使得recyclerView滚动时，能将内容绘制在paddingBottom区域，当滚动到底部时，
      *     // 留出paddingBottom区域，内容不会被手势导航栏遮挡。
      *     recyclerView.clipToPadding = !supportGestureNavBarEdgeToEdge

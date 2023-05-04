@@ -513,7 +513,7 @@ interface AnimationState {
     val currentOffset: Int
 
     /**
-     * 导航栏偏移，若不支持手势导航栏边到边，则该属性值为0
+     * 导航栏偏移，若不支持手势导航栏EdgeToEdge，则该属性值为0
      */
     @get:IntRange(from = 0)
     val navBarOffset: Int

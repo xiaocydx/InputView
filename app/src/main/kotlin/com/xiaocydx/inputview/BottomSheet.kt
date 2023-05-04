@@ -15,25 +15,27 @@
  */
 
 @file:JvmName("BottomSheetInternalKt")
-@file:Suppress("PackageDirectoryMismatch")
+@file:Suppress("ObsoleteSdkInt", "PackageDirectoryMismatch")
 
 package com.google.android.material.bottomsheet
 
 import android.view.View
 import android.view.WindowInsets
+import androidx.annotation.RequiresApi
 import androidx.core.view.WindowCompat
 import androidx.core.view.doOnAttach
 
 /**
- * 禁用[BottomSheetDialog]的`EdgeToEdge`和`fitsSystemWindows`，自行处理[WindowInsets]和实现`EdgeToEdge`
+ * 禁用[BottomSheetDialog]的EdgeToEdge和FitsSystemWindows，自行处理[WindowInsets]和实现EdgeToEdge
  *
  * 禁用后的效果：
  * 1. 去除`container`和`coordinator`消费`systemWindowInsets`的逻辑，避免停止分发[WindowInsets]。
- * 2. 去除`bottomSheet`状态栏`EdgeToEdge`的逻辑，避免重复实现状态栏`EdgeToEdge`。
- * 3. 去除`bottomSheet`适应`systemWindowInsets`的逻辑，避免重复设置`paddings`。
+ * 2. 去除`bottomSheet`状态栏EdgeToEdge的逻辑，避免重复实现状态栏EdgeToEdge。
+ * 3. 去除`bottomSheet`适应`systemWindowInsets`的逻辑，避免重复设置paddings。
  *
  * **注意**：该函数的实现逻辑为示例代码，主要是演示禁用的实现思路，实际场景可以做进一步优化。
  */
+@RequiresApi(21)
 fun BottomSheetDialog.disableEdgeToEdgeAndFitsSystemWindows() = doOnAttachSafely {
     val clazz = BottomSheetDialog::class.java
     val edgeToEdgeEnabledField = clazz

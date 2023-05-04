@@ -3,6 +3,7 @@ package com.xiaocydx.inputview
 import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
+import android.view.WindowInsets
 import androidx.annotation.StyleRes
 import androidx.appcompat.app.AppCompatDialog
 import androidx.core.view.*
@@ -14,9 +15,9 @@ private const val statusBarEdgeToEdge = true
 private const val gestureNavBarEdgeToEdge = true
 
 /**
- * [R.style.MessageListDialog]最重要的是`windowIsFloating = false`，这能让Dialog的视图树有WindowInsets分发，
+ * [R.style.MessageListDialog]最重要的是`windowIsFloating = false`，这能让Dialog的视图树有[WindowInsets]分发，
  * 例如[BottomSheetDialog]的默认主题包含`windowIsFloating = false`，布局文件是`design_bottom_sheet_dialog.xml`
- * id为`coordinator`和`design_bottom_sheet`的View实现边到边，id为`touch_outside`的View实现`canceledOnTouchOutside`。
+ * id为`coordinator`和`design_bottom_sheet`的View处理[WindowInsets]，id为`touch_outside`的View实现`canceledOnTouchOutside`。
  */
 class MessageListDialog(
     context: Context,

@@ -20,8 +20,8 @@ private const val gestureNavBarEdgeToEdge = true
 
 /**
  * 视图初始化阶段调用[disableEdgeToEdgeAndFitsSystemWindows]，
- * 禁用[BottomSheetDialog]的`EdgeToEdge`和`fitsSystemWindows`，
- * 自行处理[WindowInsets]和实现`EdgeToEdge`。
+ * 禁用[BottomSheetDialog]的EdgeToEdge和FitsSystemWindows，
+ * 自行处理[WindowInsets]和实现EdgeToEdge。
  *
  * 这种处理方式更为灵活和自由，不需要兼容[BottomSheetDialog]的实现逻辑。
  */
