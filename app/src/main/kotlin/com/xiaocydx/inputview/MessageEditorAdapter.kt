@@ -1,9 +1,7 @@
 package com.xiaocydx.inputview
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -49,18 +47,8 @@ private class EmojiRecyclerView(context: Context) : RecyclerView(context) {
         adapter = EmojiAdapter(spanCount)
         layoutManager = GridLayoutManager(context, spanCount)
         recycledViewPool.setMaxRecycledViews(0, 16)
-        isNestedScrollingEnabled = false
         withLayoutParams(matchParent, 350.dp)
         setupGestureNavBarEdgeToEdge()
-    }
-
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onTouchEvent(e: MotionEvent): Boolean {
-        if (e.actionMasked == MotionEvent.ACTION_DOWN) {
-            // 示例代码仅简单处理嵌套滚动冲突
-            parent?.requestDisallowInterceptTouchEvent(true)
-        }
-        return super.onTouchEvent(e)
     }
 
     /**

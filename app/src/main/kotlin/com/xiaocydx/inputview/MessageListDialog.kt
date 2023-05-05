@@ -3,6 +3,7 @@ package com.xiaocydx.inputview
 import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
+import android.view.Window
 import android.view.WindowInsets
 import androidx.annotation.StyleRes
 import androidx.appcompat.app.AppCompatDialog
@@ -31,20 +32,19 @@ class MessageListDialog(
 
         // 1. 初始化InputView所需的配置
         InputView.init(window, statusBarEdgeToEdge, gestureNavBarEdgeToEdge)
+        setContentView(binding.init(window).initView(window).root)
+    }
 
-        binding.tvTitle.apply {
-            setBackgroundColor(0xFFD5A7AE.toInt())
-            if (!statusBarEdgeToEdge) return@apply
-            doOnAttach {
-                val rootInsets = ViewCompat.getRootWindowInsets(it) ?: return@doOnAttach
-                val statusBars = rootInsets.getInsets(WindowInsetsCompat.Type.statusBars())
-                updatePadding(top = statusBars.top)
-                updateLayoutParams { height += statusBars.top }
-            }
-            WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+    private fun MessageListBinding.initView(window: Window) = apply {
+        tvTitle.setBackgroundColor(0xFFD5A7AE.toInt())
+        if (!statusBarEdgeToEdge) return@apply
+        tvTitle.doOnAttach {
+            val rootInsets = ViewCompat.getRootWindowInsets(it) ?: return@doOnAttach
+            val statusBars = rootInsets.getInsets(WindowInsetsCompat.Type.statusBars())
+            tvTitle.updatePadding(top = statusBars.top)
+            tvTitle.updateLayoutParams { height += statusBars.top }
         }
-
-        setContentView(binding.init(window).root)
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
     }
 }
 

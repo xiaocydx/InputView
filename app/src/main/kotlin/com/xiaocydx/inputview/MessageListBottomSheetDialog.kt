@@ -32,26 +32,33 @@ class MessageListBottomSheetDialog(
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        disableEdgeToEdgeAndFitsSystemWindows()
-
         val window = window!!
         val binding = MessageListBinding.inflate(layoutInflater)
 
         // 1. 初始化InputView所需的配置
         InputView.init(window, statusBarEdgeToEdge, gestureNavBarEdgeToEdge)
+        setContentView(binding.init(window).initView(window).root)
+    }
+
+    private fun MessageListBinding.initView(window: Window) = apply {
+        disableEdgeToEdgeAndFitsSystemWindows()
 
         val color = 0xFF8F9AD5.toInt()
-        binding.tvTitle.setBackgroundColor(color)
-        binding.root.doOnLayout {
-            val bottomSheet = binding.root.parent as View
+        tvTitle.setBackgroundColor(color)
+        root.doOnLayout {
+            val bottomSheet = root.parent as View
             behavior.peekHeight = bottomSheet.height
             if (!statusBarEdgeToEdge) bottomSheet.background = null
         }
         if (statusBarEdgeToEdge) {
-            StatusBarEdgeToEdgeCallback(window, color, binding).attach(behavior)
+            StatusBarEdgeToEdgeCallback(window, color, this).attach(behavior)
         }
 
-        setContentView(binding.init(window).root)
+        inputView.editorAdapter.addEditorChangedListener { _, current ->
+            // 当current为MessageEditor.EMOJI时，禁用rvMessage的嵌套滚动，
+            // 让behavior.onLayoutChild()查找到current的NestedScrollingChild。
+            rvMessage.isNestedScrollingEnabled = current != MessageEditor.EMOJI
+        }
     }
 }
 
