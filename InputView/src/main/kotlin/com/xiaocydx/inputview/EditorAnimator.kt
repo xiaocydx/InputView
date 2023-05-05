@@ -120,7 +120,7 @@ abstract class EditorAnimator(
         endAnimation()
         assert(animationRecord == null) { "animationRecord未被置空" }
         animationRecord = record
-        dispatchAnimationPrepare()
+        dispatchAnimationPrepare(record)
     }
 
     private fun runSimpleAnimationIfNecessary(record: AnimationRecord) {
@@ -144,8 +144,8 @@ abstract class EditorAnimator(
         }
     }
 
-    private fun dispatchAnimationPrepare() {
-        dispatchAnimationCallback { onAnimationPrepare() }
+    private fun dispatchAnimationPrepare(record: AnimationRecord) {
+        dispatchAnimationCallback { onAnimationPrepare(record.previous, record.current) }
     }
 
     private fun dispatchAnimationStart(record: AnimationRecord) {
@@ -556,9 +556,12 @@ interface AnimationCallback {
     /**
      * 动画准备
      *
-     * 该函数在下一帧之前被调用，此时可以修改[InputView]的属性
+     * 该函数在下一帧之前被调用，此时可以修改[InputView]的属性。
+     *
+     * @param previous 动画起始[Editor]
+     * @param current  动画结束[Editor]
      */
-    fun onAnimationPrepare() = Unit
+    fun onAnimationPrepare(previous: Editor?, current: Editor?) = Unit
 
     /**
      * 动画开始

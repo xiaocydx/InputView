@@ -94,7 +94,7 @@ private fun MessageListBinding.handleScroll() {
     //region 处理rvMessage可视区域未铺满时的动画偏移
     val initialMode = inputView.editorMode
     inputView.editorAnimator.addAnimationCallback(object : AnimationCallback {
-        override fun onAnimationPrepare() {
+        override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
             if (inputView.editorMode !== EditorMode.ADJUST_RESIZE
                     && calculateVerticalScrollRangeDiff() < 0) {
                 // 将editorMode动态调整为EditorMode.ADJUST_RESIZE相比于其它处理方式,
