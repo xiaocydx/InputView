@@ -178,3 +178,20 @@ class NopEditorAnimator : EditorAnimator() {
         }
     }
 }
+
+/**
+ * [EditorAnimator.addAnimationCallback]的简化函数
+ *
+ * @return 返回添加的[AnimationCallback]，可用于[EditorAnimator.removeAnimationCallback]
+ */
+inline fun EditorAnimator.addAnimationCallback(
+    crossinline onPrepare: (previous: Editor?, current: Editor?) -> Unit = { _, _ -> },
+    crossinline onStart: (state: AnimationState) -> Unit = {},
+    crossinline onUpdate: (state: AnimationState) -> Unit = {},
+    crossinline onEnd: (state: AnimationState) -> Unit = {}
+) = object : AnimationCallback {
+    override fun onAnimationPrepare(previous: Editor?, current: Editor?) = onPrepare(previous, current)
+    override fun onAnimationStart(state: AnimationState) = onStart(state)
+    override fun onAnimationUpdate(state: AnimationState) = onUpdate(state)
+    override fun onAnimationEnd(state: AnimationState) = onEnd(state)
+}.also(::addAnimationCallback)
