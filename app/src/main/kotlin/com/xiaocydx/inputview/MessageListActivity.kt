@@ -12,7 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.xiaocydx.inputview.MessageEditor.*
 import com.xiaocydx.inputview.databinding.MessageListBinding
-import com.xiaocydx.sample.onClick
+import com.xiaocydx.sample.*
 
 /**
  * @author xcc
@@ -22,7 +22,6 @@ class MessageListActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // 1. 初始化InputView所需的配置
         InputView.init(window, gestureNavBarEdgeToEdge = true)
         setContentView(MessageListBinding.inflate(layoutInflater).init(window).root)
     }
@@ -33,12 +32,11 @@ class MessageListActivity : AppCompatActivity() {
  * 使用[EditorMode.ADJUST_RESIZE]，更改内容区域尺寸时会让[RecyclerView]重新measure和layout，
  * 在性能表现上不如[EditorMode.ADJUST_PAN]。
  *
- * 示例代码反转了[RecyclerView]的布局，并从顶部开始填充子View，此时使用[EditorMode.ADJUST_PAN]，
- * 需要对[RecyclerView]处理编辑器区域的动画偏移，[handleScroll]演示了如何处理动画偏移，
- * 可以调小[MessageListAdapter]的`itemCount`，观察处理后的效果。
+ * 示例代码使用[EditorMode.ADJUST_PAN]，[initScroll]演示了如何处理动画偏移，
+ * 可以调小[MessageListAdapter]的`itemCount`，观察处理动画偏移后的运行结果。
  */
 fun MessageListBinding.init(window: Window) = apply {
-    // 2. 初始化InputView的属性
+    // 1. 初始化InputView的属性
     val editorAdapter = MessageEditorAdapter()
     inputView.apply {
         editText = etMessage
@@ -50,7 +48,7 @@ fun MessageListBinding.init(window: Window) = apply {
         // editorAnimator = NopEditorAnimator()
     }
 
-    // 3. 初始化RecyclerView的属性
+    // 2. 初始化RecyclerView的属性
     rvMessage.apply {
         layoutManager = LinearLayoutManager(context).apply {
             stackFromEnd = true
@@ -60,10 +58,10 @@ fun MessageListBinding.init(window: Window) = apply {
         scrollToPosition(0)
     }
 
-    // 4. 处理输入场景的交互
-    handleScroll()
-    handleTouch(window)
-    handleToggle(editorAdapter)
+    // 3. 初始化输入场景的交互处理
+    initScroll()
+    initTouch(window)
+    initToggle(editorAdapter)
 }
 
 /**
@@ -71,95 +69,69 @@ fun MessageListBinding.init(window: Window) = apply {
  * 2. 更改显示的[MessageEditor]，`rvMessage`滚动到首位。
  * 3. 处理`rvMessage`可视区域未铺满时的动画偏移。
  */
-private fun MessageListBinding.handleScroll() {
+private fun MessageListBinding.initScroll() {
     val scrollToFirst = { rvMessage.scrollToPosition(0) }
 
-    //region 更改rvMessage的高度，rvMessage滚动到首位
-    rvMessage.addOnLayoutChangeListener listener@{ _, left, top, right, bottom,
-                                                   _, oldTop, _, oldBottom ->
-        if (right - left == 0) return@listener
+    // 更改rvMessage的高度，rvMessage滚动到首位
+    rvMessage.addOnLayoutChangeListener { v, _, _, _, _,
+                                          _, oldTop, _, oldBottom ->
         val oldHeight = oldBottom - oldTop
-        val newHeight = bottom - top
-        if (oldHeight > 0 && oldHeight != newHeight) {
+        if (oldHeight > 0 && oldHeight != v.height) {
             // 视图树的PFLAG_FORCE_LAYOUT都移除后，再申请下一帧重新布局
             rvMessage.doOnPreDraw { scrollToFirst() }
         }
     }
-    //endregion
 
-    //region 更改显示的MessageEditor，rvMessage滚动到首位
+    // 更改显示的MessageEditor，rvMessage滚动到首位
     inputView.editorAdapter.addEditorChangedListener { _, _ -> scrollToFirst() }
-    //endregion
 
-    //region 处理rvMessage可视区域未铺满时的动画偏移
+    // 处理rvMessage可视区域未铺满时的动画偏移
     val initialMode = inputView.editorMode
-    inputView.editorAnimator.addAnimationCallback(object : AnimationCallback {
-        override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
-            if (inputView.editorMode !== EditorMode.ADJUST_RESIZE
-                    && calculateVerticalScrollRangeDiff() < 0) {
+    val isExceedVisibleRange = { rvMessage.computeVerticalScrollRange() > rvMessage.height }
+    inputView.editorAnimator.addAnimationCallback(
+        onPrepare = { _, _ ->
+            if (inputView.editorMode !== EditorMode.ADJUST_RESIZE && !isExceedVisibleRange()) {
                 // 将editorMode动态调整为EditorMode.ADJUST_RESIZE相比于其它处理方式,
                 // 能确保EditorAnimator动画运行中、结束后，添加消息的item动画正常运行。
                 inputView.editorMode = EditorMode.ADJUST_RESIZE
             }
-        }
-
-        override fun onAnimationEnd(state: AnimationState) {
-            if (state.endOffset == 0) inputView.editorMode = initialMode
-        }
-
-        private fun calculateVerticalScrollRangeDiff(): Int {
-            return rvMessage.computeVerticalScrollRange() - rvMessage.height
-        }
-    })
-    //endregion
+        },
+        onEnd = { state -> if (state.endOffset == 0) inputView.editorMode = initialMode }
+    )
 }
 
 /**
- * 1. 在动画运行时决定是否拦截触摸事件。
- * 2. 触摸RecyclerView隐藏当前[MessageEditor]。
+ * 1. 触摸RecyclerView隐藏当前[MessageEditor]。
+ * 2. 实际场景可能需要在动画运行时拦截触摸事件。
  */
 @SuppressLint("ClickableViewAccessibility")
-private fun MessageListBinding.handleTouch(window: Window) {
-    //region 在动画运行时决定是否拦截触摸事件
-    val delegate = window.callback
-    window.callback = object : Window.Callback by delegate {
-        override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-            // 实际场景可能需要在动画运行时拦截触摸事件，避免造成较差的交互体验
-            // if (ev.action == ACTION_DOWN && inputView.editorAnimator.isRunning) return false
-            return delegate.dispatchTouchEvent(ev)
+private fun MessageListBinding.initTouch(window: Window) {
+    // 触摸RecyclerView隐藏当前MessageEditor
+    rvMessage.addOnItemTouchListener(onInterceptTouchEvent = { _, ev ->
+        if (ev.action == ACTION_DOWN && inputView.editorAdapter.current !== VOICE) {
+            inputView.editorAdapter.notifyHideCurrent()
         }
-    }
-    //endregion
-
-    //region 触摸RecyclerView隐藏当前MessageEditor
-    rvMessage.addOnItemTouchListener(object : RecyclerView.OnItemTouchListener {
-        override fun onInterceptTouchEvent(rv: RecyclerView, ev: MotionEvent): Boolean {
-            if (ev.action == ACTION_DOWN && inputView.editorAdapter.current !== VOICE) {
-                inputView.editorAdapter.notifyHideCurrent()
-            }
-            return false
-        }
-
-        override fun onTouchEvent(rv: RecyclerView, e: MotionEvent) = Unit
-
-        override fun onRequestDisallowInterceptTouchEvent(disallowIntercept: Boolean) = Unit
+        false
     })
-    //endregion
+
+    // 实际场景可能需要在动画运行时拦截触摸事件
+    inputView.editorAnimator.addAnimationCallback(
+        // onStart = { window.isDispatchTouchEventEnabled = false },
+        // onEnd = { window.isDispatchTouchEventEnabled = true }
+    )
 }
 
 /**
  * 处理[MessageEditor]的视图和图标切换
  */
-private fun MessageListBinding.handleToggle(editorAdapter: MessageEditorAdapter) {
+private fun MessageListBinding.initToggle(editorAdapter: MessageEditorAdapter) {
     val actions = mutableMapOf<MessageEditor, Action>()
     actions[VOICE] = Action(ivVoice, R.mipmap.ic_message_editor_voice)
     actions[EMOJI] = Action(ivEmoji, R.mipmap.ic_message_editor_emoji)
     actions[EXTRA] = Action(ivExtra, R.mipmap.ic_message_editor_extra, isKeep = true)
     // 初始化各个按钮显示的图标
     actions.forEach { it.value.showSelfIcon() }
-    ivVoice.onClick { editorAdapter.notifyToggle(VOICE) }
-    ivEmoji.onClick { editorAdapter.notifyToggle(EMOJI) }
-    ivExtra.onClick { editorAdapter.notifyToggle(EXTRA) }
+
     editorAdapter.addEditorChangedListener { previous, current ->
         if (previous === VOICE) {
             tvVoice.isVisible = false
@@ -172,6 +144,10 @@ private fun MessageListBinding.handleToggle(editorAdapter: MessageEditorAdapter)
         actions.forEach { it.value.showSelfIcon() }
         current?.let(actions::get)?.takeIf { !it.isKeep }?.showImeIcon()
     }
+
+    ivVoice.onClick { editorAdapter.notifyToggle(VOICE) }
+    ivEmoji.onClick { editorAdapter.notifyToggle(EMOJI) }
+    ivExtra.onClick { editorAdapter.notifyToggle(EXTRA) }
 }
 
 private class Action(

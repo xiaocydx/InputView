@@ -29,8 +29,6 @@ class MessageListDialog(
         super.onCreate(savedInstanceState)
         val window = window!!
         val binding = MessageListBinding.inflate(layoutInflater)
-
-        // 1. 初始化InputView所需的配置
         InputView.init(window, statusBarEdgeToEdge, gestureNavBarEdgeToEdge)
         setContentView(binding.init(window).initView(window).root)
     }

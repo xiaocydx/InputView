@@ -6,9 +6,12 @@ import android.annotation.SuppressLint
 import android.content.res.Resources
 import android.os.Build
 import android.util.TypedValue
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import androidx.annotation.Px
+import androidx.recyclerview.widget.RecyclerView
 
 /**
  * [TypedValue.complexToDimensionPixelSize]的舍入逻辑，
@@ -76,5 +79,49 @@ private fun ViewGroup.hiddenSuppressLayout(suppress: Boolean) {
         } catch (e: NoSuchMethodError) {
             tryHiddenSuppressLayout = false
         }
+    }
+}
+
+inline fun RecyclerView.addOnItemTouchListener(
+    crossinline onInterceptTouchEvent: (rv: RecyclerView, ev: MotionEvent) -> Boolean = { _, _ -> false },
+    crossinline onTouchEvent: (rv: RecyclerView, ev: MotionEvent) -> Unit = { _, _ -> },
+    crossinline onRequestDisallowInterceptTouchEvent: (disallowIntercept: Boolean) -> Unit = {}
+) = object : RecyclerView.OnItemTouchListener {
+    override fun onInterceptTouchEvent(rv: RecyclerView, ev: MotionEvent): Boolean {
+        return onInterceptTouchEvent(rv, ev)
+    }
+
+    override fun onTouchEvent(rv: RecyclerView, e: MotionEvent) {
+        onTouchEvent(rv, e)
+    }
+
+    override fun onRequestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
+        onRequestDisallowInterceptTouchEvent(disallowIntercept)
+    }
+}.also(::addOnItemTouchListener)
+
+var Window.isDispatchTouchEventEnabled: Boolean
+    get() = callback is DisableDispatchTouchEvent
+    set(value) {
+        val callback = callback
+        if (value && callback is DisableDispatchTouchEvent) {
+            callback.detach()
+        } else if (!value && callback !is DisableDispatchTouchEvent) {
+            DisableDispatchTouchEvent(this).attach()
+        }
+    }
+
+private class DisableDispatchTouchEvent(
+    private val window: Window,
+    private val delegate: Window.Callback = window.callback
+) : Window.Callback by delegate {
+
+    fun attach() = apply { window.callback = this }
+
+    fun detach() = apply { window.callback = delegate }
+
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) return false
+        return delegate.dispatchTouchEvent(event)
     }
 }
