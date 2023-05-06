@@ -37,8 +37,8 @@ import com.xiaocydx.inputview.compat.toCompat
  * 1. 调用`InputView.init()`初始化[InputView]所需的配置。
  * 2. [InputView]初始化时只能有一个子View，该子View作为[contentView]。
  * 3. [editText]用于兼容Android各版本显示和隐藏IME。
- * 4. [editorAdapter]支持多种[Editor]的视图创建和显示。
- * 5. [editorAnimator]支持切换[Editor]的过渡动画。
+ * 4. [editorAdapter]支持[Editor]的视图创建和显示。
+ * 5. [editorAnimator]支持[Editor]的切换过渡动画。
  *
  * [contentView]的初始化布局位置等同于[Gravity.CENTER]，其测量高度不受`layoutParams.height`影响，
  * 最大值是[InputView]的测量高度，[Editor]的视图位于[contentView]下方，通知显示[Editor]的视图时，

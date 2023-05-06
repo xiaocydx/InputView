@@ -23,7 +23,6 @@ import android.view.*
 import android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
 import android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
 import android.view.animation.Interpolator
-import androidx.annotation.CheckResult
 import androidx.core.view.*
 import androidx.core.view.WindowInsetsCompat.Type.*
 import com.xiaocydx.inputview.compat.*
@@ -33,54 +32,35 @@ import java.lang.ref.WeakReference
  * 初始化[InputView]所需的配置
  *
  * @param window [Activity.getWindow]或[Dialog.getWindow]。
- *
  * @param statusBarEdgeToEdge 是否启用状态栏EdgeToEdge。
- * 若启用状态栏EdgeToEdge，则去除状态栏间距和背景色，[EdgeToEdgeHelper]提供了实现EdgeToEdge的辅助函数。
- *
+ * 若启用状态栏EdgeToEdge，则去除状态栏间距和背景色，[EdgeToEdgeHelper]提供实现EdgeToEdge的辅助函数。
  * @param gestureNavBarEdgeToEdge 是否启用手势导航栏EdgeToEdge。
- * 若启用手势导航栏EdgeToEdge，则去除手势导航栏间距和背景色，[EdgeToEdgeHelper]提供了实现EdgeToEdge的辅助函数。
- *
- * @param alwaysConsumeTypeMask 总是消费的[InsetsType]类型集。
- * 例如隐藏导航栏且总是消费导航栏类型，视图树无需实现导航栏间距和手势导航栏EdgeToEdge：
- * ```
- * val controller = WindowInsetsControllerCompat(window, window.decorView)
- * controller.systemBarsBehavior = BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
- * controller.hide(WindowInsetsCompat.Type.navigationBars())
- *
- * InputView.init(
- *     window = window,
- *     alwaysConsumeTypeMask = WindowInsetsCompat.Type.navigationBars()
- * ）
- * ```
+ * 若启用手势导航栏EdgeToEdge，则去除手势导航栏间距和背景色，[EdgeToEdgeHelper]提供实现EdgeToEdge的辅助函数。
  */
 fun InputView.Companion.init(
     window: Window,
     statusBarEdgeToEdge: Boolean = false,
-    gestureNavBarEdgeToEdge: Boolean = false,
-    @InsetsType alwaysConsumeTypeMask: Int = 0
+    gestureNavBarEdgeToEdge: Boolean = false
 ) {
-    ViewTreeWindow(window, gestureNavBarEdgeToEdge)
-        .attachToDecorView(statusBarEdgeToEdge, alwaysConsumeTypeMask)
+    ViewTreeWindow(window, gestureNavBarEdgeToEdge).attach()
+        .setOnApplyWindowInsetsListener(statusBarEdgeToEdge)
+
 }
 
 /**
  * 初始化[InputView]所需的配置
  *
- * 该函数用于兼容已有的WindowInsets分发处理方案，例如单Activity多Fragment结构。
- *
- * **注意**：[window]需要通过[Window.checkDispatchApplyInsetsCompatibility]的检查。
+ * 该函数用于兼容已有的[WindowInsets]分发处理方案。
  *
  * @param window [Activity.getWindow]或[Dialog.getWindow]。
- * @param inputView [Activity]或[Dialog]视图树的[InputView]。
  * @param gestureNavBarEdgeToEdge 是否启用手势导航栏EdgeToEdge。
  * 若启用手势导航栏EdgeToEdge，则去除手势导航栏间距，[EdgeToEdgeHelper]提供了实现EdgeToEdge的辅助函数。
  */
-fun InputView.Companion.init(
+fun InputView.Companion.initCompat(
     window: Window,
-    inputView: InputView,
     gestureNavBarEdgeToEdge: Boolean = false,
 ) {
-    ViewTreeWindow(window, gestureNavBarEdgeToEdge).attachToInputView(inputView)
+    ViewTreeWindow(window, gestureNavBarEdgeToEdge).attach()
 }
 
 /**
@@ -153,60 +133,39 @@ internal class ViewTreeWindow(
     val gestureNavBarEdgeToEdge: Boolean
 ) : EdgeToEdgeHelper {
     private val decorView = window.decorView as ViewGroup
-    private val initialized: Boolean
-        get() = decorView.viewTreeWindow != null
 
-    fun attachToDecorView(statusBarEdgeToEdge: Boolean, @InsetsType alwaysConsumeTypeMask: Int) {
-        check(!initialized) { "InputView.init()只能调用一次" }
+    fun attach() = apply {
+        check(decorView.viewTreeWindow == null) { "InputView.init()只能调用一次" }
         @Suppress("DEPRECATION")
         window.setSoftInputMode(SOFT_INPUT_ADJUST_RESIZE)
         window.setDecorFitsSystemWindowsCompat(false)
         window.checkDispatchApplyInsetsCompatibility()
+        decorView.viewTreeWindow = this
+    }
 
+    fun setOnApplyWindowInsetsListener(statusBarEdgeToEdge: Boolean) {
         val contentRootRef = decorView.children
             .firstOrNull { it is ViewGroup }?.let(::WeakReference)
         decorView.setOnApplyWindowInsetsListenerCompat { _, insets ->
             window.checkDispatchApplyInsetsCompatibility()
 
-            val applyInsets = insets.consume(alwaysConsumeTypeMask)
-            val edgeToEdgeInsets = applyInsets.edgeToEdge(statusBarEdgeToEdge)
-            decorView.onApplyWindowInsetsCompat(edgeToEdgeInsets)
+            val decorInsets = insets.toDecorInsets(statusBarEdgeToEdge)
+            decorView.onApplyWindowInsetsCompat(decorInsets)
 
             // 在DecorView处理完ContentRoot的Margins后，再设置Margins
             contentRootRef?.get()?.updateMargins(
-                top = edgeToEdgeInsets.statusBarHeight,
-                bottom = edgeToEdgeInsets.navigationBarHeight
+                top = decorInsets.statusBarHeight,
+                bottom = decorInsets.navigationBarHeight
             )
-            applyInsets
-        }
-
-        decorView.viewTreeWindow = this
-    }
-
-    fun attachToInputView(inputView: InputView) {
-        check(!initialized) { "InputView.init()只能调用一次" }
-        window.setDecorFitsSystemWindowsCompat(false)
-        window.checkDispatchApplyInsetsCompatibility()
-
-        inputView.setOnApplyWindowInsetsListenerCompat { _, insets ->
-            window.checkDispatchApplyInsetsCompatibility()
-            inputView.updateMargins(bottom = when {
-                insets.supportGestureNavBarEdgeToEdge(inputView) -> 0
-                else -> insets.navigationBarHeight
-            })
             insets
         }
-
-        decorView.viewTreeWindow = this
-        inputView.viewTreeWindow = this
     }
 
     /**
      * 不调用[Window.setStatusBarColor]和[Window.setNavigationBarColor]将背景颜色设为透明，
      * 通过消费状态栏和导航栏的`Insets`实现不绘制背景，这种处理方式的通用性更强，侵入性更低。
      */
-    @CheckResult
-    private fun WindowInsetsCompat.edgeToEdge(statusBarEdgeToEdge: Boolean): WindowInsetsCompat {
+    private fun WindowInsetsCompat.toDecorInsets(statusBarEdgeToEdge: Boolean): WindowInsetsCompat {
         var typeMask = 0
         if (statusBarEdgeToEdge) {
             typeMask = typeMask or statusBars()
@@ -228,10 +187,6 @@ internal class ViewTreeWindow(
 
     val WindowInsetsCompat.navigationBarOffset: Int
         get() = if (supportGestureNavBarEdgeToEdge(decorView)) navigationBarHeight else 0
-
-    override fun WindowInsetsCompat.supportGestureNavBarEdgeToEdge(view: View): Boolean {
-        return gestureNavBarEdgeToEdge && isGestureNavigationBar(view)
-    }
 
     fun createWindowInsetsController(editText: View) =
             window.createWindowInsetsControllerCompat(editText)
