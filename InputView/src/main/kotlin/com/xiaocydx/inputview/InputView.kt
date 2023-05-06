@@ -229,12 +229,8 @@ class InputView @JvmOverloads constructor(
             // 修复editorOffset，例如导航栏高度改变（导航栏模式改变），
             // editorView的子View实现手势导航栏EdgeToEdge，可能会修改尺寸，
             // 此时未同步editorOffset，导致布局位置不正确。
-            val ime = editorView.ime
-            val current = editorView.current
-            val offset = editorView.measuredHeight
-            if (current !== ime && editorOffset != offset) {
-                editorOffset = offset
-            }
+            val offset = editorAnimator.calculateEndOffset()
+            if (offset >= 0) editorOffset = offset
         }
 
         val horizontalMargin = contentView.let { it.marginLeft + it.marginRight }

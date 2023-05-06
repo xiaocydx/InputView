@@ -16,6 +16,8 @@
 
 package com.xiaocydx.inputview
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.os.Build
 import android.view.View
@@ -24,7 +26,6 @@ import android.view.animation.Interpolator
 import android.view.animation.LinearInterpolator
 import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
-import androidx.core.animation.addListener
 import androidx.core.view.OneShotPreDrawListener
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
@@ -131,11 +132,15 @@ abstract class EditorAnimator(
         }
 
         ValueAnimator.ofFloat(0f, 1f).apply {
-            addListener(
-                onStart = { dispatchAnimationStart(record) },
-                onCancel = { dispatchAnimationEnd(record) },
-                onEnd = { dispatchAnimationEnd(record) }
-            )
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationStart(animation: Animator) {
+                    dispatchAnimationStart(record)
+                }
+
+                override fun onAnimationEnd(animation: Animator) {
+                    dispatchAnimationEnd(record)
+                }
+            })
             addUpdateListener { dispatchAnimationUpdate(record) }
             duration = durationMillis
             interpolator = LinearInterpolator()
@@ -178,6 +183,21 @@ abstract class EditorAnimator(
 
     internal fun endAnimation() {
         animationRecord?.endAnimation()
+    }
+
+    internal fun calculateEndOffset(): Int {
+        host?.window?.apply {
+            val host = host!!
+            return if (host.current === host.ime) {
+                // 当前是IME，若还未进行WindowInsets分发，更新lastInsets，
+                // 则lastInsets.imeOffset为0，这种情况imeOffset不是有效值。
+                val offset = lastInsets?.imeOffset ?: NO_VALUE
+                if (offset != 0) offset else NO_VALUE
+            } else {
+                host.currentView?.measuredHeight ?: 0
+            }
+        }
+        return NO_VALUE
     }
 
     internal fun onAttachToEditorHost(host: EditorHost) {
@@ -395,14 +415,7 @@ abstract class EditorAnimator(
         }
 
         fun setAnimationEndOffset() {
-            host?.window?.apply {
-                val endOffset = if (isIme(current)) {
-                    lastInsets?.imeOffset ?: NO_VALUE
-                } else {
-                    host!!.currentView?.height ?: 0
-                }
-                setAnimationOffset(endOffset = endOffset)
-            }
+            setAnimationOffset(endOffset = calculateEndOffset())
         }
 
         fun updateAnimationCurrent() {
