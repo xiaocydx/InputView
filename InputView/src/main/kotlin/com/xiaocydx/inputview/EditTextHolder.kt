@@ -16,6 +16,7 @@
 
 package com.xiaocydx.inputview
 
+import android.graphics.Matrix
 import android.view.MotionEvent
 import android.view.ViewParent
 import android.widget.EditText
@@ -31,7 +32,9 @@ import java.lang.ref.WeakReference
  * @date 2023/1/18
  */
 internal class EditTextHolder(editText: EditText, window: ViewTreeWindow?) {
+    private val point = FloatArray(2)
     private val location = IntArray(2)
+    private var inverseMatrix: Matrix? = null
     private val editTextRef = WeakReference(editText)
     private val callback = HideTextSelectHandleWhileAnimationStart()
     private var host: EditorHost? = null
@@ -149,13 +152,17 @@ internal class EditTextHolder(editText: EditText, window: ViewTreeWindow?) {
     private fun EditText.isTouched(ev: MotionEvent): Boolean {
         if (!isVisible) return false
         getLocationOnScreen(location)
-        val left = location[0]
-        val top = location[1]
-        val right = left + width
-        val bottom = top + height
-        val isContainX = ev.rawX in left.toFloat()..right.toFloat()
-        val isContainY = ev.rawY in top.toFloat()..bottom.toFloat()
-        return isContainX && isContainY
+        point[0] = ev.rawX - location[0]
+        point[1] = ev.rawY - location[1]
+        if (!matrix.isIdentity) {
+            if (inverseMatrix == null) {
+                inverseMatrix = Matrix()
+            }
+            matrix.invert(inverseMatrix)
+            inverseMatrix!!.mapPoints(point)
+        }
+        return point[0] >= 0 && point[0] < right - left
+                && point[1] >= 0 && point[1] < bottom - top
     }
 
     /**
