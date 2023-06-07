@@ -186,15 +186,14 @@ abstract class EditorAnimator(
     }
 
     internal fun calculateEndOffset(): Int {
-        host?.window?.apply {
-            val host = host!!
-            return if (host.current === host.ime) {
+        host?.apply {
+            return if (current === ime) {
                 // 当前是IME，若还未进行WindowInsets分发，更新lastInsets，
                 // 则lastInsets.imeOffset为0，这种情况imeOffset不是有效值。
                 val offset = lastInsets?.imeOffset ?: NO_VALUE
                 if (offset != 0) offset else NO_VALUE
             } else {
-                host.currentView?.measuredHeight ?: 0
+                currentView?.measuredHeight ?: 0
             }
         }
         return NO_VALUE
@@ -278,16 +277,16 @@ abstract class EditorAnimator(
          * 该函数被调用之前，可能已更改[Editor]，执行了[onEditorChanged]创建[animationRecord]
          */
         override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
-            host?.window?.apply {
+            host?.apply {
                 lastInsets = insets
                 val imeHeight = insets.imeHeight
                 when {
                     lastImeHeight == 0 && imeHeight > 0 -> {
-                        host?.dispatchImeShown(shown = true)
+                        dispatchImeShown(shown = true)
                         animationRecord?.addPreDrawRunSimpleAnimation()
                     }
                     lastImeHeight > 0 && imeHeight == 0 -> {
-                        host?.dispatchImeShown(shown = false)
+                        dispatchImeShown(shown = false)
                         animationRecord?.addPreDrawRunSimpleAnimation()
                     }
                     lastImeHeight > 0 && imeHeight > 0 && lastImeHeight != imeHeight -> {
@@ -475,7 +474,6 @@ abstract class EditorAnimator(
     }
 
     companion object {
-        private const val NO_VALUE = -1
         private const val ENABLE_INSETS_ANIMATION_BELOW_R = true
         internal const val ANIMATION_DURATION_MILLIS = 200L
         internal val ANIMATION_INTERPOLATOR = DecelerateInterpolator()

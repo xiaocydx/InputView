@@ -304,8 +304,10 @@ class InputView @JvmOverloads constructor(
 
     private inner class EditorHostImpl : EditorHost {
         private var pending: PendingInsetsAnimationCallback? = null
-        override val window: ViewTreeWindow?
-            get() = this@InputView.window
+        override val WindowInsetsCompat.imeHeight: Int
+            get() = window?.run { imeHeight } ?: NO_VALUE
+        override val WindowInsetsCompat.imeOffset: Int
+            get() = window?.run { imeOffset } ?: NO_VALUE
         override val editorOffset: Int
             get() = this@InputView.editorOffset
         override val navBarOffset: Int

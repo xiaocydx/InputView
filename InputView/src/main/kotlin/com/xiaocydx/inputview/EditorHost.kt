@@ -21,6 +21,7 @@ import android.view.animation.Interpolator
 import androidx.annotation.IntRange
 import androidx.core.view.OneShotPreDrawListener
 import androidx.core.view.WindowInsetsAnimationCompat
+import androidx.core.view.WindowInsetsCompat
 
 /**
  * [Editor]的宿主，作用是让内部实现不用区分[InputView]和[EditorView]
@@ -31,9 +32,14 @@ import androidx.core.view.WindowInsetsAnimationCompat
 internal interface EditorHost {
 
     /**
-     * 视图树的[ViewTreeWindow]
+     * IME高度
      */
-    val window: ViewTreeWindow?
+    val WindowInsetsCompat.imeHeight: Int
+
+    /**
+     * IME偏移
+     */
+    val WindowInsetsCompat.imeOffset: Int
 
     /**
      * 编辑区的偏移值
@@ -134,6 +140,8 @@ internal interface EditorHost {
         callback: WindowInsetsAnimationCompat.Callback?
     )
 }
+
+internal const val NO_VALUE = -1
 
 internal interface Replicable
 
