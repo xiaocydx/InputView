@@ -44,7 +44,6 @@ fun InputView.Companion.init(
 ) {
     ViewTreeWindow(window, gestureNavBarEdgeToEdge).attach()
         .setOnApplyWindowInsetsListener(statusBarEdgeToEdge)
-
 }
 
 /**
