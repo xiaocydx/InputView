@@ -55,7 +55,7 @@ interface EdgeToEdgeHelper {
      * val typeMask = WindowInsetsCompat.Type.statusBars()
      * val outcome = insets.consume(typeMask)
      * outcome.getInsets(typeMask) // Insets.NONE
-     * outcome.getInsetsIgnoringVisibility() // Insets.NONE
+     * outcome.getInsetsIgnoringVisibility(typeMask) // Insets.NONE
      * outcome.isVisible(typeMask) // 不改变可见结果
      * ```
      */
