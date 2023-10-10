@@ -84,7 +84,7 @@ internal interface EditorHost {
     fun updateEditorOffset(offset: Int)
 
     /**
-     * 分发IME的显示情况
+     * 分发IME的显示情况，分发成功立即消费待处理[Editor]更改
      */
     fun dispatchImeShown(shown: Boolean)
 

@@ -30,6 +30,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     private val views = mutableMapOf<Editor, View?>()
     private var editText: EditTextHolder? = null
     private var removePreviousImmediately = true
+    private var pendingPrevious: Editor? = NopEditor
     var ime: Editor? = null; private set
     var current: Editor? = null; private set
     var changeRecord = ChangeRecord(); private set
@@ -53,6 +54,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
 
         ime = checkedAdapter().ime
         current = null
+        clearPendingPrevious()
     }
 
     fun setEditTextHolder(editText: EditTextHolder?) {
@@ -65,49 +67,49 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     }
 
     fun showChecked(editor: Editor, controlIme: Boolean = true): Boolean {
-        val adapter = checkedAdapter()
         if (current === editor) return false
-
-        val currentChild: View?
         val previous = current
-        val previousChild = views[previous]
-        if (!views.contains(editor)) {
-            currentChild = when {
-                editor === ime -> null
-                else -> adapter.onCreateView(this, editor)
-            }
-            views[editor] = currentChild
-        } else {
-            currentChild = views[editor]
-        }
-
-        removePreviousBeforeChange(previousChild)
-        currentChild?.let(::addView)
         current = editor
-        changeRecord = ChangeRecord(previousChild, currentChild)
+        setPendingPrevious(previous)
         if (previous === ime) {
             handleImeShown(shown = false, controlIme)
-        } else if (editor === ime) {
+        } else if (current === ime) {
             handleImeShown(shown = true, controlIme)
         }
-        adapter.onEditorChanged(previous, current)
+        checkedAdapter().onEditorChanged(previous, current)
+        requestLayout()
         return true
     }
 
     fun hideChecked(editor: Editor, controlIme: Boolean = true): Boolean {
-        val adapter = checkedAdapter()
         if (current !== editor) return false
-
-        val previousChild = views[editor]
-        removePreviousBeforeChange(previousChild)
         current = null
-        changeRecord = ChangeRecord(previousChild, currentChild = null)
+        setPendingPrevious(editor)
         if (editor === ime) handleImeShown(shown = false, controlIme)
-        adapter.onEditorChanged(editor, current)
+        checkedAdapter().onEditorChanged(editor, current)
+        requestLayout()
         return true
     }
 
-    private fun removePreviousBeforeChange(previousChild: View?) {
+    fun consumePendingChange(): Boolean {
+        if (!hasPendingPrevious()) return false
+        val current = current
+        val previous = pendingPrevious
+        clearPendingPrevious()
+        if (current === previous) return false
+
+        val currentChild: View?
+        val previousChild = previous?.let(views::get)
+        if (current != null && !views.contains(current)) {
+            currentChild = when {
+                current === ime -> null
+                else -> checkedAdapter().onCreateView(this, current)
+            }
+            views[current] = currentChild
+        } else {
+            currentChild = current?.let(views::get)
+        }
+
         // 举例说明：Editor1 -> Editor2 -> Editor3
         if (changeRecord.currentChild === previousChild) {
             // Editor1在Editor1 -> Editor2的流程可能没有被立即移除，
@@ -118,7 +120,20 @@ internal class EditorView(context: Context) : FrameLayout(context) {
             // previousChild是Editor2，立即移除Editor2再添加Editor3
             previousChild?.let(::removeView)
         }
-        requestLayout()
+        currentChild?.let(::addView)
+
+        changeRecord = ChangeRecord(previous, current, previousChild, currentChild)
+        return true
+    }
+
+    private fun hasPendingPrevious() = pendingPrevious !== NopEditor
+
+    private fun setPendingPrevious(previous: Editor?) {
+        if (!hasPendingPrevious()) pendingPrevious = previous
+    }
+
+    private fun clearPendingPrevious() {
+        pendingPrevious = NopEditor
     }
 
     private fun removeChangeRecordPrevious() {
@@ -147,9 +162,14 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun checkedAdapter(): EditorAdapter<Editor> {
-        return adapter as EditorAdapter<Editor>
-    }
+    private fun checkedAdapter() = adapter as EditorAdapter<Editor>
 
-    class ChangeRecord(val previousChild: View? = null, val currentChild: View? = null)
+    data class ChangeRecord(
+        val previous: Editor? = null,
+        val current: Editor? = null,
+        val previousChild: View? = null,
+        val currentChild: View? = null
+    )
+
+    private companion object NopEditor : Editor
 }

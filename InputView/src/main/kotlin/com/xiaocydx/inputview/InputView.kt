@@ -224,6 +224,7 @@ class InputView @JvmOverloads constructor(
         checkContentView()
         val contentView = contentView ?: return
 
+        host.consumePendingChange()
         editorView.measure(widthMeasureSpec, measuredHeight.toAtMostMeasureSpec())
         if (!editorAnimator.canRunAnimation || !editorAnimator.isActive) {
             // 修复editorOffset，例如导航栏高度改变（导航栏模式改变），
@@ -346,6 +347,14 @@ class InputView @JvmOverloads constructor(
             editorView.setEditTextHolder(current)
         }
 
+        fun consumePendingChange() {
+            // 消费待处理Editor更改，完成子View的添加和移除
+            if (editorView.consumePendingChange()) {
+                val (previous, current, _, _) = editorView.changeRecord
+                editorAnimator.onPendingChanged(previous, current)
+            }
+        }
+
         override fun removeEditorView(view: View) {
             view.takeIf { it.parent === editorView }?.let(editorView::removeView)
         }
@@ -355,7 +364,7 @@ class InputView @JvmOverloads constructor(
         }
 
         override fun dispatchImeShown(shown: Boolean) {
-            editorView.dispatchImeShown(shown)
+            if (editorView.dispatchImeShown(shown)) consumePendingChange()
         }
 
         override fun showChecked(editor: Editor) {

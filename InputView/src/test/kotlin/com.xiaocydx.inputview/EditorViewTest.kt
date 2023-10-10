@@ -62,16 +62,12 @@ internal class EditorViewTest {
 
             assertThat(editorView.showChecked(TestEditor.A)).isTrue()
             assertThat(editorView.current).isEqualTo(TestEditor.A)
-            assertThat(editorView.childCount).isEqualTo(1)
-            assertThat(editorView.changeRecord.previousChild).isNull()
-            assertThat(editorView.changeRecord.currentChild).isInstanceOf(TestViewA::class.java)
+            assertThat(editorView.childCount).isEqualTo(0)
             verify(exactly = 1) { adapter.onEditorChanged(TestEditor.IME, TestEditor.A) }
 
             assertThat(editorView.showChecked(TestEditor.B)).isTrue()
             assertThat(editorView.current).isEqualTo(TestEditor.B)
-            assertThat(editorView.childCount).isEqualTo(1)
-            assertThat(editorView.changeRecord.previousChild).isInstanceOf(TestViewA::class.java)
-            assertThat(editorView.changeRecord.currentChild).isInstanceOf(TestViewB::class.java)
+            assertThat(editorView.childCount).isEqualTo(0)
             verify(exactly = 1) { adapter.onEditorChanged(TestEditor.A, TestEditor.B) }
         }
     }
@@ -85,16 +81,12 @@ internal class EditorViewTest {
 
             assertThat(editorView.showChecked(TestEditor.A)).isTrue()
             assertThat(editorView.current).isEqualTo(TestEditor.A)
-            assertThat(editorView.childCount).isEqualTo(1)
-            assertThat(editorView.changeRecord.previousChild).isNull()
-            assertThat(editorView.changeRecord.currentChild).isInstanceOf(TestViewA::class.java)
+            assertThat(editorView.childCount).isEqualTo(0)
             verify(exactly = 1) { adapter.onEditorChanged(null, TestEditor.A) }
 
             assertThat(editorView.hideChecked(TestEditor.A)).isTrue()
             assertThat(editorView.current).isNull()
             assertThat(editorView.childCount).isEqualTo(0)
-            assertThat(editorView.changeRecord.previousChild).isInstanceOf(TestViewA::class.java)
-            assertThat(editorView.changeRecord.currentChild).isNull()
             verify(exactly = 1) { adapter.onEditorChanged(TestEditor.A, null) }
         }
     }
@@ -125,14 +117,54 @@ internal class EditorViewTest {
     }
 
     @Test
+    fun consumePendingChange() {
+        scenario.onActivity {
+            val editorView = EditorView(it)
+            val adapter = TestEditorAdapter()
+            editorView.setAdapter(adapter)
+
+            assertThat(editorView.showChecked(TestEditor.A)).isTrue()
+            assertThat(editorView.consumePendingChange()).isTrue()
+            assertThat(editorView.childCount).isEqualTo(1)
+            assertThat(editorView.changeRecord.previous).isNull()
+            assertThat(editorView.changeRecord.current).isEqualTo(TestEditor.A)
+            assertThat(editorView.changeRecord.previousChild).isNull()
+            assertThat(editorView.changeRecord.currentChild).isInstanceOf(TestViewA::class.java)
+
+            assertThat(editorView.hideChecked(TestEditor.A)).isTrue()
+            assertThat(editorView.consumePendingChange()).isTrue()
+            assertThat(editorView.childCount).isEqualTo(0)
+            assertThat(editorView.changeRecord.previous).isEqualTo(TestEditor.A)
+            assertThat(editorView.changeRecord.current).isNull()
+            assertThat(editorView.changeRecord.previousChild).isInstanceOf(TestViewA::class.java)
+            assertThat(editorView.changeRecord.currentChild).isNull()
+        }
+    }
+
+    @Test
+    fun repeatConsumePendingChange() {
+        scenario.onActivity {
+            val editorView = EditorView(it)
+            val adapter = TestEditorAdapter()
+            editorView.setAdapter(adapter)
+
+            assertThat(editorView.showChecked(TestEditor.A)).isTrue()
+            assertThat(editorView.consumePendingChange()).isTrue()
+            assertThat(editorView.consumePendingChange()).isFalse()
+        }
+    }
+
+    @Test
     fun removePreviousNotImmediately() {
         scenario.onActivity {
             val editorView = EditorView(it)
             editorView.setRemovePreviousImmediately(false)
-            val adapter = spyk(TestEditorAdapter())
+            val adapter = TestEditorAdapter()
             editorView.setAdapter(adapter)
             editorView.showChecked(TestEditor.A)
+            editorView.consumePendingChange()
             editorView.showChecked(TestEditor.B)
+            editorView.consumePendingChange()
             assertThat(editorView.childCount).isEqualTo(2)
             assertThat(editorView.getChildAt(0)).isInstanceOf(TestViewA::class.java)
             assertThat(editorView.getChildAt(1)).isInstanceOf(TestViewB::class.java)
@@ -144,10 +176,12 @@ internal class EditorViewTest {
         scenario.onActivity {
             val editorView = EditorView(it)
             editorView.setRemovePreviousImmediately(false)
-            val adapter = spyk(TestEditorAdapter())
+            val adapter = TestEditorAdapter()
             editorView.setAdapter(adapter)
             editorView.showChecked(TestEditor.A)
+            editorView.consumePendingChange()
             editorView.showChecked(TestEditor.B)
+            editorView.consumePendingChange()
             editorView.setRemovePreviousImmediately(true)
             assertThat(editorView.childCount).isEqualTo(1)
             assertThat(editorView.getChildAt(0)).isInstanceOf(TestViewB::class.java)

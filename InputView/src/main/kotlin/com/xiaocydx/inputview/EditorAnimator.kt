@@ -199,9 +199,13 @@ abstract class EditorAnimator(
         return NO_VALUE
     }
 
+    internal fun onPendingChanged(previous: Editor?, current: Editor?) {
+        if (host == null) return
+        animationDispatcher.onPendingChanged(previous, current)
+    }
+
     internal fun onAttachToEditorHost(host: EditorHost) {
         this.host = host
-        host.addEditorChangedListener(animationDispatcher)
         host.setOnApplyWindowInsetsListener(animationDispatcher)
         host.takeIf { enableWindowInsetsAnimation() }
             ?.setWindowInsetsAnimationCallback(durationMillis, interpolator, animationDispatcher)
@@ -209,7 +213,6 @@ abstract class EditorAnimator(
 
     internal fun onDetachFromEditorHost(host: EditorHost) {
         endAnimation()
-        host.removeEditorChangedListener(animationDispatcher)
         host.setOnApplyWindowInsetsListener(null)
         host.takeIf { enableWindowInsetsAnimation() }
             ?.setWindowInsetsAnimationCallback(durationMillis, interpolator, callback = null)
@@ -220,8 +223,7 @@ abstract class EditorAnimator(
         return canRunAnimation && (Build.VERSION.SDK_INT >= 30 || ENABLE_INSETS_ANIMATION_BELOW_R)
     }
 
-    private inner class AnimationDispatcher :
-            ReplicableEditorChangedListener, OnApplyWindowInsetsListenerCompat,
+    private inner class AnimationDispatcher : OnApplyWindowInsetsListenerCompat,
             WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_STOP) {
         private var lastImeHeight = 0
 
@@ -240,7 +242,7 @@ abstract class EditorAnimator(
          * 点击EditText显示IME、按返回键隐藏IME等操作，会在[onApplyWindowInsets]判断IME的显示情况，
          * 然后调用[EditorHost.dispatchImeShown]更改[Editor]，这属于被动更改。
          */
-        override fun onEditorChanged(previous: Editor?, current: Editor?) {
+        fun onPendingChanged(previous: Editor?, current: Editor?) {
             val record = AnimationRecord(previous, current)
             resetAnimationRecord(record)
             record.setStartViewAndEndView()
@@ -274,7 +276,7 @@ abstract class EditorAnimator(
         }
 
         /**
-         * 该函数被调用之前，可能已更改[Editor]，执行了[onEditorChanged]创建[animationRecord]
+         * 该函数被调用之前，可能已消费待处理[Editor]更改，执行[onPendingChanged]创建[animationRecord]
          */
         override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
             host?.apply {
