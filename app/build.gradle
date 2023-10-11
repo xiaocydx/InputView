@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace 'com.xiaocydx.inputview'
-    compileSdk 32
+    compileSdk 33
 
     defaultConfig {
         applicationId "com.xiaocydx.inputview"
         minSdk 21
-        targetSdk 32
+        targetSdk 33
         versionCode 1
         versionName "1.0"
 
@@ -41,6 +41,8 @@ dependencies {
     implementation 'com.google.android.material:material:1.7.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.recyclerview:recyclerview:1.2.0'
+    implementation 'androidx.fragment:fragment:1.6.1'
+    implementation 'androidx.fragment:fragment-ktx:1.6.1'
     implementation project(path: ':InputView')
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

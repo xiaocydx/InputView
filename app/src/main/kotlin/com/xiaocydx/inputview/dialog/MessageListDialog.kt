@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview
+package com.xiaocydx.inputview.dialog
 
 import android.app.Dialog
 import android.content.Context
@@ -15,7 +15,10 @@ import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.fragment.app.DialogFragment
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.R
 import com.xiaocydx.inputview.databinding.MessageListBinding
+import com.xiaocydx.inputview.init
 
 private const val statusBarEdgeToEdge = true
 private const val gestureNavBarEdgeToEdge = true

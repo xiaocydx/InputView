@@ -6,6 +6,11 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.xiaocydx.inputview.dialog.MessageListBottomSheetDialog
+import com.xiaocydx.inputview.dialog.MessageListBottomSheetDialogFragment
+import com.xiaocydx.inputview.dialog.MessageListDialog
+import com.xiaocydx.inputview.dialog.MessageListDialogFragment
+import com.xiaocydx.inputview.fragment.FragmentEditorAdapterActivity
 
 /**
  * **注意**：需要确保`androidx.core`的版本足够高，因为高版本修复了[WindowInsetsCompat]一些常见的问题，
@@ -39,5 +44,9 @@ class MainActivity : AppCompatActivity() {
 
     fun showMessageListBottomSheetDialogFragment(view: View) {
         MessageListBottomSheetDialogFragment().show(supportFragmentManager, null)
+    }
+
+    fun startFragmentEditorAdapterActivity(view: View) {
+        startActivity(Intent(this, FragmentEditorAdapterActivity::class.java))
     }
 }

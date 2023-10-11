@@ -30,17 +30,21 @@ val Int.dp: Int
 val Float.dp: Int
     get() = (this * Resources.getSystem().displayMetrics.density).toRoundingPx()
 
-@Suppress("unused")
-inline val View.matchParent: Int
-    get() = ViewGroup.LayoutParams.MATCH_PARENT
+const val matchParent = ViewGroup.LayoutParams.MATCH_PARENT
+const val wrapContent = ViewGroup.LayoutParams.WRAP_CONTENT
 
-@Suppress("unused")
-inline val View.wrapContent: Int
-    get() = ViewGroup.LayoutParams.WRAP_CONTENT
-
-fun View.overScrollNever() {
+fun <V : View> V.overScrollNever(): V = apply {
     overScrollMode = View.OVER_SCROLL_NEVER
 }
+
+fun <V : View> V.layoutParams(
+    width: Int,
+    height: Int,
+    block: ViewGroup.MarginLayoutParams.() -> Unit = {}
+): V = apply {
+    layoutParams = ViewGroup.MarginLayoutParams(width, height).apply(block)
+}
+
 
 inline fun View.withLayoutParams(width: Int, height: Int, block: ViewGroup.MarginLayoutParams.() -> Unit = {}) {
     layoutParams = ViewGroup.MarginLayoutParams(width, height).apply(block)

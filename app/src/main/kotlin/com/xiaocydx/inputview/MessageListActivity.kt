@@ -35,9 +35,11 @@ class MessageListActivity : AppCompatActivity() {
  * 示例代码使用[EditorMode.ADJUST_PAN]，[initScroll]演示了如何处理动画偏移，
  * 可以调小[MessageListAdapter]的`itemCount`，观察处理动画偏移后的运行结果。
  */
-fun MessageListBinding.init(window: Window) = apply {
+fun MessageListBinding.init(
+    window: Window,
+    editorAdapter: EditorAdapter<MessageEditor> = MessageEditorAdapter()
+) = apply {
     // 1. 初始化InputView的属性
-    val editorAdapter = MessageEditorAdapter()
     inputView.apply {
         editText = etMessage
         editorMode = EditorMode.ADJUST_PAN
@@ -125,7 +127,7 @@ private fun MessageListBinding.initTouch(window: Window) {
 /**
  * 处理[MessageEditor]的视图和图标切换
  */
-private fun MessageListBinding.initToggle(editorAdapter: MessageEditorAdapter) {
+private fun MessageListBinding.initToggle(editorAdapter: EditorAdapter<MessageEditor>) {
     val actions = mutableMapOf<MessageEditor, Action>()
     actions[VOICE] = Action(ivVoice, R.mipmap.ic_message_editor_voice)
     actions[EMOJI] = Action(ivEmoji, R.mipmap.ic_message_editor_emoji)

@@ -42,5 +42,13 @@
         android:layout_height="wrap_content"
         android:onClick="showMessageListBottomSheetDialogFragment"
         android:text="BottomSheetDialogFragment"
+        android:layout_marginBottom="5dp"
+        android:textAllCaps="false" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="startFragmentEditorAdapterActivity"
+        android:text="FragmentEditorAdapter"
         android:textAllCaps="false" />
 </LinearLayout>

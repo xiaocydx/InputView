@@ -43,7 +43,7 @@ enum class MessageEditor : Editor {
     IME, VOICE, EMOJI, EXTRA
 }
 
-private class EmojiRecyclerView(context: Context) : RecyclerView(context) {
+class EmojiRecyclerView(context: Context) : RecyclerView(context) {
 
     init {
         val spanCount = 8
