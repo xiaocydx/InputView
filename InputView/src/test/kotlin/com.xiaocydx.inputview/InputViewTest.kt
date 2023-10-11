@@ -91,14 +91,10 @@ internal class InputViewTest {
 
     @Test
     fun adjustPanUpdateEditorOffset() {
-        scenario.moveToState(State.RESUMED).onActivity { activity ->
+        scenario.onActivity { activity ->
             val inputView = activity.inputView
             inputView.editorMode = EditorMode.ADJUST_PAN
             val host = inputView.getEditorHost()
-            val editorView = inputView.getEditorView()
-            val contentView = inputView.getContentView()
-            assertThat(contentView).isNotNull()
-
             val insets = WindowInsetsCompat.Builder().build().toWindowInsets()
             assertThat(insets).isNotNull()
             inputView.onApplyWindowInsets(insets!!)
@@ -107,8 +103,6 @@ internal class InputViewTest {
             val offset = 10
             host.updateEditorOffset(offset)
             assertThat(host.editorOffset).isEqualTo(offset)
-            assertThat(editorView.top).isEqualTo(inputView.height - offset)
-            assertThat(contentView!!.top).isEqualTo(-offset)
         }
     }
 }

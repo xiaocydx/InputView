@@ -351,12 +351,6 @@ class InputView @JvmOverloads constructor(
     }
 
     @VisibleForTesting(otherwise = PRIVATE)
-    internal fun getEditorView(): View = editorView
-
-    @VisibleForTesting(otherwise = PRIVATE)
-    internal fun getContentView(): View? = contentView
-
-    @VisibleForTesting(otherwise = PRIVATE)
     internal fun getEditorHost(): EditorHost = host
 
     private inner class EditorHostImpl : EditorHost {
