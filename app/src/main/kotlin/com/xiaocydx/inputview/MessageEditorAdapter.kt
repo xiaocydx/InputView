@@ -12,7 +12,10 @@ import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.xiaocydx.inputview.MessageEditor.*
+import com.xiaocydx.inputview.MessageEditor.EMOJI
+import com.xiaocydx.inputview.MessageEditor.EXTRA
+import com.xiaocydx.inputview.MessageEditor.IME
+import com.xiaocydx.inputview.MessageEditor.VOICE
 import com.xiaocydx.sample.dp
 import com.xiaocydx.sample.matchParent
 import com.xiaocydx.sample.withLayoutParams

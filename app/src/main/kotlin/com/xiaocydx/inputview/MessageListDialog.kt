@@ -7,7 +7,12 @@ import android.view.Window
 import android.view.WindowInsets
 import androidx.annotation.StyleRes
 import androidx.appcompat.app.AppCompatDialog
-import androidx.core.view.*
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.doOnAttach
+import androidx.core.view.updateLayoutParams
+import androidx.core.view.updatePadding
 import androidx.fragment.app.DialogFragment
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.xiaocydx.inputview.databinding.MessageListBinding

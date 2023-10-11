@@ -10,8 +10,17 @@ import android.view.Window
 import android.view.WindowInsets
 import androidx.annotation.StyleRes
 import androidx.core.graphics.Insets
-import androidx.core.view.*
-import com.google.android.material.bottomsheet.*
+import androidx.core.view.OnApplyWindowInsetsListener
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.doOnLayout
+import androidx.core.view.updatePadding
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.bottomsheet.SimpleBottomSheetCallback
+import com.google.android.material.bottomsheet.disableEdgeToEdgeAndFitsSystemWindows
 import com.xiaocydx.inputview.databinding.MessageListBinding
 import com.xiaocydx.sample.suppressLayoutCompat
 

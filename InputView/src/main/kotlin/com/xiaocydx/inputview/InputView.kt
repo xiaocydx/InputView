@@ -17,16 +17,32 @@
 package com.xiaocydx.inputview
 
 import android.content.Context
+import android.graphics.Canvas
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
 import android.util.AttributeSet
-import android.view.*
-import android.view.View.MeasureSpec.*
+import android.view.Gravity
+import android.view.MotionEvent
+import android.view.View
+import android.view.View.MeasureSpec.AT_MOST
+import android.view.View.MeasureSpec.EXACTLY
+import android.view.View.MeasureSpec.makeMeasureSpec
+import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.view.WindowInsets
 import android.view.animation.Interpolator
 import android.widget.EditText
+import androidx.annotation.ColorInt
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.PRIVATE
-import androidx.core.view.*
+import androidx.core.view.OneShotPreDrawListener
+import androidx.core.view.WindowInsetsAnimationCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.marginBottom
+import androidx.core.view.marginLeft
+import androidx.core.view.marginRight
+import androidx.core.view.marginTop
 import com.xiaocydx.inputview.compat.setOnApplyWindowInsetsListenerImmutable
 import com.xiaocydx.inputview.compat.setWindowInsetsAnimationCallbackImmutable
 import com.xiaocydx.inputview.compat.toCompat
@@ -134,11 +150,35 @@ class InputView @JvmOverloads constructor(
             field = value
         }
 
+    /**
+     * [Editor]区域的[Drawable]，边界范围包含手势导航栏EdgeToEdge的偏移
+     */
+    var editBackground: Drawable? = null
+        set(value) {
+            if (field === value) return
+            setWillNotDraw(value == null)
+            field?.callback = null
+            value?.callback = this
+            field = value
+            field?.invalidateSelf()
+        }
+
     init {
         isFocusable = true
         isFocusableInTouchMode = true
         host.onEditorAdapterChanged(previous = null, editorAdapter)
         host.onEditorAnimatorChanged(previous = null, editorAnimator)
+    }
+
+    /**
+     * 设置[Editor]区域的背景色，边界范围包含手势导航栏EdgeToEdge的偏移
+     */
+    fun setEditBackgroundColor(@ColorInt color: Int) {
+        if (editBackground is ColorDrawable) {
+            (editBackground!!.mutate() as ColorDrawable).color = color
+        } else {
+            editBackground = ColorDrawable(color)
+        }
     }
 
     override fun shouldDelayChildPressedState(): Boolean = false
@@ -214,6 +254,7 @@ class InputView @JvmOverloads constructor(
                 if (contentDiff != Int.MIN_VALUE) {
                     contentView.offsetTopAndBottom(contentDiff)
                 }
+                updateEditBackground(top = contentView.bottom)
             }
             EditorMode.ADJUST_RESIZE -> requestLayout()
         }
@@ -275,6 +316,13 @@ class InputView @JvmOverloads constructor(
             val top = bottom - it.measuredHeight
             it.layout(left, top, right, bottom)
         }
+        updateEditBackground(top = contentView.bottom)
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        val contentView = contentView ?: return
+        editBackground?.setBounds(0, contentView.bottom, width, height)
+        editBackground?.takeIf { it.bounds.height() > 0 }?.draw(canvas)
     }
 
     private fun Int.toExactlyMeasureSpec() = makeMeasureSpec(this, EXACTLY)
@@ -292,6 +340,14 @@ class InputView @JvmOverloads constructor(
 
     private fun getLayoutOffset(): Int {
         return (editorOffset - navBarOffset).coerceAtLeast(0)
+    }
+
+    private fun updateEditBackground(top: Int) {
+        editBackground?.takeIf { it.bounds.top != top }?.invalidateSelf()
+    }
+
+    override fun verifyDrawable(who: Drawable): Boolean {
+        return who === editBackground || super.verifyDrawable(who)
     }
 
     @VisibleForTesting(otherwise = PRIVATE)

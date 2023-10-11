@@ -19,8 +19,13 @@ package com.xiaocydx.inputview.compat
 import android.view.View
 import android.view.Window
 import android.view.WindowInsets
-import androidx.core.view.*
+import androidx.core.view.OnApplyWindowInsetsListener
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsAnimationCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsCompat.Type.InsetsType
+import androidx.core.view.WindowInsetsControllerCompat
 
 internal fun Window.setDecorFitsSystemWindowsCompat(decorFitsSystemWindows: Boolean) {
     WindowCompat.setDecorFitsSystemWindows(this, decorFitsSystemWindows)

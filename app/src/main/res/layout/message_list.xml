@@ -24,8 +24,7 @@
     <com.xiaocydx.inputview.InputView
         android:id="@+id/inputView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#F2F2F2">
+        android:layout_height="match_parent">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -49,6 +48,7 @@
                 android:id="@+id/inputBar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:background="#F2F2F2"
                 android:paddingTop="6dp">
 
                 <ImageView
