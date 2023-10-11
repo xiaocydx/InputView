@@ -249,48 +249,31 @@ abstract class EditorAnimator(
             record.setAnimationStartOffset()
             // Android 9.0以下的WindowInsets可变（InputView已兼容），
             // Android 9.0、Android 10的window包含FLAG_FULLSCREEN，
-            // 可能导致insetsAnimation的回调不会执行，因此做以下处理：
-            // 1. 预测是否将要运行insetsAnimation。
-            // 2. 若不会运行insetsAnimation，则立即添加PreDrawRunSimpleAnimation。
-            // 3. 若将要运行insetsAnimation，则推迟添加PreDrawRunSimpleAnimation，
-            // 在onApplyWindowInsets()判断为显示或隐藏IME时，才添加PreDrawRunSimpleAnimation，
-            // 这样做的目的是确保PreDrawRunSimpleAnimation在insetsAnimation的onStart()之后执行，
-            // 当执行PreDrawRunSimpleAnimation时，若没有insetsAnimation，则运行simpleAnimation。
+            // 可能导致insetsAnimation的回调不会执行。
             record.setPreDrawRunSimpleAnimation action@{
-                if (record.insetsAnimation != null) return@action
-                record.setAnimationEndOffset()
-                runSimpleAnimationIfNecessary(record)
-            }
-            if (!record.willRunInsetsAnimation) {
-                record.addPreDrawRunSimpleAnimation()
-            } else {
-                // 将要运行insetsAnimation的一帧执行顺序：
+                // 运行insetsAnimation的一帧执行顺序：
                 // 1. WindowInsetsAnimationCompat.Callback.onPrepare()
                 // 2. AnimationDispatcher.onApplyWindowInsets()
-                //    -> AnimationRecord.addPreDrawRunSimpleAnimation()
+                //    -> host.dispatchImeShown()
+                //    -> AnimationDispatcher.onPendingChanged()
+                //    -> record.setPreDrawRunSimpleAnimation()
                 // 3. WindowInsetsAnimationCompat.Callback.onStart()
                 // 4. PreDrawRunSimpleAnimation.invoke()
                 // 若执行过程缺少第1、3步，则可能是没有运行insetsAnimation，
                 // 第4步判断没有insetsAnimation，运行simpleAnimation进行兼容。
+                if (record.insetsAnimation != null) return@action
+                record.setAnimationEndOffset()
+                runSimpleAnimationIfNecessary(record)
             }
         }
 
-        /**
-         * 该函数被调用之前，可能已消费待处理[Editor]更改，执行[onPendingChanged]创建[animationRecord]
-         */
         override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
             host?.apply {
                 lastInsets = insets
                 val imeHeight = insets.imeHeight
                 when {
-                    lastImeHeight == 0 && imeHeight > 0 -> {
-                        dispatchImeShown(shown = true)
-                        animationRecord?.addPreDrawRunSimpleAnimation()
-                    }
-                    lastImeHeight > 0 && imeHeight == 0 -> {
-                        dispatchImeShown(shown = false)
-                        animationRecord?.addPreDrawRunSimpleAnimation()
-                    }
+                    lastImeHeight == 0 && imeHeight > 0 -> dispatchImeShown(shown = true)
+                    lastImeHeight > 0 && imeHeight == 0 -> dispatchImeShown(shown = false)
                     lastImeHeight > 0 && imeHeight > 0 && lastImeHeight != imeHeight -> {
                         // 调整IME高度后，运行simpleAnimation修正editorOffset
                         runSimpleAnimationFixEditorOffset(endOffset = insets.imeOffset)
@@ -349,7 +332,6 @@ abstract class EditorAnimator(
         override val previous: Editor?,
         override val current: Editor?
     ) : AnimationState {
-        private var preDrawAction: (() -> Unit)? = null
         private var preDrawListener: OneShotPreDrawListener? = null
         override var startView: View? = null; private set
         override var endView: View? = null; private set
@@ -361,7 +343,6 @@ abstract class EditorAnimator(
         override var durationMillis: Long = 0; private set
         override lateinit var interpolator: Interpolator; private set
 
-        val willRunInsetsAnimation = isIme(previous) || isIme(current)
         var insetsAnimation: WindowInsetsAnimationCompat? = null; private set
         var simpleAnimation: ValueAnimator? = null; private set
         val handleInsetsAnimation: Boolean
@@ -447,19 +428,12 @@ abstract class EditorAnimator(
 
         fun setPreDrawRunSimpleAnimation(action: () -> Unit) {
             removePreDrawRunSimpleAnimation()
-            preDrawAction = action
-        }
-
-        fun addPreDrawRunSimpleAnimation() {
-            val action = preDrawAction ?: return
-            preDrawAction = null
             preDrawListener = host?.addPreDrawAction(action)
         }
 
         fun removePreDrawRunSimpleAnimation() {
             preDrawListener?.removeListener()
             preDrawListener = null
-            preDrawAction = null
         }
 
         fun endAnimation() {

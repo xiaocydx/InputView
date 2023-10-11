@@ -45,8 +45,8 @@ abstract class FragmentEditorAdapter<T : Editor>(
     private val lifecycle: Lifecycle,
     private val fragmentManager: FragmentManager
 ) : EditorAdapter<T>() {
-    private val fragmentMaxLifecycleEnforcer = FragmentMaxLifecycleEnforcer()
     private val fragments = mutableMapOf<T, Fragment?>()
+    private val fragmentMaxLifecycleEnforcer = FragmentMaxLifecycleEnforcer()
 
     constructor(fragmentActivity: FragmentActivity) : this(
         lifecycle = fragmentActivity.lifecycle,
@@ -84,16 +84,16 @@ abstract class FragmentEditorAdapter<T : Editor>(
         val tag = "$KEY_PREFIX_FRAGMENT${getEditorKey(editor)}"
         val fragment = fragmentManager.findFragmentByTag(tag) ?: onCreateFragment(editor)
         fragments[editor] = fragment
-        if (fragment != null) placeFragment(parent, fragment, tag)
+        if (fragment != null) placeFragmentInContainer(parent, fragment, tag)
         return fragment?.view
     }
 
     private fun shouldDelayFragmentTransactions() = fragmentManager.isStateSaved
 
-    private fun placeFragment(container: ViewGroup, fragment: Fragment, tag: String) {
+    private fun placeFragmentInContainer(container: ViewGroup, fragment: Fragment, tag: String) {
+        // InputView确保在常规布局流程调用onCreateView()，不考虑兼容drawToBitmap()这类场景
         require(container.id != View.NO_ID) { "container未设置id" }
-        // FIXME: onCreateView执行时机能否做到绝对的保证？
-        require(!shouldDelayFragmentTransactions()) { "当前未处于布局流程" }
+        require(!shouldDelayFragmentTransactions()) { "当前未处于常规布局流程" }
         val view = fragment.view
         when {
             fragment.isAdded && view != null -> when {

@@ -266,12 +266,19 @@ class InputView @JvmOverloads constructor(
         checkContentView()
         val contentView = contentView ?: return
 
-        host.consumePendingChange()
+        // 消费PendingChange，仅在measure阶段创建、添加、移除子View
+        if (editorView.consumePendingChange()) {
+            val (previous, current, _, _) = editorView.changeRecord
+            editorAnimator.onPendingChanged(previous, current)
+        }
         editorView.measure(widthMeasureSpec, measuredHeight.toAtMostMeasureSpec())
-        if (!editorAnimator.canRunAnimation || !editorAnimator.isActive) {
-            // 修复editorOffset，例如导航栏高度改变（导航栏模式改变），
+
+        // 若消费PendingChange失败，则表示等待条件未满足，先不尝试修正editorOffset
+        if (!editorView.hasPendingChange()
+                && (!editorAnimator.canRunAnimation || !editorAnimator.isActive)) {
+            // 尝试修正editorOffset，例如导航栏高度改变（导航栏模式更改），
             // editorView的子View实现手势导航栏EdgeToEdge，可能会修改尺寸，
-            // 此时未同步editorOffset，导致布局位置不正确。
+            // 此时editorOffset未修正，导致布局位置不正确。
             val offset = editorAnimator.calculateEndOffset()
             if (offset >= 0) editorOffset = offset
         }
@@ -398,14 +405,6 @@ class InputView @JvmOverloads constructor(
             editorView.setEditTextHolder(current)
         }
 
-        fun consumePendingChange() {
-            // 消费待处理Editor更改，完成子View的添加和移除
-            if (editorView.consumePendingChange()) {
-                val (previous, current, _, _) = editorView.changeRecord
-                editorAnimator.onPendingChanged(previous, current)
-            }
-        }
-
         override fun removeEditorView(view: View) {
             view.takeIf { it.parent === editorView }?.let(editorView::removeView)
         }
@@ -415,7 +414,7 @@ class InputView @JvmOverloads constructor(
         }
 
         override fun dispatchImeShown(shown: Boolean) {
-            if (editorView.dispatchImeShown(shown)) consumePendingChange()
+            editorView.dispatchImeShown(shown)
         }
 
         override fun showChecked(editor: Editor) {

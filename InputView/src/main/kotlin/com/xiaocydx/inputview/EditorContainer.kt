@@ -31,7 +31,7 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
     private val views = mutableMapOf<Editor, View?>()
     private var editText: EditTextHolder? = null
     private var removePreviousImmediately = true
-    private var pendingPrevious: Editor? = NopEditor
+    private var pendingChange: PendingChange? = null
     var ime: Editor? = null; private set
     var current: Editor? = null; private set
     var changeRecord = ChangeRecord(); private set
@@ -56,7 +56,7 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
 
         ime = checkedAdapter().ime
         current = null
-        clearPendingPrevious()
+        clearPendingChange()
     }
 
     fun setEditTextHolder(editText: EditTextHolder?) {
@@ -72,7 +72,7 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
         if (current === editor) return false
         val previous = current
         current = editor
-        setPendingPrevious(previous)
+        setPendingChange(previous, current)
         if (previous === ime) {
             handleImeShown(shown = false, controlIme)
         } else if (current === ime) {
@@ -86,19 +86,27 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
     fun hideChecked(editor: Editor, controlIme: Boolean = true): Boolean {
         if (current !== editor) return false
         current = null
-        setPendingPrevious(editor)
+        setPendingChange(editor, current)
         if (editor === ime) handleImeShown(shown = false, controlIme)
         checkedAdapter().onEditorChanged(editor, current)
         requestLayout()
         return true
     }
 
+    fun hasPendingChange(): Boolean = pendingChange != null
+
     fun consumePendingChange(): Boolean {
-        if (!hasPendingPrevious()) return false
+        if (pendingChange == null) return false
+        val previous = pendingChange?.previous
         val current = current
-        val previous = pendingPrevious
-        clearPendingPrevious()
-        if (current === previous) return false
+        if (pendingChange!!.waitDispatchImeShown) {
+            // previous和current都是ime，属于无效等待情况
+            if (previous === current) clearPendingChange()
+            return false
+        }
+
+        clearPendingChange()
+        if (previous === current) return false
 
         val currentChild: View?
         val previousChild = previous?.let(views::get)
@@ -132,14 +140,19 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
         return true
     }
 
-    private fun hasPendingPrevious() = pendingPrevious !== NopEditor
-
-    private fun setPendingPrevious(previous: Editor?) {
-        if (!hasPendingPrevious()) pendingPrevious = previous
+    private fun setPendingChange(previous: Editor?, current: Editor?) {
+        if (pendingChange == null) {
+            pendingChange = PendingChange(previous)
+            pendingChange!!.waitDispatchImeShown = previous === ime
+        }
+        if (pendingChange!!.previous !== ime) {
+            // pendingChange.previous不需要wait，最后的current决定是否wait
+            pendingChange?.waitDispatchImeShown = current === ime
+        }
     }
 
-    private fun clearPendingPrevious() {
-        pendingPrevious = NopEditor
+    private fun clearPendingChange() {
+        pendingChange = null
     }
 
     private fun removeChangeRecordPrevious() {
@@ -148,12 +161,18 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
     }
 
     fun dispatchImeShown(shown: Boolean): Boolean {
-        val ime = ime ?: return false
-        return when {
+        val ime = ime
+        val changed = when {
+            ime == null -> false
             current !== ime && shown -> showChecked(ime, controlIme = false)
             current === ime && !shown -> hideChecked(ime, controlIme = false)
             else -> false
         }
+        if (pendingChange?.waitDispatchImeShown == true) {
+            pendingChange?.waitDispatchImeShown = false
+            requestLayout()
+        }
+        return changed
     }
 
     private fun handleImeShown(shown: Boolean, controlIme: Boolean) {
@@ -172,9 +191,14 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
 
     override fun onRestoreInstanceState(state: Parcelable?) {
         super.onRestoreInstanceState(state)
-        // 移除Fragment重建流程添加的child，通过consumePendingChange()重新添加回来
+        // 移除Fragment重建流程添加的child，通过consumePendingChange()重新添加child
         if (childCount > 0) removeAllViews()
     }
+
+    private data class PendingChange(
+        val previous: Editor?,
+        var waitDispatchImeShown: Boolean = false
+    )
 
     data class ChangeRecord(
         val previous: Editor? = null,
@@ -182,6 +206,4 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
         val previousChild: View? = null,
         val currentChild: View? = null
     )
-
-    private companion object NopEditor : Editor
 }
