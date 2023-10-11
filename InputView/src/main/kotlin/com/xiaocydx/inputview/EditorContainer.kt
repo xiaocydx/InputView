@@ -17,6 +17,7 @@
 package com.xiaocydx.inputview
 
 import android.content.Context
+import android.os.Parcelable
 import android.view.View
 import android.widget.FrameLayout
 
@@ -26,7 +27,7 @@ import android.widget.FrameLayout
  * @author xcc
  * @date 2023/1/7
  */
-internal class EditorView(context: Context) : FrameLayout(context) {
+internal class EditorContainer(context: Context) : FrameLayout(context) {
     private val views = mutableMapOf<Editor, View?>()
     private var editText: EditTextHolder? = null
     private var removePreviousImmediately = true
@@ -37,6 +38,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
     lateinit var adapter: EditorAdapter<*>; private set
 
     init {
+        id = R.id.tag_editor_container_id
         setAdapter(ImeAdapter())
     }
 
@@ -100,11 +102,15 @@ internal class EditorView(context: Context) : FrameLayout(context) {
 
         val currentChild: View?
         val previousChild = previous?.let(views::get)
+        var isCurrentAdded = false
         if (current != null && !views.contains(current)) {
-            currentChild = when {
+            val result = when {
                 current === ime -> null
-                else -> checkedAdapter().onCreateView(this, current)
+                else -> checkedAdapter().createView(this, current)
             }
+            isCurrentAdded = result?.isAdded == true
+            currentChild = result?.view
+            require(isCurrentAdded || currentChild?.parent == null) { "Editor的视图存在parent" }
             views[current] = currentChild
         } else {
             currentChild = current?.let(views::get)
@@ -120,7 +126,7 @@ internal class EditorView(context: Context) : FrameLayout(context) {
             // previousChild是Editor2，立即移除Editor2再添加Editor3
             previousChild?.let(::removeView)
         }
-        currentChild?.let(::addView)
+        if (!isCurrentAdded) currentChild?.let(::addView)
 
         changeRecord = ChangeRecord(previous, current, previousChild, currentChild)
         return true
@@ -163,6 +169,12 @@ internal class EditorView(context: Context) : FrameLayout(context) {
 
     @Suppress("UNCHECKED_CAST")
     private fun checkedAdapter() = adapter as EditorAdapter<Editor>
+
+    override fun onRestoreInstanceState(state: Parcelable?) {
+        super.onRestoreInstanceState(state)
+        // 移除Fragment重建流程添加的child，通过consumePendingChange()重新添加回来
+        if (childCount > 0) removeAllViews()
+    }
 
     data class ChangeRecord(
         val previous: Editor? = null,

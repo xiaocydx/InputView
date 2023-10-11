@@ -24,7 +24,7 @@ import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 
 /**
- * [Editor]的宿主，作用是让内部实现不用区分[InputView]和[EditorView]
+ * [Editor]的宿主，作用是让内部实现不用区分[InputView]和[EditorContainer]
  *
  * @author xcc
  * @date 2023/1/19

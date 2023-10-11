@@ -67,7 +67,7 @@ class InputView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : ViewGroup(context, attrs, defStyleAttr) {
     private val host = EditorHostImpl()
-    private val editorView = EditorView(context)
+    private val editorView = EditorContainer(context)
     private var contentView: View? = null
     private var window: ViewTreeWindow? = null
     private var editTextHolder: EditTextHolder? = null
@@ -166,6 +166,7 @@ class InputView @JvmOverloads constructor(
     init {
         isFocusable = true
         isFocusableInTouchMode = true
+        addView(editorView, MATCH_PARENT, WRAP_CONTENT)
         host.onEditorAdapterChanged(previous = null, editorAdapter)
         host.onEditorAnimatorChanged(previous = null, editorAnimator)
     }
@@ -330,11 +331,11 @@ class InputView @JvmOverloads constructor(
     private fun Int.toAtMostMeasureSpec() = makeMeasureSpec(this, AT_MOST)
 
     private fun checkContentView() {
-        if (childCount == 0) return
-        if (contentView == null) {
-            require(childCount == 1) { "InputView初始化时只能有一个子View" }
-            contentView = getChildAt(0)
-            addView(editorView, MATCH_PARENT, WRAP_CONTENT)
+        if (contentView != null) return
+        for (i in 0 until childCount) {
+            require(contentView == null) { "InputView初始化时只能有一个子View" }
+            val child = getChildAt(i)
+            if (child !== editorView) contentView = child
         }
     }
 
