@@ -18,6 +18,7 @@ package com.xiaocydx.inputview
 
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.VisibleForTesting
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentFactory
@@ -157,6 +158,11 @@ abstract class FragmentEditorAdapter<T : Editor>(
         fragmentMaxLifecycleEnforcer.unregister(host)
     }
 
+    @VisibleForTesting
+    internal fun setDelayUpdateFragmentMaxLifecycleEnabled(isEnabled: Boolean) {
+        fragmentMaxLifecycleEnforcer.setDelayUpdateEnabled(isEnabled)
+    }
+
     private inner class FragmentRestoreEnforcer : LifecycleEventObserver {
 
         fun register() {
@@ -211,13 +217,15 @@ abstract class FragmentEditorAdapter<T : Editor>(
 
     private inner class FragmentMaxLifecycleEnforcer {
         private var isAnimationRunning = false
-        private var adjustObserver: LifecycleObserver? = null
+        private var delayUpdateEnabled = true
+        private var delayUpdateObserver: LifecycleObserver? = null
         private var animationCallback: ReplicableAnimationCallback? = null
 
         fun register(host: EditorHost) {
-            adjustObserver = LifecycleEventObserver { _, _ ->
+            delayUpdateObserver = LifecycleEventObserver { _, _ ->
                 // 当动画结束时，可能错过了saveState，不允许提交事务，
                 // 因此观察Lifecycle的状态更改，尝试提交事务修正状态。
+                if (!delayUpdateEnabled) return@LifecycleEventObserver
                 updateFragmentMaxLifecycle(host.current)
             }
             animationCallback = object : ReplicableAnimationCallback {
@@ -234,16 +242,21 @@ abstract class FragmentEditorAdapter<T : Editor>(
                     updateFragmentMaxLifecycle(state.current)
                 }
             }
-            adjustObserver?.let(lifecycle::addObserver)
+            delayUpdateObserver?.let(lifecycle::addObserver)
             animationCallback?.let(host::addAnimationCallback)
         }
 
         fun unregister(host: EditorHost) {
-            adjustObserver?.let(lifecycle::removeObserver)
+            delayUpdateObserver?.let(lifecycle::removeObserver)
             animationCallback?.let(host::removeAnimationCallback)
-            adjustObserver = null
+            delayUpdateObserver = null
             animationCallback = null
             isAnimationRunning = false
+        }
+
+        @VisibleForTesting
+        fun setDelayUpdateEnabled(isEnabled: Boolean) {
+            delayUpdateEnabled = isEnabled
         }
 
         private fun updateFragmentMaxLifecycle(current: Editor?) {

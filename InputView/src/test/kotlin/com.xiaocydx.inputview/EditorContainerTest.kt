@@ -20,7 +20,7 @@ import android.content.Context
 import android.os.Build
 import android.view.View
 import android.view.ViewGroup
-import androidx.lifecycle.Lifecycle.State
+import androidx.lifecycle.Lifecycle.State.RESUMED
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ActivityScenario.launch
 import com.google.common.truth.Truth.assertThat
@@ -45,7 +45,7 @@ internal class EditorContainerTest {
 
     @Before
     fun setup() {
-        scenario = launch(TestActivity::class.java).moveToState(State.CREATED)
+        scenario = launch(TestActivity::class.java).moveToState(RESUMED)
     }
 
     @Test

@@ -18,7 +18,7 @@ package com.xiaocydx.inputview
 
 import android.os.Build
 import androidx.core.view.WindowInsetsCompat
-import androidx.lifecycle.Lifecycle.State
+import androidx.lifecycle.Lifecycle.State.RESUMED
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ActivityScenario.launch
 import com.google.common.truth.Truth.assertThat
@@ -43,7 +43,7 @@ internal class InputViewTest {
 
     @Before
     fun setup() {
-        scenario = launch(TestActivity::class.java).moveToState(State.CREATED)
+        scenario = launch(TestActivity::class.java).moveToState(RESUMED)
     }
 
     @Test
