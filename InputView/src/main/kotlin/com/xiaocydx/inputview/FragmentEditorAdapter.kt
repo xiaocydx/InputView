@@ -10,6 +10,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Lifecycle.State.RESUMED
 import androidx.lifecycle.Lifecycle.State.STARTED
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 
 /**
@@ -46,6 +47,8 @@ abstract class FragmentEditorAdapter<T : Editor>(
     private val fragmentManager: FragmentManager
 ) : EditorAdapter<T>() {
     private val fragments = mutableMapOf<T, Fragment?>()
+    private val restoreFragments = mutableMapOf<String, Fragment>()
+    private val fragmentRestoreEnforcer = FragmentRestoreEnforcer()
     private val fragmentMaxLifecycleEnforcer = FragmentMaxLifecycleEnforcer()
 
     constructor(fragmentActivity: FragmentActivity) : this(
@@ -68,21 +71,17 @@ abstract class FragmentEditorAdapter<T : Editor>(
      *
      * 创建的Fragment，在[InputView.editorAnimator]的动画结束时，生命周期状态才会转换为[RESUMED]。
      *
-     * **注意**：[editor]重建后的Fragment会被直接使用，不会调用该函数重新创建Fragment，
-     * 在创建Fragment时，不要对Fragment的构造函数传参，重建后的Fragment会缺少这些传参，
-     * 除非在重建Fragment之前，设置自定义的[FragmentFactory]，重新对构造函数进行传参，
+     * **注意**：[editor]重建的Fragment会被直接使用，不会调用该函数重新创建Fragment，
+     * 在创建Fragment时，不要对Fragment的构造函数传参，重建的Fragment会缺少这些传参，
+     * 除非在重建Fragment之前，设置自定义[FragmentFactory]，重新对构造函数进行传参，
      * 不过这种做法有些麻烦，一般不会考虑。
      */
     protected abstract fun onCreateFragment(editor: T): Fragment?
 
-    final override fun createView(parent: ViewGroup, editor: T): CreateResult {
-        return CreateResult(onCreateView(parent, editor), isAdded = true)
-    }
-
     final override fun onCreateView(parent: ViewGroup, editor: T): View? {
         if (editor === ime) return null
         val tag = "$KEY_PREFIX_FRAGMENT${getEditorKey(editor)}"
-        val fragment = fragmentManager.findFragmentByTag(tag) ?: onCreateFragment(editor)
+        val fragment = restoreFragments.remove(tag) ?: onCreateFragment(editor)
         fragments[editor] = fragment
         if (fragment != null) placeFragmentInContainer(parent, fragment, tag)
         return fragment?.view
@@ -91,75 +90,138 @@ abstract class FragmentEditorAdapter<T : Editor>(
     private fun shouldDelayFragmentTransactions() = fragmentManager.isStateSaved
 
     private fun placeFragmentInContainer(container: ViewGroup, fragment: Fragment, tag: String) {
-        // InputView确保在常规布局流程调用onCreateView()，不考虑兼容drawToBitmap()这类场景
+        // InputView确保在常规布局流程调用onCreateView()
         require(container.id != View.NO_ID) { "container未设置id" }
         require(!shouldDelayFragmentTransactions()) { "当前未处于常规布局流程" }
-        val view = fragment.view
+        var view = fragment.view
         when {
-            fragment.isAdded && view != null -> when {
-                view.parent != null -> throw IllegalStateException("container未移除子View")
-                view.layoutParams == null -> throw IllegalStateException("container未添加过子View")
-                else -> container.addView(view)
-            }
             fragment.isAdded && view == null -> {
-                fragmentManager.beginTransaction()
-                    .setMaxLifecycle(fragment, STARTED)
-                    .commitNow()
+                throw IllegalStateException("Fragment生命周期状态转换的异常情况")
             }
-            !fragment.isAdded -> if (view != null) {
-                throw IllegalStateException("不符合设计的异常情况")
-            } else {
+            fragment.isAdded && view != null && view.parent != null -> {
+                throw IllegalStateException("FragmentRestoreEnforcer未移除View")
+            }
+            fragment.isAdded && view != null && view.layoutParams == null -> {
+                throw IllegalStateException("重建的Fragment未对container添加View")
+            }
+            !fragment.isAdded && view != null -> {
+                throw IllegalStateException("违背常规流程的异常情况")
+            }
+            !fragment.isAdded && view == null -> {
                 fragmentManager.beginTransaction()
                     .add(container.id, fragment, tag)
                     .setMaxLifecycle(fragment, STARTED)
                     .commitNow()
             }
         }
-        requireNotNull(fragment.view?.parent) { "添加fragment.view失败" }
+        view = fragment.view
+        assert(view != null)
+        val parent = view?.parent
+        assert(parent == null || parent === container)
+        // 移除view，在onCreateView()之后重新添加view，确保跟重建流程表现一致
+        view?.let(container::removeView)
     }
 
     final override fun onAttachToEditorHost(host: EditorHost) {
         super.onAttachToEditorHost(host)
-        fragmentMaxLifecycleEnforcer.register(host, lifecycle)
+        fragmentRestoreEnforcer.register()
+        fragmentMaxLifecycleEnforcer.register(host)
     }
 
     final override fun onDetachFromEditorHost(host: EditorHost) {
         super.onDetachFromEditorHost(host)
-        fragmentMaxLifecycleEnforcer.unregister(host, lifecycle)
+        fragmentRestoreEnforcer.unregister()
+        fragmentMaxLifecycleEnforcer.unregister(host)
     }
 
-    private inner class FragmentMaxLifecycleEnforcer :
-            ReplicableAnimationCallback, LifecycleEventObserver {
-        private var isAnimationRunning = false
+    private inner class FragmentRestoreEnforcer : LifecycleEventObserver {
 
-        fun register(host: EditorHost, lifecycle: Lifecycle) {
-            host.addAnimationCallback(this)
+        fun register() {
             lifecycle.addObserver(this)
         }
 
-        fun unregister(host: EditorHost, lifecycle: Lifecycle) {
-            host.removeAnimationCallback(this)
+        fun unregister() {
             lifecycle.removeObserver(this)
         }
 
-        override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
-            isAnimationRunning = true
-        }
-
-        override fun onAnimationEnd(state: AnimationState) {
-            // 在动画结束时，才转换Fragment的生命周期状态，
-            // 目的是对调用者提供一个协调动画卡顿问题的时机，
-            // 例如在Fragment的生命周期状态转换为RESUMED时，
-            // 才设置数据，申请下一帧重新布局，创建大量视图。
-            isAnimationRunning = false
-            updateFragmentMaxLifecycle(state.current)
-        }
-
         override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-            updateFragmentMaxLifecycle(host?.current)
+            val currentState = source.lifecycle.currentState
+            if (shouldDelayFragmentTransactions() || !currentState.isAtLeast(STARTED)) return
+            unregister()
+
+            // TODO: 尝试重建后立即show的交互
+            val container = host?.container ?: return
+            val toRemove = mutableListOf<Fragment>()
+            require(container.id != View.NO_ID) { "container未设置id" }
+            fragmentManager.fragments.forEach action@{ fragment ->
+                val tag = fragment.tag ?: return@action
+                if (!tag.contains(KEY_PREFIX_FRAGMENT)) return@action
+                if (fragments.containsValue(fragment)) return@action
+                val view = fragment.view
+                if (view?.parent === container) {
+                    restoreFragments[tag] = fragment
+                } else {
+                    // view = null或parent = null
+                    toRemove.add(fragment)
+                }
+            }
+
+            if (restoreFragments.isEmpty() && toRemove.isEmpty()) return
+            val transaction = fragmentManager.beginTransaction()
+            restoreFragments.forEach {
+                val fragment = it.value
+                fragment.view?.let(container::removeView)
+                // 重建的Fragment生命周期可能处于RESUMED，
+                // 此时未显示Fragment，需要回退到STARTED。
+                transaction.setMaxLifecycle(it.value, STARTED)
+                fragment.setMenuVisibility(false)
+            }
+            toRemove.forEach { fragment ->
+                // TODO: 补充注释说明
+                transaction.remove(fragment)
+            }
+            transaction.takeIf { !it.isEmpty }?.commitNow()
+        }
+    }
+
+    private inner class FragmentMaxLifecycleEnforcer {
+        private var isAnimationRunning = false
+        private var adjustObserver: LifecycleObserver? = null
+        private var animationCallback: ReplicableAnimationCallback? = null
+
+        fun register(host: EditorHost) {
+            adjustObserver = LifecycleEventObserver { _, _ ->
+                // 当动画结束时，可能错过了saveState，不允许提交事务，
+                // 因此观察Lifecycle的状态更改，尝试提交事务修正状态。
+                updateFragmentMaxLifecycle(host.current)
+            }
+            animationCallback = object : ReplicableAnimationCallback {
+                override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
+                    isAnimationRunning = true
+                }
+
+                override fun onAnimationEnd(state: AnimationState) {
+                    // 当动画结束时，才转换Fragment的生命周期状态，
+                    // 目的是对调用者提供一个协调动画卡顿问题的时机，
+                    // 例如当Fragment的生命周期状态转换为RESUMED时，
+                    // 才设置数据，申请下一帧重新布局，创建大量视图。
+                    isAnimationRunning = false
+                    updateFragmentMaxLifecycle(state.current)
+                }
+            }
+            adjustObserver?.let(lifecycle::addObserver)
+            animationCallback?.let(host::addAnimationCallback)
         }
 
-        fun updateFragmentMaxLifecycle(current: Editor?) {
+        fun unregister(host: EditorHost) {
+            adjustObserver?.let(lifecycle::removeObserver)
+            animationCallback?.let(host::removeAnimationCallback)
+            adjustObserver = null
+            animationCallback = null
+            isAnimationRunning = false
+        }
+
+        private fun updateFragmentMaxLifecycle(current: Editor?) {
             if (shouldDelayFragmentTransactions() || isAnimationRunning || fragments.isEmpty()) return
             val transaction = fragmentManager.beginTransaction()
             var toResume: Fragment? = null
@@ -167,12 +229,12 @@ abstract class FragmentEditorAdapter<T : Editor>(
                 val editor = it.key
                 val fragment = it.value
                 if (fragment == null || !fragment.isAdded) return@action
-                if (editor != current) {
+                if (editor !== current) {
                     transaction.setMaxLifecycle(fragment, STARTED)
                 } else {
                     toResume = fragment
                 }
-                fragment.setMenuVisibility(editor == current)
+                fragment.setMenuVisibility(editor === current)
             }
             toResume?.let { transaction.setMaxLifecycle(it, RESUMED) }
             transaction.takeIf { !it.isEmpty }?.commitNow()
@@ -180,6 +242,6 @@ abstract class FragmentEditorAdapter<T : Editor>(
     }
 
     private companion object {
-        const val KEY_PREFIX_FRAGMENT = "f#"
+        const val KEY_PREFIX_FRAGMENT = "com.xiaocydx.inputview.FragmentEditorAdapter.f#"
     }
 }

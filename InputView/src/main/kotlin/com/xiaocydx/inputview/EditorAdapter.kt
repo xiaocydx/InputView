@@ -57,7 +57,7 @@ abstract class EditorAdapter<T : Editor> {
     /**
      * 创建[editor]的视图，返回`null`表示不需要视图，当[editor]表示IME时，该函数不会被调用
      */
-    protected abstract fun onCreateView(parent: ViewGroup, editor: T): View?
+    abstract fun onCreateView(parent: ViewGroup, editor: T): View?
 
     /**
      * 添加[EditorChangedListener]
@@ -73,10 +73,6 @@ abstract class EditorAdapter<T : Editor> {
      */
     fun removeEditorChangedListener(listener: EditorChangedListener<T>) {
         listeners.remove(listener)
-    }
-
-    internal open fun createView(parent: ViewGroup, editor: T): CreateResult {
-        return CreateResult(onCreateView(parent, editor), isAdded = false)
     }
 
     @CallSuper
@@ -99,8 +95,6 @@ abstract class EditorAdapter<T : Editor> {
             listeners[index].onEditorChanged(previous, current)
         }
     }
-
-    internal class CreateResult(val view: View?, val isAdded: Boolean)
 }
 
 /**

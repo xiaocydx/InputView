@@ -375,6 +375,8 @@ class InputView @JvmOverloads constructor(
             get() = editorView.ime
         override val current: Editor?
             get() = editorView.current
+        override val container: ViewGroup
+            get() = editorView
         override val previousView: View?
             get() = editorView.changeRecord.previousChild
         override val currentView: View?

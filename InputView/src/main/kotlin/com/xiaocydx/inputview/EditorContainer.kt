@@ -17,7 +17,6 @@
 package com.xiaocydx.inputview
 
 import android.content.Context
-import android.os.Parcelable
 import android.view.View
 import android.widget.FrameLayout
 
@@ -110,15 +109,12 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
 
         val currentChild: View?
         val previousChild = previous?.let(views::get)
-        var isCurrentAdded = false
         if (current != null && !views.contains(current)) {
-            val result = when {
+            currentChild = when {
                 current === ime -> null
-                else -> checkedAdapter().createView(this, current)
+                else -> checkedAdapter().onCreateView(this, current)
             }
-            isCurrentAdded = result?.isAdded == true
-            currentChild = result?.view
-            require(isCurrentAdded || currentChild?.parent == null) { "Editor的视图存在parent" }
+            require(currentChild?.parent == null) { "Editor的视图存在parent" }
             views[current] = currentChild
         } else {
             currentChild = current?.let(views::get)
@@ -134,7 +130,7 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
             // previousChild是Editor2，立即移除Editor2再添加Editor3
             previousChild?.let(::removeView)
         }
-        if (!isCurrentAdded) currentChild?.let(::addView)
+        currentChild?.let(::addView)
 
         changeRecord = ChangeRecord(previous, current, previousChild, currentChild)
         return true
@@ -188,12 +184,6 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
 
     @Suppress("UNCHECKED_CAST")
     private fun checkedAdapter() = adapter as EditorAdapter<Editor>
-
-    override fun onRestoreInstanceState(state: Parcelable?) {
-        super.onRestoreInstanceState(state)
-        // 移除Fragment重建流程添加的child，通过consumePendingChange()重新添加child
-        if (childCount > 0) removeAllViews()
-    }
 
     private data class PendingChange(
         val previous: Editor?,

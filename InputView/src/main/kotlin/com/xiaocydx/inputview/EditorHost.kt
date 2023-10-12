@@ -17,6 +17,7 @@
 package com.xiaocydx.inputview
 
 import android.view.View
+import android.view.ViewGroup
 import android.view.animation.Interpolator
 import androidx.annotation.IntRange
 import androidx.core.view.OneShotPreDrawListener
@@ -62,6 +63,11 @@ internal interface EditorHost {
      * 当前显示的[Editor]
      */
     val current: Editor?
+
+    /**
+     * [Editor]的视图容器
+     */
+    val container: ViewGroup
 
     /**
      * 更改[Editor]后，之前[Editor]的视图
