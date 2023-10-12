@@ -14,7 +14,8 @@ import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 
 /**
- * [InputView]编辑区[Editor]的Fragment适配器，负责创建和通知显示[Editor]的Fragment
+ * [InputView]编辑区的Fragment适配器，负责创建和通知显示[Editor]的Fragment，
+ * [current]的Fragment，生命周期状态是[RESUMED]，其它的Fragment是[STARTED]。
  *
  * ```
  * enum class MessageEditor : Editor {
@@ -69,9 +70,10 @@ abstract class FragmentEditorAdapter<T : Editor>(
     /**
      * 创建[editor]的Fragment，返回`null`表示不需要Fragment，当[editor]表示IME时，该函数不会被调用
      *
-     * 创建的Fragment，在[InputView.editorAnimator]的动画结束时，生命周期状态才会转换为[RESUMED]。
+     * 创建的Fragment，在[InputView.editorAnimator]的动画结束时，生命周期状态才会转换为[RESUMED]，
+     * 当执行Fragment重建流程时，若[InputView]还未添加到视图树，则移除重建的Fragment，放弃恢复状态。
      *
-     * **注意**：[editor]重建的Fragment会被直接使用，不会调用该函数重新创建Fragment，
+     * **注意**：重建且可恢复状态的Fragment会被使用，不会调用该函数再次创建Fragment，
      * 在创建Fragment时，不要对Fragment的构造函数传参，重建的Fragment会缺少这些传参，
      * 除非在重建Fragment之前，设置自定义[FragmentFactory]，重新对构造函数进行传参，
      * 不过这种做法有些麻烦，一般不会考虑。
@@ -108,6 +110,11 @@ abstract class FragmentEditorAdapter<T : Editor>(
                 throw IllegalStateException("违背常规流程的异常情况")
             }
             !fragment.isAdded && view == null -> {
+                // 不使用add(fragment, tag) + 手动添加Fragment.view的方案，
+                // 原因是创建view时会丢失layoutParams，直观表现就是丢失尺寸。
+                // 使用add(containerViewId, fragment, tag)的方案，其缺陷是
+                // 重建流程会将Fragment.view添加到container，不符合当前设计，
+                // FragmentRestoreEnforcer在重建完成后，移除Fragment.view。
                 fragmentManager.beginTransaction()
                     .add(container.id, fragment, tag)
                     .setMaxLifecycle(fragment, STARTED)
@@ -149,7 +156,6 @@ abstract class FragmentEditorAdapter<T : Editor>(
             if (shouldDelayFragmentTransactions() || !currentState.isAtLeast(STARTED)) return
             unregister()
 
-            // TODO: 尝试重建后立即show的交互
             val container = host?.container ?: return
             val toRemove = mutableListOf<Fragment>()
             require(container.id != View.NO_ID) { "container未设置id" }
@@ -171,13 +177,16 @@ abstract class FragmentEditorAdapter<T : Editor>(
             restoreFragments.forEach {
                 val fragment = it.value
                 fragment.view?.let(container::removeView)
-                // 重建的Fragment生命周期可能处于RESUMED，
-                // 此时未显示Fragment，需要回退到STARTED。
+                // 重建的Fragment，生命周期状态可能是RESUMED，
+                // 此时未显示Fragment，状态需要回退到STARTED。
                 transaction.setMaxLifecycle(it.value, STARTED)
                 fragment.setMenuVisibility(false)
             }
             toRemove.forEach { fragment ->
-                // TODO: 补充注释说明
+                // 执行重建流程，container还未添加到视图树，
+                // 此时重建的Fragment，其view缺少container，
+                // view丢失layoutParams，直观表现就是丢失尺寸，
+                // 移除重建的Fragment，放弃恢复状态，确保表现一致。
                 transaction.remove(fragment)
             }
             transaction.takeIf { !it.isEmpty }?.commitNow()

@@ -21,6 +21,9 @@ class EmojiFragment : Fragment() {
     private val TAG = javaClass.canonicalName
     private val viewModel: EditorViewModel by viewModels()
 
+    /**
+     * 设置`viewModel.viewId`，重建后恢复滚动位置
+     */
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,

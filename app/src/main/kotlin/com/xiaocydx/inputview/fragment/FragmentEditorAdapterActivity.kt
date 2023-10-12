@@ -11,9 +11,13 @@ import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.MessageEditor
 import com.xiaocydx.inputview.databinding.MessageListBinding
 import com.xiaocydx.inputview.init
-import com.xiaocydx.inputview.notifyShow
 
 /**
+ * [FragmentEditorAdapter]的示例代码
+ *
+ * 当页面重建后，[FragmentEditorAdapter]会使用重建且可恢复状态的Fragment，
+ * 关于重建的处理，可以看[FragmentEditorAdapter.onCreateFragment]的注释。
+ *
  * @author xcc
  * @date 2023/10/11
  */
@@ -23,11 +27,9 @@ class FragmentEditorAdapterActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         InputView.init(window, gestureNavBarEdgeToEdge = true)
         val binding = MessageListBinding.inflate(layoutInflater)
+        binding.tvTitle.setBackgroundColor(0xFF79AA91.toInt())
         val editorAdapter = MessageFragmentEditorAdapter(this)
         setContentView(binding.init(window, editorAdapter).root)
-        if (savedInstanceState != null) {
-            editorAdapter.notifyShow(MessageEditor.IME)
-        }
     }
 
     private class MessageFragmentEditorAdapter(
