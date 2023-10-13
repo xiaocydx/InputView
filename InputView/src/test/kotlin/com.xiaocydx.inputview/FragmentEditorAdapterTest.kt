@@ -245,7 +245,7 @@ internal class FragmentEditorAdapterTest {
         scenario.moveToState(RESUMED).onActivity {
             val fm = it.supportFragmentManager
             assertThat(fm.isStateSaved).isFalse()
-            // Activity转换到RESUMED，fragmentA的max仍为RESUMED
+            // Activity转换到RESUMED，fragmentA的max修正为STARTED
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(STARTED)
         }
     }
@@ -276,7 +276,7 @@ internal class FragmentEditorAdapterTest {
         scenario.moveToState(RESUMED).onActivity {
             val fm = it.supportFragmentManager
             assertThat(fm.isStateSaved).isFalse()
-            // Activity转换到RESUMED，fragmentVp2的max仍为RESUMED
+            // Activity转换到RESUMED，fragmentVp2的max修正为STARTED
             val child = fm.fragmentA()!!.childFragmentManager
             assertThat(child.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(STARTED)
         }
