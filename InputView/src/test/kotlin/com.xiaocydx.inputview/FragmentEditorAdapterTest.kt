@@ -54,15 +54,10 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 internal class FragmentEditorAdapterTest {
     private lateinit var scenario: ActivityScenario<TestActivity>
-    private lateinit var editorAdapter: TestEditorAdapter
 
     @Before
     fun setup() {
         scenario = launch(TestActivity::class.java).moveToState(RESUMED)
-        scenario.onActivity {
-            editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter
-        }
     }
 
     @After
@@ -74,6 +69,9 @@ internal class FragmentEditorAdapterTest {
     fun createFragment() {
         scenario.onActivity {
             val fm = it.supportFragmentManager
+            val editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter
+
             editorAdapter.notifyShow(TestEditor.A)
             assertThat(editorAdapter.current).isEqualTo(TestEditor.A)
             shadowOf(getMainLooper()).idle()
@@ -90,6 +88,9 @@ internal class FragmentEditorAdapterTest {
     fun createChildFragment() {
         scenario.onActivity {
             val fm = it.supportFragmentManager
+            val editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter
+
             editorAdapter.notifyShow(TestEditor.A)
             shadowOf(getMainLooper()).idle()
             val childA = fm.fragmentA()!!.childFragmentManager
@@ -106,6 +107,9 @@ internal class FragmentEditorAdapterTest {
     fun updateFragmentMaxLifecycle() {
         scenario.onActivity {
             val fm = it.supportFragmentManager
+            val editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter
+
             editorAdapter.notifyShow(TestEditor.A)
             shadowOf(getMainLooper()).idle()
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(RESUMED)
@@ -126,6 +130,9 @@ internal class FragmentEditorAdapterTest {
     fun updateChildFragmentMaxLifecycle() {
         scenario.onActivity {
             val fm = it.supportFragmentManager
+            val editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter
+
             editorAdapter.notifyShow(TestEditor.A)
             shadowOf(getMainLooper()).idle()
             val childA = fm.fragmentA()!!.childFragmentManager
@@ -151,10 +158,14 @@ internal class FragmentEditorAdapterTest {
 
     @Test
     fun missUpdateFragmentMaxLifecycle() {
-        editorAdapter.setDelayUpdateFragmentMaxLifecycleEnabled(false)
+        var editorAdapter: TestEditorAdapter? = null
         scenario.onActivity {
             val fm = it.supportFragmentManager
-            editorAdapter.notifyShow(TestEditor.A)
+            editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter!!
+            editorAdapter!!.setDelayUpdateFragmentMaxLifecycleEnabled(false)
+
+            editorAdapter!!.notifyShow(TestEditor.A)
             shadowOf(getMainLooper()).idle()
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(RESUMED)
         }
@@ -162,7 +173,7 @@ internal class FragmentEditorAdapterTest {
         scenario.moveToState(CREATED).onActivity {
             val fm = it.supportFragmentManager
             assertThat(fm.isStateSaved).isTrue()
-            editorAdapter.notifyHide(TestEditor.A)
+            editorAdapter!!.notifyHide(TestEditor.A)
             shadowOf(getMainLooper()).idle()
             // Activity已完成saveState，不允许提交事务将fragmentA的max设为STARTED
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(CREATED)
@@ -174,15 +185,18 @@ internal class FragmentEditorAdapterTest {
             // Activity转换到RESUMED，fragmentA的max仍为RESUMED
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(RESUMED)
         }
-        editorAdapter.setDelayUpdateFragmentMaxLifecycleEnabled(true)
     }
 
     @Test
     fun missUpdateChildFragmentMaxLifecycle() {
-        editorAdapter.setDelayUpdateFragmentMaxLifecycleEnabled(false)
+        var editorAdapter: TestEditorAdapter? = null
         scenario.onActivity {
             val fm = it.supportFragmentManager
-            editorAdapter.notifyShow(TestEditor.A)
+            editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter!!
+            editorAdapter!!.setDelayUpdateFragmentMaxLifecycleEnabled(false)
+
+            editorAdapter!!.notifyShow(TestEditor.A)
             shadowOf(getMainLooper()).idle()
             val child = fm.fragmentA()!!.childFragmentManager
             assertThat(child.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(RESUMED)
@@ -191,7 +205,7 @@ internal class FragmentEditorAdapterTest {
         scenario.moveToState(CREATED).onActivity {
             val fm = it.supportFragmentManager
             assertThat(fm.isStateSaved).isTrue()
-            editorAdapter.notifyHide(TestEditor.A)
+            editorAdapter!!.notifyHide(TestEditor.A)
             shadowOf(getMainLooper()).idle()
             // Activity已完成saveState，不允许提交事务将fragmentVp2的max设为STARTED
             val child = fm.fragmentA()!!.childFragmentManager
@@ -205,14 +219,16 @@ internal class FragmentEditorAdapterTest {
             val child = fm.fragmentA()!!.childFragmentManager
             assertThat(child.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(RESUMED)
         }
-        editorAdapter.setDelayUpdateFragmentMaxLifecycleEnabled(true)
     }
 
     @Test
     fun delayUpdateFragmentMaxLifecycle() {
+        var editorAdapter: TestEditorAdapter? = null
         scenario.onActivity {
             val fm = it.supportFragmentManager
-            editorAdapter.notifyShow(TestEditor.A)
+            editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter!!
+            editorAdapter!!.notifyShow(TestEditor.A)
             shadowOf(getMainLooper()).idle()
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(RESUMED)
         }
@@ -220,7 +236,7 @@ internal class FragmentEditorAdapterTest {
         scenario.moveToState(CREATED).onActivity {
             val fm = it.supportFragmentManager
             assertThat(fm.isStateSaved).isTrue()
-            editorAdapter.notifyHide(TestEditor.A)
+            editorAdapter!!.notifyHide(TestEditor.A)
             shadowOf(getMainLooper()).idle()
             // Activity已完成saveState，不允许提交事务将fragmentA的max设为STARTED
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(CREATED)
@@ -236,9 +252,12 @@ internal class FragmentEditorAdapterTest {
 
     @Test
     fun delayUpdateChildFragmentMaxLifecycle() {
+        var editorAdapter: TestEditorAdapter? = null
         scenario.onActivity {
             val fm = it.supportFragmentManager
-            editorAdapter.notifyShow(TestEditor.A)
+            editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter!!
+            editorAdapter!!.notifyShow(TestEditor.A)
             shadowOf(getMainLooper()).idle()
             val child = fm.fragmentA()!!.childFragmentManager
             assertThat(child.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(RESUMED)
@@ -247,7 +266,7 @@ internal class FragmentEditorAdapterTest {
         scenario.moveToState(CREATED).onActivity {
             val fm = it.supportFragmentManager
             assertThat(fm.isStateSaved).isTrue()
-            editorAdapter.notifyHide(TestEditor.A)
+            editorAdapter!!.notifyHide(TestEditor.A)
             shadowOf(getMainLooper()).idle()
             // Activity已完成saveState，不允许提交事务将fragmentVp2的max设为STARTED
             val child = fm.fragmentA()!!.childFragmentManager
@@ -266,6 +285,8 @@ internal class FragmentEditorAdapterTest {
     @Test
     fun recreateFragment() {
         scenario.onActivity {
+            val editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter
             editorAdapter.notifyShow(TestEditor.A)
             shadowOf(getMainLooper()).idle()
         }
@@ -279,6 +300,8 @@ internal class FragmentEditorAdapterTest {
     @Test
     fun recreateChildFragment() {
         scenario.onActivity {
+            val editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter
             editorAdapter.notifyShow(TestEditor.A)
             shadowOf(getMainLooper()).idle()
         }
@@ -292,6 +315,8 @@ internal class FragmentEditorAdapterTest {
     @Test
     fun restoreFragment() {
         scenario.onActivity {
+            val editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter
             editorAdapter.notifyShow(TestEditor.A)
             shadowOf(getMainLooper()).idle()
         }
@@ -310,6 +335,8 @@ internal class FragmentEditorAdapterTest {
     @Test
     fun restoreChildFragment() {
         scenario.onActivity {
+            val editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter
             editorAdapter.notifyShow(TestEditor.A)
             shadowOf(getMainLooper()).idle()
         }
@@ -328,6 +355,8 @@ internal class FragmentEditorAdapterTest {
     @Test
     fun recreateFragmentAddToContainer() {
         scenario.onActivity {
+            val editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter
             editorAdapter.notifyShow(TestEditor.A)
             shadowOf(getMainLooper()).idle()
         }
@@ -348,6 +377,8 @@ internal class FragmentEditorAdapterTest {
     @Test
     fun recreateChildFragmentAddToContainer() {
         scenario.onActivity {
+            val editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter
             editorAdapter.notifyShow(TestEditor.A)
             shadowOf(getMainLooper()).idle()
         }
@@ -363,6 +394,8 @@ internal class FragmentEditorAdapterTest {
     @Test
     fun recreateUpdateFragmentMaxLifecycle() {
         scenario.onActivity {
+            val editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter
             val fm = it.supportFragmentManager
             editorAdapter.notifyShow(TestEditor.A)
             shadowOf(getMainLooper()).idle()
@@ -377,14 +410,21 @@ internal class FragmentEditorAdapterTest {
         scenario.recreate().onActivity {
             val fm = it.supportFragmentManager
             // FragmentEditorAdapter在重建完成后，更新fragmentA的生命周期状态
-            it.inputView.editorAdapter = TestEditorAdapter(it)
+            val editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(STARTED)
+
+            editorAdapter.notifyShow(TestEditor.A)
+            shadowOf(getMainLooper()).idle()
+            assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(RESUMED)
         }
     }
 
     @Test
     fun removeRecreateFragment() {
         scenario.onActivity {
+            val editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter
             it.viewModel.canSetInputView = false
             editorAdapter.notifyShow(TestEditor.A)
             shadowOf(getMainLooper()).idle()
