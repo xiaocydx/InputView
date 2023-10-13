@@ -2,7 +2,7 @@ InputView是一个通用的输入控件
 * 支持Activity和Dialog。
 * 在调整IME高度后运行过渡动画。
 * 可自定义编辑器的切换过渡动画。
-* 可自定义编辑器的类型和视图创建。
+* 可自定义编辑器的View或Fragment。
 * 实现Edge-to-Edge并提供相关的辅助函数。
 * 修改Android 11及以上IME动画的时长和插值器。
 * 解决EditText的水滴状指示器导致动画卡顿的问题。  
