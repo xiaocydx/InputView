@@ -21,23 +21,30 @@ import android.view.View
 import android.view.ViewGroup.LayoutParams
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 
 /**
  * @author xcc
  * @date 2023/1/13
  */
 internal class TestActivity : AppCompatActivity() {
-    lateinit var content: View
+    lateinit var viewModel: TestViewModel
+        private set
     lateinit var inputView: InputView
+        private set
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        viewModel = ViewModelProvider(this)[TestViewModel::class.java]
         InputView.init(window)
-        content = View(this)
-        inputView = InputView(this).apply {
-            layoutParams = LayoutParams(MATCH_PARENT, MATCH_PARENT)
-        }
-        inputView.addView(content, MATCH_PARENT, MATCH_PARENT)
-        setContentView(inputView)
+        inputView = InputView(this)
+        inputView.layoutParams = LayoutParams(MATCH_PARENT, MATCH_PARENT)
+        inputView.addView(View(this), MATCH_PARENT, MATCH_PARENT)
+        if (viewModel.canSetInputView) setContentView(inputView)
     }
+}
+
+class TestViewModel : ViewModel() {
+    var canSetInputView = true
 }

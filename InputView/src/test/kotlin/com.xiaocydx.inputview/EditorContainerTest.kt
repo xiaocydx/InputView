@@ -26,6 +26,7 @@ import androidx.test.core.app.ActivityScenario.launch
 import com.google.common.truth.Truth.assertThat
 import io.mockk.spyk
 import io.mockk.verify
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -46,6 +47,11 @@ internal class EditorContainerTest {
     @Before
     fun setup() {
         scenario = launch(TestActivity::class.java).moveToState(RESUMED)
+    }
+
+    @After
+    fun release() {
+        scenario.close()
     }
 
     @Test
