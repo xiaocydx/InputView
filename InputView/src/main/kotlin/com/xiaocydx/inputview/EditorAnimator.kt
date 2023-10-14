@@ -26,6 +26,7 @@ import android.view.animation.Interpolator
 import android.view.animation.LinearInterpolator
 import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
+import androidx.annotation.VisibleForTesting
 import androidx.core.view.OneShotPreDrawListener
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
@@ -115,6 +116,11 @@ abstract class EditorAnimator(
 
     internal fun forEachCallback(action: (AnimationCallback) -> Unit) {
         callbacks.forEach(action)
+    }
+
+    @VisibleForTesting
+    internal fun containsCallback(callback: AnimationCallback): Boolean {
+        return callbacks.contains(callback)
     }
 
     private fun resetAnimationRecord(record: AnimationRecord) {

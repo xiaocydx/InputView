@@ -43,7 +43,6 @@ object Ime : Editor
  */
 class ImeAdapter : EditorAdapter<Ime>() {
     override val ime: Ime = Ime
-
     override fun onCreateView(parent: ViewGroup, editor: Ime): View? = null
 }
 

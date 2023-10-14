@@ -98,7 +98,7 @@ class InputView @JvmOverloads constructor(
         get() = editTextHolder?.value as? EditText
         set(value) {
             val previous = editTextHolder
-            val current = value?.let { EditTextHolder(value, window) }
+            val current = value?.let { EditTextHolder(it, window) }
             host.onEditTextHolderChanged(previous, current)
             editTextHolder = current
         }

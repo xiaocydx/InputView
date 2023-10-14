@@ -54,23 +54,20 @@ internal class InputViewTest {
 
     @Test
     fun initViewTreeWindow() {
-        scenario.onActivity { activity ->
-            val inputView = activity.inputView
-            assertThat(inputView.findViewTreeWindow()).isNotNull()
+        scenario.onActivity {
+            assertThat(it.inputView.findViewTreeWindow()).isNotNull()
         }
     }
 
     @Test
     fun editorAdapterAttachAndDetach() {
-        scenario.onActivity { activity ->
-            val inputView = activity.inputView
-
+        scenario.onActivity {
             val adapter1 = spyk(ImeAdapter())
             val adapter2 = spyk(ImeAdapter())
-            inputView.editorAdapter = adapter1
-            inputView.editorAdapter = adapter2
+            it.inputView.editorAdapter = adapter1
+            it.inputView.editorAdapter = adapter2
 
-            val host = inputView.getEditorHost()
+            val host = it.inputView.getEditorHost()
             assertThat(host.editorOffset).isEqualTo(0)
             verify(exactly = 1) { adapter1.onAttachToEditorHost(host) }
             verify(exactly = 1) { adapter1.onDetachFromEditorHost(host) }
@@ -80,15 +77,13 @@ internal class InputViewTest {
 
     @Test
     fun editorAnimatorAttachAndDetach() {
-        scenario.onActivity { activity ->
-            val inputView = activity.inputView
-
+        scenario.onActivity {
             val animator1 = spyk(NopEditorAnimator())
             val animator2 = spyk(NopEditorAnimator())
-            inputView.editorAnimator = animator1
-            inputView.editorAnimator = animator2
+            it.inputView.editorAnimator = animator1
+            it.inputView.editorAnimator = animator2
 
-            val host = inputView.getEditorHost()
+            val host = it.inputView.getEditorHost()
             verify(exactly = 1) { animator1.onAttachToEditorHost(host) }
             verify(exactly = 1) { animator1.onDetachFromEditorHost(host) }
             verify(exactly = 1) { animator2.onAttachToEditorHost(host) }
@@ -96,14 +91,49 @@ internal class InputViewTest {
     }
 
     @Test
+    fun replicableEditorChangedListener() {
+        scenario.onActivity {
+            val adapter1 = ImeAdapter()
+            it.inputView.editorAdapter = adapter1
+
+            val listener1 = EditorChangedListener<Editor> { _, _ -> }
+            val listener2 = ReplicableEditorChangedListener { _, _ -> }
+            adapter1.addEditorChangedListener(listener1)
+            adapter1.addEditorChangedListener(listener2)
+
+            val adapter2 = ImeAdapter()
+            it.inputView.editorAdapter = adapter2
+            assertThat(adapter2.containsListener(listener1)).isFalse()
+            assertThat(adapter2.containsListener(listener2)).isTrue()
+        }
+    }
+
+    @Test
+    fun replicableAnimationCallback() {
+        scenario.onActivity {
+            val animator1 = NopEditorAnimator()
+            it.inputView.editorAnimator = animator1
+
+            val callback1 = object : AnimationCallback {}
+            val callback2 = object : ReplicableAnimationCallback {}
+            animator1.addAnimationCallback(callback1)
+            animator1.addAnimationCallback(callback2)
+
+            val animator2 = NopEditorAnimator()
+            it.inputView.editorAnimator = animator2
+            assertThat(animator2.containsCallback(callback1)).isFalse()
+            assertThat(animator2.containsCallback(callback2)).isTrue()
+        }
+    }
+
+    @Test
     fun adjustPanUpdateEditorOffset() {
-        scenario.onActivity { activity ->
-            val inputView = activity.inputView
-            inputView.editorMode = EditorMode.ADJUST_PAN
-            val host = inputView.getEditorHost()
+        scenario.onActivity {
+            it.inputView.editorMode = EditorMode.ADJUST_PAN
+            val host = it.inputView.getEditorHost()
             val insets = WindowInsetsCompat.Builder().build().toWindowInsets()
             assertThat(insets).isNotNull()
-            inputView.onApplyWindowInsets(insets!!)
+            it.inputView.onApplyWindowInsets(insets!!)
             assertThat(host.navBarOffset).isEqualTo(0)
 
             val offset = 10

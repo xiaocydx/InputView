@@ -153,6 +153,6 @@ internal interface Replicable
 
 internal interface ReplicableAnimationCallback : AnimationCallback, Replicable
 
-internal interface ReplicableEditorChangedListener : EditorChangedListener<Editor>, Replicable
+internal fun interface ReplicableEditorChangedListener : EditorChangedListener<Editor>, Replicable
 
 internal typealias OnApplyWindowInsetsListenerCompat = androidx.core.view.OnApplyWindowInsetsListener

@@ -19,6 +19,7 @@ package com.xiaocydx.inputview
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.CallSuper
+import androidx.annotation.VisibleForTesting
 
 /**
  * [InputView]编辑区的[Editor]适配器，负责创建和通知显示[Editor]的视图
@@ -88,6 +89,11 @@ abstract class EditorAdapter<T : Editor> {
     @Suppress("UNCHECKED_CAST")
     internal fun forEachListener(action: (EditorChangedListener<Editor>) -> Unit) {
         listeners.forEach { action(it as EditorChangedListener<Editor>) }
+    }
+
+    @VisibleForTesting
+    internal fun containsListener(listener: EditorChangedListener<*>): Boolean {
+        return listeners.contains(listener)
     }
 
     internal fun onEditorChanged(previous: T?, current: T?) {

@@ -421,6 +421,38 @@ internal class FragmentEditorAdapterTest {
     }
 
     @Test
+    fun recreateUpdateChildFragmentMaxLifecycle() {
+        scenario.onActivity {
+            val editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter
+            val fm = it.supportFragmentManager
+            editorAdapter.notifyShow(TestEditor.A)
+            shadowOf(getMainLooper()).idle()
+            val childA = fm.fragmentA()!!.childFragmentManager
+            assertThat(childA.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(RESUMED)
+        }
+
+        scenario.recreate().onActivity {
+            val fm = it.supportFragmentManager
+            val childA = fm.fragmentA()!!.childFragmentManager
+            assertThat(childA.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(RESUMED)
+        }
+
+        scenario.recreate().onActivity {
+            val fm = it.supportFragmentManager
+            // FragmentEditorAdapter在重建完成后，更新fragmentVp2的生命周期状态
+            val editorAdapter = TestEditorAdapter(it)
+            it.inputView.editorAdapter = editorAdapter
+            val childA = fm.fragmentA()!!.childFragmentManager
+            assertThat(childA.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(STARTED)
+
+            editorAdapter.notifyShow(TestEditor.A)
+            shadowOf(getMainLooper()).idle()
+            assertThat(childA.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(RESUMED)
+        }
+    }
+
+    @Test
     fun removeRecreateFragment() {
         scenario.onActivity {
             val editorAdapter = TestEditorAdapter(it)
