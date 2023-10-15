@@ -122,6 +122,8 @@ class FadeEditorAnimator(
                 updateEditorOffset(currentOffset)
             }
 
+            if (startView == null && endView == null) return
+
             if (start > end) {
                 // 反转start到end的过程，只按start < end计算alpha
                 val diff = start - offset
