@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview
+package com.xiaocydx.inputview.message
 
 import android.annotation.SuppressLint
 import android.view.LayoutInflater

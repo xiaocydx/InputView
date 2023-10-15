@@ -8,9 +8,10 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.xiaocydx.inputview.FragmentEditorAdapter
 import com.xiaocydx.inputview.InputView
-import com.xiaocydx.inputview.MessageEditor
+import com.xiaocydx.inputview.message.MessageEditor
 import com.xiaocydx.inputview.databinding.MessageListBinding
 import com.xiaocydx.inputview.init
+import com.xiaocydx.inputview.message.init
 
 /**
  * [FragmentEditorAdapter]的示例代码

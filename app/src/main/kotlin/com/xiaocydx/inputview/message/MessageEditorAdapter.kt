@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview
+package com.xiaocydx.inputview.message
 
 import android.content.Context
 import android.view.LayoutInflater
@@ -12,10 +12,14 @@ import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.xiaocydx.inputview.MessageEditor.EMOJI
-import com.xiaocydx.inputview.MessageEditor.EXTRA
-import com.xiaocydx.inputview.MessageEditor.IME
-import com.xiaocydx.inputview.MessageEditor.VOICE
+import com.xiaocydx.inputview.EdgeToEdgeHelper
+import com.xiaocydx.inputview.Editor
+import com.xiaocydx.inputview.EditorAdapter
+import com.xiaocydx.inputview.R
+import com.xiaocydx.inputview.message.MessageEditor.EMOJI
+import com.xiaocydx.inputview.message.MessageEditor.EXTRA
+import com.xiaocydx.inputview.message.MessageEditor.IME
+import com.xiaocydx.inputview.message.MessageEditor.VOICE
 import com.xiaocydx.sample.dp
 import com.xiaocydx.sample.matchParent
 import com.xiaocydx.sample.withLayoutParams

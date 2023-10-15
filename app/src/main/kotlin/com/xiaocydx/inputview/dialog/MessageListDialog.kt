@@ -1,3 +1,5 @@
+@file:Suppress("ConstPropertyName")
+
 package com.xiaocydx.inputview.dialog
 
 import android.app.Dialog
@@ -19,6 +21,7 @@ import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.R
 import com.xiaocydx.inputview.databinding.MessageListBinding
 import com.xiaocydx.inputview.init
+import com.xiaocydx.inputview.message.init
 
 private const val statusBarEdgeToEdge = true
 private const val gestureNavBarEdgeToEdge = true

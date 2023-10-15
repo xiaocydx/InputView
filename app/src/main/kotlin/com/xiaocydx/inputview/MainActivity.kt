@@ -49,4 +49,8 @@ class MainActivity : AppCompatActivity() {
     fun startFragmentEditorAdapterActivity(view: View) {
         startActivity(Intent(this, FragmentEditorAdapterActivity::class.java))
     }
+
+    fun startOverlayInputActivity(view: View) {
+        startActivity(Intent(this, OverlayInputActivity::class.java))
+    }
 }

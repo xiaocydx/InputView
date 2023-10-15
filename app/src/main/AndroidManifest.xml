@@ -34,6 +34,9 @@
         <activity
             android:name=".fragment.FragmentEditorAdapterActivity"
             android:screenOrientation="portrait" />
+        <activity
+            android:name=".OverlayInputActivity"
+            android:screenOrientation="portrait" />
     </application>
 
 </manifest>

@@ -1,3 +1,5 @@
+@file:Suppress("ConstPropertyName")
+
 package com.xiaocydx.inputview.dialog
 
 import android.app.Dialog
@@ -22,9 +24,10 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.bottomsheet.SimpleBottomSheetCallback
 import com.google.android.material.bottomsheet.disableEdgeToEdgeAndFitsSystemWindows
 import com.xiaocydx.inputview.InputView
-import com.xiaocydx.inputview.MessageEditor
+import com.xiaocydx.inputview.message.MessageEditor
 import com.xiaocydx.inputview.databinding.MessageListBinding
 import com.xiaocydx.inputview.init
+import com.xiaocydx.inputview.message.init
 import com.xiaocydx.sample.suppressLayoutCompat
 
 private const val statusBarEdgeToEdge = true

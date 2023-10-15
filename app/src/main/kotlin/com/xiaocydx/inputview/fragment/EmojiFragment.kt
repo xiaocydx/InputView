@@ -10,7 +10,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
-import com.xiaocydx.inputview.EmojiRecyclerView
+import com.xiaocydx.inputview.message.EmojiRecyclerView
 
 /**
  * @author xcc

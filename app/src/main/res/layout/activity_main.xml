@@ -50,5 +50,13 @@
         android:layout_height="wrap_content"
         android:onClick="startFragmentEditorAdapterActivity"
         android:text="FragmentEditorAdapter"
+        android:layout_marginBottom="5dp"
+        android:textAllCaps="false" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="startOverlayInputActivity"
+        android:text="OverlayInput"
         android:textAllCaps="false" />
 </LinearLayout>
