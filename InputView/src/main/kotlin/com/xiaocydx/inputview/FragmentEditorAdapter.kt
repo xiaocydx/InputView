@@ -266,6 +266,7 @@ abstract class FragmentEditorAdapter<T : Editor>(
         }
 
         private fun updateFragmentMaxLifecycle(current: Editor?) {
+            isDelayUpdateNeeded = false
             if (fragments.isEmpty()) return
             if (shouldDelayFragmentTransactions() || isAnimationRunning) {
                 isDelayUpdateNeeded = true
