@@ -179,24 +179,27 @@ abstract class FragmentEditorAdapter<T : Editor>(
             unregister()
 
             val container = host?.container ?: return
-            val toRemove = mutableListOf<Fragment>()
+            var toRemove: MutableList<Fragment>? = null
             require(container.id != View.NO_ID) { "container未设置id" }
-            fragmentManager.fragments.forEach action@{ fragment ->
-                val tag = fragment.tag ?: return@action
-                if (!tag.contains(KEY_PREFIX_FRAGMENT)) return@action
-                if (fragments.containsValue(fragment)) return@action
+            fragmentManager.fragments.takeIf { it.isNotEmpty() }?.forEach { fragment ->
+                val tag = fragment.tag ?: return@forEach
+                if (!tag.contains(KEY_PREFIX_FRAGMENT)) return@forEach
+                if (fragments.containsValue(fragment)) return@forEach
                 val view = fragment.view
                 if (view?.parent === container) {
                     restoreFragments[tag] = fragment
                 } else {
                     // view = null或parent = null
-                    toRemove.add(fragment)
+                    if (toRemove == null) {
+                        toRemove = mutableListOf()
+                    }
+                    toRemove!!.add(fragment)
                 }
             }
 
-            if (restoreFragments.isEmpty() && toRemove.isEmpty()) return
+            if (restoreFragments.isEmpty() && toRemove.isNullOrEmpty()) return
             val transaction = fragmentManager.beginTransaction()
-            restoreFragments.forEach {
+            restoreFragments.takeIf { it.isNotEmpty() }?.forEach {
                 val fragment = it.value
                 fragment.view?.let(container::removeView)
                 // 重建的Fragment，生命周期状态可能是RESUMED，
@@ -204,7 +207,7 @@ abstract class FragmentEditorAdapter<T : Editor>(
                 transaction.setMaxLifecycle(it.value, STARTED)
                 fragment.setMenuVisibility(false)
             }
-            toRemove.forEach { fragment ->
+            toRemove?.takeIf { it.isNotEmpty() }?.forEach { fragment ->
                 // 执行重建流程，container还未添加到视图树，
                 // 此时重建的Fragment，其view缺少container，
                 // view丢失layoutParams，直观表现就是丢失尺寸，
@@ -217,7 +220,8 @@ abstract class FragmentEditorAdapter<T : Editor>(
 
     private inner class FragmentMaxLifecycleEnforcer {
         private var isAnimationRunning = false
-        private var delayUpdateEnabled = true
+        private var isDelayUpdateNeeded = false
+        private var isDelayUpdateEnabled = true
         private var delayUpdateObserver: LifecycleObserver? = null
         private var animationCallback: ReplicableAnimationCallback? = null
 
@@ -225,7 +229,8 @@ abstract class FragmentEditorAdapter<T : Editor>(
             delayUpdateObserver = LifecycleEventObserver { _, _ ->
                 // 当动画结束时，可能错过了saveState，不允许提交事务，
                 // 因此观察Lifecycle的状态更改，尝试提交事务修正状态。
-                if (!delayUpdateEnabled) return@LifecycleEventObserver
+                val isNeeded = isDelayUpdateNeeded.also { isDelayUpdateNeeded = false }
+                if (!isNeeded || !isDelayUpdateEnabled) return@LifecycleEventObserver
                 updateFragmentMaxLifecycle(host.current)
             }
             animationCallback = object : ReplicableAnimationCallback {
@@ -256,11 +261,15 @@ abstract class FragmentEditorAdapter<T : Editor>(
 
         @VisibleForTesting
         fun setDelayUpdateEnabled(isEnabled: Boolean) {
-            delayUpdateEnabled = isEnabled
+            isDelayUpdateEnabled = isEnabled
         }
 
         private fun updateFragmentMaxLifecycle(current: Editor?) {
-            if (shouldDelayFragmentTransactions() || isAnimationRunning || fragments.isEmpty()) return
+            if (fragments.isEmpty()) return
+            if (shouldDelayFragmentTransactions() || isAnimationRunning) {
+                isDelayUpdateNeeded = true
+                return
+            }
             val transaction = fragmentManager.beginTransaction()
             var toResume: Fragment? = null
             fragments.forEach action@{
