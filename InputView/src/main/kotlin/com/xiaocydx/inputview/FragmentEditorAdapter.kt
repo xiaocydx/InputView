@@ -257,6 +257,7 @@ abstract class FragmentEditorAdapter<T : Editor>(
             delayUpdateObserver = null
             animationCallback = null
             isAnimationRunning = false
+            isDelayUpdateNeeded = false
         }
 
         @VisibleForTesting
