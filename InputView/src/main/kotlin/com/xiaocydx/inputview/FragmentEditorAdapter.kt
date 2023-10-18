@@ -269,6 +269,7 @@ abstract class FragmentEditorAdapter<T : Editor>(
             isDelayUpdateNeeded = false
             if (fragments.isEmpty()) return
             if (shouldDelayFragmentTransactions() || isAnimationRunning) {
+                // 不使用commitNowAllowingStateLoss()，是因为此时没必要提交事务，而不是担心状态丢失
                 isDelayUpdateNeeded = true
                 return
             }
