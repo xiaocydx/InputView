@@ -22,7 +22,7 @@ import com.xiaocydx.inputview.message.MessageEditor.IME
 import com.xiaocydx.inputview.message.MessageEditor.VOICE
 import com.xiaocydx.sample.dp
 import com.xiaocydx.sample.matchParent
-import com.xiaocydx.sample.withLayoutParams
+import com.xiaocydx.sample.layoutParams
 import com.xiaocydx.sample.wrapContent
 
 /**
@@ -54,7 +54,7 @@ class EmojiRecyclerView(context: Context) : RecyclerView(context) {
         adapter = EmojiAdapter(spanCount)
         layoutManager = GridLayoutManager(context, spanCount)
         recycledViewPool.setMaxRecycledViews(0, 16)
-        withLayoutParams(matchParent, 350.dp)
+        layoutParams(matchParent, 350.dp)
         setupGestureNavBarEdgeToEdge()
     }
 
@@ -111,7 +111,7 @@ class EmojiRecyclerView(context: Context) : RecyclerView(context) {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             val view = AppCompatImageView(parent.context).apply {
-                withLayoutParams(matchParent, wrapContent)
+                layoutParams(matchParent, wrapContent)
             }
             return object : ViewHolder(view) {}
         }

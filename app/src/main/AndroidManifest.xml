@@ -29,13 +29,13 @@
                 android:value="" />
         </activity>
         <activity
+            android:name=".OverlayInputActivity"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".MessageListActivity"
             android:screenOrientation="portrait" />
         <activity
             android:name=".fragment.FragmentEditorAdapterActivity"
-            android:screenOrientation="portrait" />
-        <activity
-            android:name=".OverlayInputActivity"
             android:screenOrientation="portrait" />
     </application>
 

@@ -10,9 +10,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven("https://jitpack.io")
     }
 }
 rootProject.name = "InputView"
-include ':app'
-include ':inputview'
-include ':inputview-reflect'
+include(":app")
+include(":inputview")
+include(":inputview-reflect")

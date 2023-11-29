@@ -26,6 +26,10 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
     }
 
+    fun startOverlayInputActivity(view: View) {
+        startActivity(Intent(this, OverlayInputActivity::class.java))
+    }
+
     fun startMessageListActivity(view: View) {
         startActivity(Intent(this, MessageListActivity::class.java))
     }
@@ -48,9 +52,5 @@ class MainActivity : AppCompatActivity() {
 
     fun startFragmentEditorAdapterActivity(view: View) {
         startActivity(Intent(this, FragmentEditorAdapterActivity::class.java))
-    }
-
-    fun startOverlayInputActivity(view: View) {
-        startActivity(Intent(this, OverlayInputActivity::class.java))
     }
 }
