@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <item name="tag_view_tree_window" type="id" />
-    <item name="tag_view_request_apply_insets" type="id" />
     <item name="tag_decor_view_ime_animation_compat" type="id" />
     <item name="tag_decor_view_insets_animation_callback" type="id" />
-    <item name="tag_dispatch_apply_insets_full_screen_enabled" type="id" />
     <item name="tag_window_insets_immutable_listener" type="id" />
-    <item name="tag_editor_container_id" type="id" />
+    <item name="tag_dispatch_apply_insets_full_screen_enabled" type="id" />
 </resources>

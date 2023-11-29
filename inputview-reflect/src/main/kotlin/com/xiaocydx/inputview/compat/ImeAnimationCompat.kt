@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
+
 package com.xiaocydx.inputview.compat
 
 import android.annotation.SuppressLint
@@ -25,7 +27,26 @@ import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.RequiresApi
 import androidx.core.view.*
 import androidx.core.view.WindowInsetsCompat.Type.ime
-import com.xiaocydx.inputview.R
+
+/**
+ * 对`window.decorView`设置[WindowInsetsAnimationCompat.Callback]，
+ * 该函数能避免跟[modifyImeAnimation]产生冲突，实际效果等同于：
+ * ```
+ * ViewCompat.setWindowInsetsAnimationCallback(window.decorView, callback)
+ * ```
+ */
+fun Window.setWindowInsetsAnimationCallbackCompat(callback: WindowInsetsAnimationCompat.Callback?) {
+    if (!supportModifyImeAnimation) {
+        return decorView.setWindowInsetsAnimationCallbackCompat(callback)
+    }
+    val proxyCallback = if (callback == null) null else {
+        InsetsAnimationReflection.insetsAnimationCompat?.createProxyCallback(callback)
+    }
+    insetsAnimationCallback = proxyCallback
+    imeAnimationCompat?.reattach() ?: run {
+        decorView.setWindowInsetsAnimationCallback(insetsAnimationCallback)
+    }
+}
 
 /**
  * 修改Android 11及以上IME动画的`durationMillis`和`interpolator`
@@ -73,26 +94,6 @@ internal fun Window.restoreImeAnimation() {
     if (!supportModifyImeAnimation) return
     imeAnimationCompat?.detach()
     imeAnimationCompat = null
-}
-
-/**
- * 对`window.decorView`设置[WindowInsetsAnimationCompat.Callback]，
- * 该函数能避免跟[modifyImeAnimation]产生冲突，实际效果等同于：
- * ```
- * ViewCompat.setWindowInsetsAnimationCallback(window.decorView, callback)
- * ```
- */
-internal fun Window.setWindowInsetsAnimationCallbackCompat(callback: WindowInsetsAnimationCompat.Callback?) {
-    if (!supportModifyImeAnimation) {
-        return decorView.setWindowInsetsAnimationCallbackCompat(callback)
-    }
-    val proxyCallback = if (callback == null) null else {
-        InsetsAnimationReflection.insetsAnimationCompat?.createProxyCallback(callback)
-    }
-    insetsAnimationCallback = proxyCallback
-    imeAnimationCompat?.reattach() ?: run {
-        decorView.setWindowInsetsAnimationCallback(insetsAnimationCallback)
-    }
 }
 
 @ChecksSdkIntAtLeast(api = 30)

@@ -15,6 +15,7 @@
  */
 
 @file:SuppressLint("ObsoleteSdkInt")
+@file:Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
 
 package com.xiaocydx.inputview.compat
 
@@ -31,7 +32,6 @@ import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
-import com.xiaocydx.inputview.R
 import com.xiaocydx.inputview.compat.InsetsCompatReflection.getLastInsetsFromProxyListener
 import com.xiaocydx.inputview.compat.InsetsCompatReflection.setStableInsets
 import com.xiaocydx.inputview.compat.InsetsCompatReflection.setupImmutableListener

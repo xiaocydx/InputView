@@ -43,8 +43,7 @@ import androidx.core.view.marginBottom
 import androidx.core.view.marginLeft
 import androidx.core.view.marginRight
 import androidx.core.view.marginTop
-import com.xiaocydx.inputview.compat.setOnApplyWindowInsetsListenerImmutable
-import com.xiaocydx.inputview.compat.setWindowInsetsAnimationCallbackImmutable
+import com.xiaocydx.inputview.compat.ReflectCompat
 import com.xiaocydx.inputview.compat.toCompat
 
 /**
@@ -448,7 +447,7 @@ class InputView @JvmOverloads constructor(
         }
 
         override fun setOnApplyWindowInsetsListener(listener: OnApplyWindowInsetsListenerCompat?) {
-            editorView.setOnApplyWindowInsetsListenerImmutable(listener)
+            ReflectCompat { editorView.setOnApplyWindowInsetsListenerImmutable(listener) }
         }
 
         override fun setWindowInsetsAnimationCallback(
@@ -467,7 +466,7 @@ class InputView @JvmOverloads constructor(
                 } else {
                     window.modifyImeAnimation(durationMillis, interpolator)
                 }
-                editorView.setWindowInsetsAnimationCallbackImmutable(callback)
+                ReflectCompat { editorView.setWindowInsetsAnimationCallbackImmutable(callback) }
             }
         }
     }

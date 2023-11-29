@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
+@file:Suppress("PackageDirectoryMismatch")
+
 package com.xiaocydx.inputview.compat
 
 import android.view.View
 import android.view.Window
 import android.view.WindowInsets
+import android.view.animation.Interpolator
 import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -26,6 +29,7 @@ import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsCompat.Type.InsetsType
 import androidx.core.view.WindowInsetsControllerCompat
+import com.xiaocydx.inputview.OnApplyWindowInsetsListenerCompat
 
 internal fun Window.setDecorFitsSystemWindowsCompat(decorFitsSystemWindows: Boolean) {
     WindowCompat.setDecorFitsSystemWindows(this, decorFitsSystemWindows)
@@ -60,3 +64,43 @@ internal fun WindowInsets.toCompat(view: View) =
 
 internal fun WindowInsetsAnimationCompat.contains(@InsetsType typeMask: Int) =
         this.typeMask and typeMask == typeMask
+
+internal val reflectCompat: ReflectCompat = try {
+    val className = "com.xiaocydx.inputview.compat.ReflectCompatImpl"
+    val clazz = Class.forName(className, false, ReflectCompat::class.java.classLoader)
+    clazz.asSubclass(ReflectCompat::class.java).newInstance()
+} catch (e: Throwable) {
+    NotReflectCompat
+}
+
+@Suppress("FunctionName")
+internal inline fun <R> ReflectCompat(block: ReflectCompat.() -> R): R = with(reflectCompat, block)
+
+internal interface ReflectCompat {
+    val Window.isFullscreenCompatEnabled: Boolean
+
+    fun Window.modifyImeAnimation(durationMillis: Long, interpolator: Interpolator)
+
+    fun Window.restoreImeAnimation()
+
+    fun View.setOnApplyWindowInsetsListenerImmutable(listener: OnApplyWindowInsetsListenerCompat?)
+
+    fun View.setWindowInsetsAnimationCallbackImmutable(callback: WindowInsetsAnimationCompat.Callback?)
+}
+
+internal object NotReflectCompat : ReflectCompat {
+    override val Window.isFullscreenCompatEnabled: Boolean
+        get() = false
+
+    override fun Window.modifyImeAnimation(durationMillis: Long, interpolator: Interpolator) = Unit
+
+    override fun Window.restoreImeAnimation() = Unit
+
+    override fun View.setOnApplyWindowInsetsListenerImmutable(listener: OnApplyWindowInsetsListenerCompat?) {
+        setOnApplyWindowInsetsListenerCompat(listener)
+    }
+
+    override fun View.setWindowInsetsAnimationCallbackImmutable(callback: WindowInsetsAnimationCompat.Callback?) {
+        setWindowInsetsAnimationCallbackCompat(callback)
+    }
+}

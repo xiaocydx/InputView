@@ -77,7 +77,7 @@ fun InputView.Companion.initCompat(
  * 并申请下一帧布局，下一帧由于`mPendingContentInsets`跟`mAttachInfo.mContentInsets`的数值相等，
  * 因此不调用`ViewRootImpl.dispatchApplyInsets()`。
  */
-private fun Window.checkDispatchApplyInsetsCompatibility() {
+private fun Window.checkDispatchApplyInsetsCompatibility() = ReflectCompat {
     check(!isFloating) {
         "InputView需要主题的windowIsFloating = false，" +
                 "否则会导致视图树没有WindowInsets分发"
@@ -191,10 +191,10 @@ internal class ViewTreeWindow(
             window.createWindowInsetsControllerCompat(editText)
 
     fun modifyImeAnimation(durationMillis: Long, interpolator: Interpolator) {
-        window.modifyImeAnimation(durationMillis, interpolator)
+        ReflectCompat { window.modifyImeAnimation(durationMillis, interpolator) }
     }
 
     fun restoreImeAnimation() {
-        window.restoreImeAnimation()
+        ReflectCompat { window.restoreImeAnimation() }
     }
 }

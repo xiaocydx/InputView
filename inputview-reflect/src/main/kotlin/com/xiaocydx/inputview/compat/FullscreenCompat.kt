@@ -29,7 +29,6 @@ import android.widget.Scroller
 import androidx.annotation.RequiresApi
 import androidx.core.view.ViewCompat
 import com.xiaocydx.inputview.EditorAnimator
-import com.xiaocydx.inputview.R
 import com.xiaocydx.inputview.compat.FullscreenCompat.Companion.MSG_RESIZED
 import com.xiaocydx.inputview.compat.FullscreenCompat.Companion.MSG_RESIZED_REPORT
 

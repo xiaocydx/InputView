@@ -1,7 +1,6 @@
 package com.xiaocydx.inputview.message
 
 import android.annotation.SuppressLint
-import android.view.MotionEvent
 import android.view.MotionEvent.ACTION_DOWN
 import android.view.Window
 import android.widget.ImageView
@@ -12,11 +11,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.EditorMode
-import com.xiaocydx.inputview.message.MessageEditor.*
 import com.xiaocydx.inputview.R
 import com.xiaocydx.inputview.addAnimationCallback
 import com.xiaocydx.inputview.current
 import com.xiaocydx.inputview.databinding.MessageListBinding
+import com.xiaocydx.inputview.message.MessageEditor.*
 import com.xiaocydx.inputview.notifyHideCurrent
 import com.xiaocydx.inputview.notifyToggle
 import com.xiaocydx.sample.addOnItemTouchListener
