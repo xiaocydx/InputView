@@ -15,7 +15,7 @@ import com.xiaocydx.inputview.sample.databinding.ActivityImeAnimatorBinding
 /**
  * `InputView.animator()`的示例代码
  *
- * `InputView.animator()`复用[InputView]的动画实现，不需要跟动画无关的功能，
+ * `InputView.animator()`复用[InputView]的动画实现，不涉及跟动画无关的功能，
  * `InputView.init()`和[EdgeToEdgeHelper]实现EdgeToEdge的辅助函数仍然适用。
  *
  * @author xcc

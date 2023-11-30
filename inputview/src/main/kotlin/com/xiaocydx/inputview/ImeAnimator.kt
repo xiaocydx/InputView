@@ -51,7 +51,7 @@ private class ImeAnimator(
     durationMillis: Long,
     interpolator: Interpolator
 ) : EditorAnimator(durationMillis, interpolator) {
-    private val host = EditHostImpl()
+    private val host = EditorHostImpl()
 
     init {
         setAnimationCallback(object : AnimationCallback {
@@ -97,7 +97,7 @@ private class ImeAnimator(
         return holder
     }
 
-    private inner class EditHostImpl : EditorHost {
+    private inner class EditorHostImpl : EditorHost {
         private var window: ViewTreeWindow? = null
         override val WindowInsetsCompat.imeHeight: Int
             get() = window?.run { imeHeight } ?: NO_VALUE
