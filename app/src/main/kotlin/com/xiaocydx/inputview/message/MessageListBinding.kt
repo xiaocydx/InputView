@@ -15,6 +15,7 @@ import com.xiaocydx.inputview.R
 import com.xiaocydx.inputview.addAnimationCallback
 import com.xiaocydx.inputview.current
 import com.xiaocydx.inputview.databinding.MessageListBinding
+import com.xiaocydx.inputview.linearEditorOffset
 import com.xiaocydx.inputview.message.MessageEditor.*
 import com.xiaocydx.inputview.notifyHideCurrent
 import com.xiaocydx.inputview.notifyToggle
@@ -43,6 +44,8 @@ fun MessageListBinding.init(
         // editorAnimator = FadeEditorAnimator(durationMillis = 500)
         // 不运行Editor的过渡动画，仅记录动画状态，分发动画回调
         // editorAnimator = NopEditorAnimator()
+        // 两个非IME的Editor切换，调整为线性更新编辑区的偏移值
+        editorAnimator.linearEditorOffset()
     }
 
     // 2. 初始化RecyclerView的属性

@@ -47,6 +47,40 @@ class ImeAdapter : EditorAdapter<Ime>() {
 }
 
 /**
+ * 两个非IME的[Editor]切换，调整为线性更新编辑区的偏移值
+ */
+fun EditorAnimator.linearEditorOffset() {
+    if (!canRunAnimation) return
+    removeAnimationCallback(LinearEditorOffsetCallback)
+    addAnimationCallback(LinearEditorOffsetCallback)
+}
+
+private object LinearEditorOffsetCallback : AnimationCallback {
+    override fun onAnimationUpdate(state: AnimationState): Unit = with(state) {
+        if (!isIme(previous) && !isIme(current) && startView != null && endView != null) {
+            updateEditorOffset((startOffset + (endOffset - startOffset) * animatedFraction).toInt())
+        }
+    }
+}
+
+/**
+ * [EditorAnimator.addAnimationCallback]的简化函数
+ *
+ * @return 返回添加的[AnimationCallback]，可用于[EditorAnimator.removeAnimationCallback]
+ */
+inline fun EditorAnimator.addAnimationCallback(
+    crossinline onPrepare: (previous: Editor?, current: Editor?) -> Unit = { _, _ -> },
+    crossinline onStart: (state: AnimationState) -> Unit = {},
+    crossinline onUpdate: (state: AnimationState) -> Unit = {},
+    crossinline onEnd: (state: AnimationState) -> Unit = {}
+) = object : AnimationCallback {
+    override fun onAnimationPrepare(previous: Editor?, current: Editor?) = onPrepare(previous, current)
+    override fun onAnimationStart(state: AnimationState) = onStart(state)
+    override fun onAnimationUpdate(state: AnimationState) = onUpdate(state)
+    override fun onAnimationEnd(state: AnimationState) = onEnd(state)
+}.also(::addAnimationCallback)
+
+/**
  * [Editor]的淡入淡出动画
  */
 class FadeEditorAnimator(
@@ -99,7 +133,7 @@ class FadeEditorAnimator(
 ) : EditorAnimator(durationMillis, interpolator) {
 
     init {
-        addAnimationCallback(EditorOffsetAndAlphaUpdater())
+        setAnimationCallback(EditorOffsetAndAlphaUpdater())
     }
 
     private inner class EditorOffsetAndAlphaUpdater : AnimationCallback {
@@ -110,20 +144,12 @@ class FadeEditorAnimator(
         }
 
         override fun onAnimationUpdate(state: AnimationState): Unit = with(state) {
+            updateEditorOffset(currentOffset)
+            if (startView == null && endView == null) return
+
             var start = startOffset
             var end = endOffset
             var offset = (start + (end - start) * animatedFraction).toInt()
-
-            if (!isIme(previous) && !isIme(current)
-                    && startView != null && endView != null) {
-                // 两个非IME的Editor切换，调整为匀速动画
-                updateEditorOffset(currentOffset = offset)
-            } else {
-                updateEditorOffset(currentOffset)
-            }
-
-            if (startView == null && endView == null) return
-
             if (start > end) {
                 // 反转start到end的过程，只按start < end计算alpha
                 val diff = start - offset
@@ -170,29 +196,12 @@ class NopEditorAnimator : EditorAnimator() {
     override val canRunAnimation: Boolean = false
 
     init {
-        addAnimationCallback(EditorOffsetUpdater())
+        setAnimationCallback(EditorOffsetUpdater())
     }
 
-    private inner class EditorOffsetUpdater : AnimationCallback {
+    private class EditorOffsetUpdater : AnimationCallback {
         override fun onAnimationUpdate(state: AnimationState) {
-            updateEditorOffset(state.currentOffset)
+            state.apply { updateEditorOffset(currentOffset) }
         }
     }
 }
-
-/**
- * [EditorAnimator.addAnimationCallback]的简化函数
- *
- * @return 返回添加的[AnimationCallback]，可用于[EditorAnimator.removeAnimationCallback]
- */
-inline fun EditorAnimator.addAnimationCallback(
-    crossinline onPrepare: (previous: Editor?, current: Editor?) -> Unit = { _, _ -> },
-    crossinline onStart: (state: AnimationState) -> Unit = {},
-    crossinline onUpdate: (state: AnimationState) -> Unit = {},
-    crossinline onEnd: (state: AnimationState) -> Unit = {}
-) = object : AnimationCallback {
-    override fun onAnimationPrepare(previous: Editor?, current: Editor?) = onPrepare(previous, current)
-    override fun onAnimationStart(state: AnimationState) = onStart(state)
-    override fun onAnimationUpdate(state: AnimationState) = onUpdate(state)
-    override fun onAnimationEnd(state: AnimationState) = onEnd(state)
-}.also(::addAnimationCallback)

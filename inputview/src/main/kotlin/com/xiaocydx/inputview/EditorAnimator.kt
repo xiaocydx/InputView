@@ -77,6 +77,7 @@ abstract class EditorAnimator(
     private var lastInsets: WindowInsetsCompat? = null
     private var animationRecord: AnimationRecord? = null
     private val animationDispatcher = AnimationDispatcher()
+    private var callback: AnimationCallback? = null
     private val callbacks = ArrayList<AnimationCallback>(2)
     internal open val canRunAnimation: Boolean = true
     internal val isActive: Boolean
@@ -105,13 +106,10 @@ abstract class EditorAnimator(
     }
 
     /**
-     * 更新编辑区的偏移值
-     *
-     * **注意**：该函数只能在[AnimationCallback]的函数中调用，并确保[currentOffset]
-     * 在[AnimationState.startOffset]到[AnimationState.endOffset]的范围内。
+     * 设置最先分发的[callback]，该函数仅由实现类调用
      */
-    protected fun updateEditorOffset(@IntRange(from = 0) currentOffset: Int) {
-        host?.updateEditorOffset(currentOffset)
+    protected fun setAnimationCallback(callback: AnimationCallback) {
+        this.callback = callback
     }
 
     internal fun forEachCallback(action: (AnimationCallback) -> Unit) {
@@ -184,6 +182,7 @@ abstract class EditorAnimator(
     }
 
     private inline fun dispatchAnimationCallback(action: AnimationCallback.() -> Unit) {
+        callback?.action()
         for (index in callbacks.indices.reversed()) callbacks[index].apply(action)
     }
 
@@ -365,6 +364,14 @@ abstract class EditorAnimator(
             return editor != null && host != null && host!!.ime === editor
         }
 
+        override fun updateEditorOffset(offset: Int) {
+            val host = host ?: return
+            checkAnimationOffset()
+            val min = min(startOffset, endOffset)
+            val max = max(startOffset, endOffset)
+            host.updateEditorOffset(offset.coerceAtLeast(min).coerceAtMost(max))
+        }
+
         fun checkAnimationOffset(): Boolean {
             return startOffset != NO_VALUE
                     && endOffset != NO_VALUE
@@ -539,6 +546,14 @@ interface AnimationState {
      * [editor]是否为IME
      */
     fun isIme(editor: Editor?): Boolean
+
+    /**
+     * 更新编辑区的偏移值
+     *
+     * @param offset 取值范围为[startOffset]到[endOffset]，
+     * [EditorAnimator]的默认实现按[currentOffset]进行更新。
+     */
+    fun updateEditorOffset(offset: Int)
 }
 
 /**
