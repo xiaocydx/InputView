@@ -30,6 +30,10 @@ class MainActivity : AppCompatActivity() {
         startActivity(Intent(this, OverlayInputActivity::class.java))
     }
 
+    fun startImeAnimatorActivity(view: View) {
+        startActivity(Intent(this, ImeAnimatorActivity::class.java))
+    }
+
     fun startMessageListActivity(view: View) {
         startActivity(Intent(this, MessageListActivity::class.java))
     }

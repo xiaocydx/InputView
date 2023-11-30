@@ -32,6 +32,9 @@
             android:name=".OverlayInputActivity"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".ImeAnimatorActivity"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".MessageListActivity"
             android:screenOrientation="portrait" />
         <activity

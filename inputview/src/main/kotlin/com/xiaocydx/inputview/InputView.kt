@@ -96,6 +96,7 @@ class InputView @JvmOverloads constructor(
         set(value) {
             val previous = editTextHolder
             val current = value?.let { EditTextHolder(it, window) }
+            current?.checkEditTextParent()
             host.onEditTextHolderChanged(previous, current)
             editTextHolder = current
         }
@@ -196,9 +197,9 @@ class InputView @JvmOverloads constructor(
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-        editTextHolder?.beforeDispatchTouchEvent(ev)
+        editTextHolder?.beforeTouchEvent(ev)
         val consumed = super.dispatchTouchEvent(ev)
-        editTextHolder?.afterDispatchTouchEvent(ev)
+        editTextHolder?.afterTouchEvent(ev)
         return consumed
     }
 

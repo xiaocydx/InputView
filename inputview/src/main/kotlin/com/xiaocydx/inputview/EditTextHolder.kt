@@ -53,11 +53,10 @@ internal class EditTextHolder(editText: EditText, window: ViewTreeWindow?) {
         get() = editText
 
     init {
-        checkEditTextParent()
         controller = window?.createWindowInsetsController(editText)
     }
 
-    private fun checkEditTextParent() {
+    fun checkEditTextParent() {
         val editText = editText ?: return
         var parent: ViewParent? = editText.parent
         while (parent != null && parent !is InputView) {
@@ -104,9 +103,9 @@ internal class EditTextHolder(editText: EditText, window: ViewTreeWindow?) {
     }
 
     /**
-     * 重置[afterDispatchTouchEvent]的处理
+     * 重置[afterTouchEvent]的处理
      */
-    fun beforeDispatchTouchEvent(ev: MotionEvent) {
+    fun beforeTouchEvent(ev: MotionEvent) {
         if (ev.action == MotionEvent.ACTION_DOWN) {
             // 按下时，将EditText重置为获得焦点显示IME
             editText?.showSoftInputOnFocus = true
@@ -114,9 +113,9 @@ internal class EditTextHolder(editText: EditText, window: ViewTreeWindow?) {
     }
 
     /**
-     * 点击[EditText]显示IME，需要隐藏水滴状指示器，避免动画运行时不断跨进程通信，进而造成卡顿。
+     * 点击[EditText]显示IME，需要隐藏水滴状指示器，避免动画运行时不断跨进程通信，进而造成卡顿
      */
-    fun afterDispatchTouchEvent(ev: MotionEvent) {
+    fun afterTouchEvent(ev: MotionEvent) {
         val editText = editText ?: return
         val ime = host?.ime ?: return
         val current = host?.current

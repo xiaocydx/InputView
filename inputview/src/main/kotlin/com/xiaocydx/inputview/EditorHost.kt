@@ -67,7 +67,7 @@ internal interface EditorHost {
     /**
      * [Editor]的视图容器
      */
-    val container: ViewGroup
+    val container: ViewGroup?
 
     /**
      * 更改[Editor]后，之前[Editor]的视图

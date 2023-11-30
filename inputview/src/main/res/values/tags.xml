@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <item name="tag_view_tree_window" type="id" />
+    <item name="tag_view_ime_animator" type="id" />
     <item name="tag_view_request_apply_insets" type="id" />
     <item name="tag_editor_container_id" type="id" />
 </resources>
