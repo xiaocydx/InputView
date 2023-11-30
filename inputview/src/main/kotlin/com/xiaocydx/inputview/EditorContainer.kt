@@ -19,6 +19,7 @@ package com.xiaocydx.inputview
 import android.content.Context
 import android.view.View
 import android.widget.FrameLayout
+import androidx.annotation.VisibleForTesting
 
 /**
  * [InputView]的编辑区，负责管理[Editor]
@@ -29,6 +30,7 @@ import android.widget.FrameLayout
 internal class EditorContainer(context: Context) : FrameLayout(context) {
     private val views = mutableMapOf<Editor, View?>()
     private var editText: EditTextHolder? = null
+    private var isCheckControlImeEnabled = true
     private var removePreviousImmediately = true
     private var pendingChange: PendingChange? = null
     var ime: Editor? = null; private set
@@ -60,6 +62,11 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
 
     fun setEditTextHolder(editText: EditTextHolder?) {
         this.editText = editText
+    }
+
+    @VisibleForTesting
+    fun setCheckControlImeEnabled(isEnabled: Boolean) {
+        isCheckControlImeEnabled = isEnabled
     }
 
     fun setRemovePreviousImmediately(immediately: Boolean) {
@@ -172,7 +179,11 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
     }
 
     private fun handleImeShown(shown: Boolean, controlIme: Boolean) {
-        val editText = editText ?: return
+        val editText = editText
+        require(!isCheckControlImeEnabled || !controlIme || editText != null) {
+            "未对InputView设置EditText，无法主动${if (shown) "显示" else "隐藏"}IME"
+        }
+        editText ?: return
         if (shown) {
             editText.requestFocus()
             if (controlIme) editText.showIme()
