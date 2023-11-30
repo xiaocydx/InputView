@@ -95,7 +95,9 @@ abstract class EditorAnimator(
      * 在[AnimationCallback]的各个函数可以调用[removeAnimationCallback]。
      */
     fun addAnimationCallback(callback: AnimationCallback) {
-        if (!callbacks.contains(callback)) callbacks.add(callback)
+        if (callbacks.contains(callback)) return
+        callbacks.add(callback)
+        dispatchAnimationRunning(callback)
     }
 
     /**
@@ -110,6 +112,7 @@ abstract class EditorAnimator(
      */
     protected fun setAnimationCallback(callback: AnimationCallback) {
         this.callback = callback
+        dispatchAnimationRunning(callback)
     }
 
     internal fun forEachCallback(action: (AnimationCallback) -> Unit) {
@@ -179,6 +182,15 @@ abstract class EditorAnimator(
         record.removeStartViewIfNecessary()
         record.removePreDrawRunSimpleAnimation()
         animationRecord = null
+    }
+
+    private fun dispatchAnimationRunning(callback: AnimationCallback) {
+        val record = animationRecord ?: return
+        if (record.isRunning && record.checkAnimationOffset()) {
+            callback.onAnimationPrepare(record.previous, record.current)
+            callback.onAnimationStart(record)
+            callback.onAnimationUpdate(record)
+        }
     }
 
     private inline fun dispatchAnimationCallback(action: AnimationCallback.() -> Unit) {
