@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.message
+package com.xiaocydx.inputview.sample.message
 
 import android.annotation.SuppressLint
 import android.view.MotionEvent.ACTION_DOWN
@@ -11,16 +11,16 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.EditorMode
-import com.xiaocydx.inputview.R
 import com.xiaocydx.inputview.addAnimationCallback
 import com.xiaocydx.inputview.current
-import com.xiaocydx.inputview.databinding.MessageListBinding
 import com.xiaocydx.inputview.linearEditorOffset
-import com.xiaocydx.inputview.message.MessageEditor.*
 import com.xiaocydx.inputview.notifyHideCurrent
 import com.xiaocydx.inputview.notifyToggle
-import com.xiaocydx.sample.addOnItemTouchListener
-import com.xiaocydx.sample.onClick
+import com.xiaocydx.inputview.sample.R
+import com.xiaocydx.inputview.sample.addOnItemTouchListener
+import com.xiaocydx.inputview.sample.databinding.MessageListBinding
+import com.xiaocydx.inputview.sample.message.MessageEditor.*
+import com.xiaocydx.inputview.sample.onClick
 
 /**
  * 内容区域包含[RecyclerView]，建议使用[EditorMode.ADJUST_PAN]，显示编辑器区域时平移内容区域，

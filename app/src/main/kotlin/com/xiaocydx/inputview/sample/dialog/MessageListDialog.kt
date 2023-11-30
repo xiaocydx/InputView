@@ -1,6 +1,6 @@
 @file:Suppress("ConstPropertyName")
 
-package com.xiaocydx.inputview.dialog
+package com.xiaocydx.inputview.sample.dialog
 
 import android.app.Dialog
 import android.content.Context
@@ -18,10 +18,10 @@ import androidx.core.view.updatePadding
 import androidx.fragment.app.DialogFragment
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.xiaocydx.inputview.InputView
-import com.xiaocydx.inputview.R
-import com.xiaocydx.inputview.databinding.MessageListBinding
 import com.xiaocydx.inputview.init
-import com.xiaocydx.inputview.message.init
+import com.xiaocydx.inputview.sample.R
+import com.xiaocydx.inputview.sample.databinding.MessageListBinding
+import com.xiaocydx.inputview.sample.message.init
 
 private const val statusBarEdgeToEdge = true
 private const val gestureNavBarEdgeToEdge = true

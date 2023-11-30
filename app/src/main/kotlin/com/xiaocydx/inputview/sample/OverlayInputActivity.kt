@@ -1,10 +1,13 @@
-package com.xiaocydx.inputview
+package com.xiaocydx.inputview.sample
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isInvisible
-import com.xiaocydx.inputview.databinding.ActivityOverlayInputBinding
-import com.xiaocydx.sample.onClick
+import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.addAnimationCallback
+import com.xiaocydx.inputview.init
+import com.xiaocydx.inputview.notifyHideIme
+import com.xiaocydx.inputview.sample.databinding.ActivityOverlayInputBinding
 
 /**
  * 覆盖输入的示例代码

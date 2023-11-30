@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview
+package com.xiaocydx.inputview.sample
 
 import android.content.Intent
 import android.os.Bundle
@@ -6,11 +6,11 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import com.xiaocydx.inputview.dialog.MessageListBottomSheetDialog
-import com.xiaocydx.inputview.dialog.MessageListBottomSheetDialogFragment
-import com.xiaocydx.inputview.dialog.MessageListDialog
-import com.xiaocydx.inputview.dialog.MessageListDialogFragment
-import com.xiaocydx.inputview.fragment.FragmentEditorAdapterActivity
+import com.xiaocydx.inputview.sample.dialog.MessageListBottomSheetDialog
+import com.xiaocydx.inputview.sample.dialog.MessageListBottomSheetDialogFragment
+import com.xiaocydx.inputview.sample.dialog.MessageListDialog
+import com.xiaocydx.inputview.sample.dialog.MessageListDialogFragment
+import com.xiaocydx.inputview.sample.fragment.FragmentEditorAdapterActivity
 
 /**
  * **注意**：需要确保`androidx.core`的版本足够高，因为高版本修复了[WindowInsetsCompat]一些常见的问题，

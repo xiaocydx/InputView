@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.xiaocydx.inputview"
+    namespace = "com.xiaocydx.inputview.sample"
     compileSdk = 33
 
     defaultConfig {
-        applicationId = "com.xiaocydx.inputview"
+        applicationId = "com.xiaocydx.inputview.sample"
         minSdk = 21
         targetSdk = 33
         versionCode = 1

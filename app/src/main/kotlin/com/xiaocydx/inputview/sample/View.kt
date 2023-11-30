@@ -1,6 +1,4 @@
-@file:Suppress("PackageDirectoryMismatch")
-
-package com.xiaocydx.sample
+package com.xiaocydx.inputview.sample
 
 import android.annotation.SuppressLint
 import android.content.res.Resources

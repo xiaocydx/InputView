@@ -1,9 +1,11 @@
-package com.xiaocydx.inputview
+package com.xiaocydx.inputview.sample
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.xiaocydx.inputview.databinding.MessageListBinding
-import com.xiaocydx.inputview.message.init
+import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.init
+import com.xiaocydx.inputview.sample.databinding.MessageListBinding
+import com.xiaocydx.inputview.sample.message.init
 
 /**
  * 消息列表的示例代码

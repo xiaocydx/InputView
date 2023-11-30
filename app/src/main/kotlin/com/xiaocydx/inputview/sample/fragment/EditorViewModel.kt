@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.fragment
+package com.xiaocydx.inputview.sample.fragment
 
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.ViewModel

@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.message
+package com.xiaocydx.inputview.sample.message
 
 import android.content.Context
 import android.view.LayoutInflater
@@ -15,15 +15,15 @@ import androidx.recyclerview.widget.RecyclerView
 import com.xiaocydx.inputview.EdgeToEdgeHelper
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.EditorAdapter
-import com.xiaocydx.inputview.R
-import com.xiaocydx.inputview.message.MessageEditor.EMOJI
-import com.xiaocydx.inputview.message.MessageEditor.EXTRA
-import com.xiaocydx.inputview.message.MessageEditor.IME
-import com.xiaocydx.inputview.message.MessageEditor.VOICE
-import com.xiaocydx.sample.dp
-import com.xiaocydx.sample.matchParent
-import com.xiaocydx.sample.layoutParams
-import com.xiaocydx.sample.wrapContent
+import com.xiaocydx.inputview.sample.R
+import com.xiaocydx.inputview.sample.dp
+import com.xiaocydx.inputview.sample.layoutParams
+import com.xiaocydx.inputview.sample.matchParent
+import com.xiaocydx.inputview.sample.message.MessageEditor.EMOJI
+import com.xiaocydx.inputview.sample.message.MessageEditor.EXTRA
+import com.xiaocydx.inputview.sample.message.MessageEditor.IME
+import com.xiaocydx.inputview.sample.message.MessageEditor.VOICE
+import com.xiaocydx.inputview.sample.wrapContent
 
 /**
  * @author xcc

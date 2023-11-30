@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.fragment
+package com.xiaocydx.inputview.sample.fragment
 
 import android.os.Bundle
 import android.util.Log
@@ -8,7 +8,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
-import com.xiaocydx.inputview.R
+import com.xiaocydx.inputview.sample.R
 
 /**
  * @author xcc

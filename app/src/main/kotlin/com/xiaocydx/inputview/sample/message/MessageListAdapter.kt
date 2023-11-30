@@ -1,11 +1,11 @@
-package com.xiaocydx.inputview.message
+package com.xiaocydx.inputview.sample.message
 
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.xiaocydx.inputview.databinding.ItemMessageBinding
-import com.xiaocydx.sample.onClick
+import com.xiaocydx.inputview.sample.databinding.ItemMessageBinding
+import com.xiaocydx.inputview.sample.onClick
 
 /**
  * @author xcc
