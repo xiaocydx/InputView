@@ -1,18 +1,40 @@
 InputView是一个通用的输入控件
 * 支持Activity和Dialog。
-* 在调整IME高度后运行过渡动画。
-* 可自定义编辑器的切换过渡动画。
+* 调整IME高度后运行动画。
+* 可自定义编辑器的切换动画。
 * 可自定义编辑器的View或Fragment。
 * 实现Edge-to-Edge并提供相关的辅助函数。
+* 解决EditText水滴状指示器导致动画卡顿的问题。  
 * 修改Android 11及以上IME动画的时长和插值器。
-* 解决EditText的水滴状指示器导致动画卡顿的问题。  
 * 提供Android 11以下Window属性包含FLAG_FULLSCREEN的兼容方案。
+> IME的全称是Input Method Editors（输入法编辑器），因此将IME和底部视图统一称为Editor（编辑器）。
+<br/> 
+
+[InputView的使用说明](https://www.yuque.com/u12192380/khwdgb/pi0b7rdhvr16z7gm)
+
+1. 在根目录的build.gradle添加
+```
+allprojects {
+    repositories {
+        // ...
+        maven { url 'https://jitpack.io' }
+    }
+}
+```
+
+2. 在module的build.gradle添加
+```
+dependencies {
+    // 修改IME动画的属性、调用FLAG_FULLSCREEN的兼容方案，需要依赖inputview-reflect
+    def version = "1.0.0"
+    implementation "com.github.xiaocydx.InputView:inputview:${version}"
+    implementation "com.github.xiaocydx.InputView:inputview-reflect:${version}"
+}
+```
 
 &nbsp;
 ### 示例代码在Android 12上的效果
 #### 切换编辑器和调整IME高度
-IME的全称是Input Method Editors（输入法编辑器），因此将底部视图统一称为Editor（编辑器）。
-
 https://user-images.githubusercontent.com/43429149/213995075-bfdf23a0-e758-4230-bca4-97701cb9a234.mp4
 
 &nbsp;
