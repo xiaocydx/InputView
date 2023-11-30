@@ -20,7 +20,7 @@ import android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN
 import android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
 
 /**
- * [InputView]编辑区的[Editor]模式
+ * 显示[Editor]的布局模式
  *
  * @author xcc
  * @date 2023/1/10
@@ -28,12 +28,12 @@ import android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
 enum class EditorMode {
 
     /**
-     * 显示[Editor]时平移`contentView`，类似[SOFT_INPUT_ADJUST_PAN]
+     * 类似[SOFT_INPUT_ADJUST_PAN]的作用，显示[Editor]平移`contentView`
      */
     ADJUST_PAN,
 
     /**
-     * 显示[Editor]时修改`contentView`的尺寸，类似[SOFT_INPUT_ADJUST_RESIZE]
+     * 类似[SOFT_INPUT_ADJUST_RESIZE]的作用，显示[Editor]修改`contentView`的尺寸
      */
     ADJUST_RESIZE
 }

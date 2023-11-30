@@ -31,8 +31,8 @@ import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 
 /**
- * [InputView]编辑区的Fragment适配器，负责创建和通知显示[Editor]的Fragment，
- * [current]的Fragment，生命周期状态是[RESUMED]，其它的Fragment是[STARTED]。
+ * [Editor]的Fragment适配器，负责创建和通知显示[Editor]的Fragment，
+ * [current]的Fragment，生命周期状态是[RESUMED]，其它Fragment是[STARTED]。
  *
  * ```
  * enum class MessageEditor : Editor {

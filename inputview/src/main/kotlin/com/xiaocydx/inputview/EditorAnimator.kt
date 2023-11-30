@@ -36,7 +36,7 @@ import java.lang.Integer.max
 import kotlin.math.min
 
 /**
- * [InputView]编辑区的[Editor]过渡动画
+ * [Editor]的动画实现类
  *
  * @author xcc
  * @date 2023/1/8
@@ -252,7 +252,7 @@ abstract class EditorAnimator(
             resetAnimationRecord(record)
             record.setStartViewAndEndView()
             record.setAnimationStartOffset()
-            // Android 9.0以下的WindowInsets可变（InputView已兼容），
+            // Android 9.0以下的WindowInsets可变（Reflect模块已兼容），
             // Android 9.0、Android 10的window包含FLAG_FULLSCREEN，
             // 可能导致insetsAnimation的回调不会执行。
             record.setPreDrawRunSimpleAnimation action@{

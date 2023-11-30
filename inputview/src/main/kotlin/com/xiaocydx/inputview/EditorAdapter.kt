@@ -22,7 +22,7 @@ import androidx.annotation.CallSuper
 import androidx.annotation.VisibleForTesting
 
 /**
- * [InputView]编辑区的[Editor]适配器，负责创建和通知显示[Editor]的视图
+ * [Editor]的适配器，负责创建和通知显示[Editor]的视图
  *
  * ```
  * enum class MessageEditor : Editor {

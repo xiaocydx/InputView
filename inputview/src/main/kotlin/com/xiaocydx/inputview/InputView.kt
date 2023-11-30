@@ -55,9 +55,9 @@ import com.xiaocydx.inputview.compat.toCompat
  * 4. [editorAdapter]支持[Editor]的视图创建和显示。
  * 5. [editorAnimator]支持[Editor]的切换过渡动画。
  *
- * [contentView]的初始化布局位置等同于[Gravity.CENTER]，其测量高度不受`layoutParams.height`影响，
- * 最大值是[InputView]的测量高度，[Editor]的视图位于[contentView]下方，通知显示[Editor]的视图时，
- * 会平移[contentView]，或者修改[contentView]的尺寸，具体是哪一种行为取决于[EditorMode]。
+ * [contentView]的初始布局位置等同于[Gravity.CENTER]，其测量高度不受`layoutParams.height`影响，
+ * 最大值是[InputView]的测量高度，测量宽度同理，[Editor]位于[contentView]下方，通知显示[Editor]时，
+ * 会平移[contentView]，或者修改[contentView]的尺寸，具体是哪一种行为，取决于[EditorMode]。
  *
  * @author xcc
  * @date 2023/1/6
@@ -79,18 +79,16 @@ class InputView @JvmOverloads constructor(
      * **注意**：[editText]必须是[InputView]的子View或间接子View。
      *
      * 显示IME[editText]会获得焦点，隐藏IME会清除[editText]的焦点，
-     * 可以通过[EditorAnimator.addAnimationCallback]处理[editText]的焦点，例如：
+     * 可以通过[EditorChangedListener]处理[editText]的焦点，例如：
      * ```
      * enum class MessageEditor : Editor {
      *     IME, VOICE, EMOJI
      * }
      *
-     * inputView.editorAnimator.addAnimationCallback(object : AnimationCallback {
-     *     override fun onAnimationEnd(state: AnimationState) {
-     *         // 显示EMOJI的动画结束时，让editText获得焦点
-     *         if (state.current === EMOJI) inputView.editText?.requestFocus()
-     *     }
-     * })
+     * inputView.editorAdapter.addEditorChangedListener { previous, current ->
+     *     // 显示EMOJI，让editText获得焦点
+     *     if (current === EMOJI) inputView.editText?.requestFocus()
+     * }
      * ```
      */
     var editText: EditText?

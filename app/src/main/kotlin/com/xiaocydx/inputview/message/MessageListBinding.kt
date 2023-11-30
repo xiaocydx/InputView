@@ -40,9 +40,9 @@ fun MessageListBinding.init(
         editorMode = EditorMode.ADJUST_PAN
         this.editorAdapter = editorAdapter
         setEditBackgroundColor(0xFFF2F2F2.toInt())
-        // 调整Editor的过渡动画时长，需要看durationMillis的注释说明
+        // 调整Editor的动画时长，需要看durationMillis的注释说明
         // editorAnimator = FadeEditorAnimator(durationMillis = 500)
-        // 不运行Editor的过渡动画，仅记录动画状态，分发动画回调
+        // 不运行Editor的动画，仅记录动画状态，分发动画回调
         // editorAnimator = NopEditorAnimator()
         // 两个非IME的Editor切换，调整为线性更新编辑区的偏移值
         editorAnimator.linearEditorOffset()
