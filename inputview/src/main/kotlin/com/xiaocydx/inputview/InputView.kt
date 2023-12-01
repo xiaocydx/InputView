@@ -185,9 +185,11 @@ class InputView @JvmOverloads constructor(
 
     override fun shouldDelayChildPressedState(): Boolean = false
 
-    override fun generateLayoutParams(attrs: AttributeSet?): LayoutParams {
-        return MarginLayoutParams(context, attrs)
-    }
+    override fun generateLayoutParams(attrs: AttributeSet) = MarginLayoutParams(context, attrs)
+
+    override fun generateDefaultLayoutParams() = MarginLayoutParams(WRAP_CONTENT, WRAP_CONTENT)
+
+    override fun generateLayoutParams(p: LayoutParams) = MarginLayoutParams(p)
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()

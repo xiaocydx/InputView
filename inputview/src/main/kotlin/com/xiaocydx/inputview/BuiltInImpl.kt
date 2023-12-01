@@ -21,29 +21,20 @@ import android.view.ViewGroup
 import android.view.animation.Interpolator
 import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
+import androidx.core.view.WindowInsetsCompat.Type.navigationBars
+import com.xiaocydx.inputview.compat.onApplyWindowInsetsCompat
 
 /**
- * [Editor]的IME默认实现
+ * 禁用手势导航栏偏移，在支持手势导航栏EdgeToEdge的情况下，
+ * `contentView`和编辑区也不会有手势导航栏高度的初始偏移，
+ * 当调用者需要自行处理手势导航栏时，可以调用该函数。
+ *
+ * 关于手势导航栏偏移的描述，可以看[InputView.onApplyWindowInsets]的注释。
  */
-object Ime : Editor
-
-/**
- * 用于只需要IME的场景
- *
- * ```
- * val adapter = ImeAdapter()
- * inputView.editorAdapter = adapter
- *
- * // 显示IME
- * adapter.notifyShowIme()
- *
- * // 隐藏IME
- * adapter.notifyHideIme()
- * ```
- */
-class ImeAdapter : EditorAdapter<Ime>() {
-    override val ime: Ime = Ime
-    override fun onCreateView(parent: ViewGroup, editor: Ime): View? = null
+fun InputView.disableGestureNavBarOffset() = EdgeToEdgeHelper {
+    doOnApplyWindowInsets { _, insets, _ ->
+        onApplyWindowInsetsCompat(insets.consume(navigationBars()))
+    }
 }
 
 /**
@@ -79,6 +70,30 @@ inline fun EditorAnimator.addAnimationCallback(
     override fun onAnimationUpdate(state: AnimationState) = onUpdate(state)
     override fun onAnimationEnd(state: AnimationState) = onEnd(state)
 }.also(::addAnimationCallback)
+
+/**
+ * [Editor]的IME默认实现
+ */
+object Ime : Editor
+
+/**
+ * 用于只需要IME的场景
+ *
+ * ```
+ * val adapter = ImeAdapter()
+ * inputView.editorAdapter = adapter
+ *
+ * // 显示IME
+ * adapter.notifyShowIme()
+ *
+ * // 隐藏IME
+ * adapter.notifyHideIme()
+ * ```
+ */
+class ImeAdapter : EditorAdapter<Ime>() {
+    override val ime: Ime = Ime
+    override fun onCreateView(parent: ViewGroup, editor: Ime): View? = null
+}
 
 /**
  * [Editor]的淡入淡出动画
