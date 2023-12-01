@@ -2,8 +2,6 @@ package com.xiaocydx.inputview.sample
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.updatePadding
 import com.xiaocydx.inputview.EdgeToEdgeHelper
 import com.xiaocydx.inputview.InputView
@@ -30,9 +28,9 @@ class ImeAnimatorActivity : AppCompatActivity() {
     }
 
     private fun ActivityImeAnimatorBinding.init() = EdgeToEdgeHelper {
+        val animator = InputView.animator(editText)
         // 1. 点击imageView，隐藏IME
-        val controller = WindowInsetsControllerCompat(window, editText)
-        imageView.onClick { controller.hide(WindowInsetsCompat.Type.ime()) }
+        imageView.onClick(animator::hideIme)
 
         // 2. 当支持手势导航栏EdgeToEdge时，设置etContainer.paddingBottom
         etContainer.doOnApplyWindowInsets { view, insets, _ ->
@@ -42,16 +40,10 @@ class ImeAnimatorActivity : AppCompatActivity() {
         }
 
         // 3. 显示和隐藏IME，运行动画设置root.paddingBottom
-        val animator = InputView.animator(editText)
-        animator.addAnimationCallback(
-            onPrepare = { _, current ->
-                if (current == null) editText.clearFocus()
-            },
-            onUpdate = { state ->
-                val bottom = state.currentOffset - state.navBarOffset
-                root.updatePadding(bottom = bottom.coerceAtLeast(0))
-            }
-        )
+        animator.addAnimationCallback(onUpdate = { state ->
+            val bottom = state.currentOffset - state.navBarOffset
+            root.updatePadding(bottom = bottom.coerceAtLeast(0))
+        })
         return@EdgeToEdgeHelper this@init
     }
 }

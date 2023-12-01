@@ -1,8 +1,26 @@
+/*
+ * Copyright 2023 xiaocydx
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@file:SuppressLint("ClickableViewAccessibility")
+
 package com.xiaocydx.inputview
 
 import android.annotation.SuppressLint
 import android.view.View
-import android.view.ViewGroup
+import android.view.View.OnAttachStateChangeListener
 import android.view.animation.Interpolator
 import android.widget.EditText
 import androidx.annotation.CheckResult
@@ -14,90 +32,97 @@ import com.xiaocydx.inputview.EditorAnimator.Companion.ANIMATION_INTERPOLATOR
 import com.xiaocydx.inputview.compat.ReflectCompat
 
 /**
- * 复用[InputView]的动画实现，调用该函数之前，需要先调用`InputView.init()`
+ * 复用[InputView]的动画实现，需要调用`InputView.init()`完成初始化
  *
  * ```
  * InputView.init(window)
- * val animator = InputView.animator(view)
- * // 显示和隐藏IME，运行动画平移contentView
- * animator.addAnimationCallback(onUpdate = { state ->
- *     contentView.translationY = -state.currentOffset.toFloat()
- * })
+ * val animator = InputView.animator(editText)
+ * animator.addAnimationCallback(
+ *     onPrepare = { previous, current ->
+ *         // 显示和隐藏IME，处理editText的焦点，覆盖默认实现
+ *     }
+ *     onUpdate = { state ->
+ *         // 显示和隐藏IME，运行动画平移contentView
+ *         contentView.translationY = -state.currentOffset.toFloat()
+ *     }
+ * )
  * ```
  *
- * @param view 首次传入，按[durationMillis]和[interpolator]创建[EditorAnimator]，
- * 后续传入，获取首次创建的[EditorAnimator]，若[view]的类型是[EditText]，则利用
- * [EditText.setOnTouchListener]解决水滴状指示器导致动画卡顿的问题。
+ * @param editText 首次按[durationMillis]和[interpolator]创建[EditorAnimator]，
+ * 后续获取的是首次创建的[EditorAnimator]，显示IME会获得焦点，隐藏IME会清除焦点，
+ * 利用[EditText.setOnTouchListener]，解决水滴状指示器导致动画卡顿的问题。
  * @param durationMillis 含义等同于[EditorAnimator.durationMillis]
  * @param interpolator   含义等同于[EditorAnimator.interpolator]
  */
 @CheckResult
 fun InputView.Companion.animator(
-    view: View,
+    editText: EditText,
     durationMillis: Long = ANIMATION_DURATION_MILLIS,
     interpolator: Interpolator = ANIMATION_INTERPOLATOR
-): EditorAnimator {
+): ImeAnimator {
     val key = R.id.tag_view_ime_animator
-    var animator = view.getTag(key) as? ImeAnimator
+    var animator = editText.getTag(key) as? ImeAnimator
     if (animator == null) {
-        animator = ImeAnimator(view, durationMillis, interpolator)
-        view.setTag(key, animator)
+        animator = ImeAnimator(editText, durationMillis, interpolator)
+        editText.setTag(key, animator)
     }
     return animator
 }
 
-private class ImeAnimator(
-    private val view: View,
+class ImeAnimator internal constructor(
+    editText: EditText,
     durationMillis: Long,
     interpolator: Interpolator
 ) : EditorAnimator(durationMillis, interpolator) {
-    private val host = EditorHostImpl()
+    private val host = EditorHostImpl(editText)
+    private val holder = EditTextHolder(editText)
 
     init {
-        setAnimationCallback(object : AnimationCallback {
-            override fun onAnimationUpdate(state: AnimationState) {
-                state.updateEditorOffset(state.currentOffset)
-            }
-        })
-        var holder: EditTextHolder? = null
-        val listener = object : View.OnAttachStateChangeListener {
-            override fun onViewAttachedToWindow(v: View) {
-                require(view.parent is ViewGroup) {
-                    "InputView.animator()不能传入Window.decorView"
-                }
-                val window = requireNotNull(view.findViewTreeWindow()) {
-                    "需要调用InputView.init()初始化InputView.animator()所需的配置"
-                }
-                if (holder == null && view is EditText) {
-                    holder = createEditTextHolder(view, window)
-                }
-                host.onAttachedToWindow(window)
-                holder?.onAttachToEditorHost(host)
-                this@ImeAnimator.onAttachToEditorHost(host)
-            }
-
-            override fun onViewDetachedFromWindow(v: View) {
-                holder?.onDetachFromEditorHost(host)
-                this@ImeAnimator.onDetachFromEditorHost(host)
-            }
-        }
-        if (view.isAttachedToWindow) listener.onViewAttachedToWindow(view)
-        view.addOnAttachStateChangeListener(listener)
-    }
-
-    @SuppressLint("ClickableViewAccessibility")
-    private fun createEditTextHolder(editText: EditText, window: ViewTreeWindow): EditTextHolder {
-        val holder = EditTextHolder(editText, window)
+        setAnimationCallback(EditorOffsetUpdater())
         editText.setOnTouchListener { _, event ->
             holder.beforeTouchEvent(event)
             val consumed = editText.onTouchEvent(event)
             holder.afterTouchEvent(event)
             consumed
         }
-        return holder
+        val listener = AttachStateChangeListenerImpl()
+        editText.addOnAttachStateChangeListener(listener)
+        editText.takeIf { it.isAttachedToWindow }?.let(listener::onViewAttachedToWindow)
     }
 
-    private inner class EditorHostImpl : EditorHost {
+    fun showIme() {
+        holder.showIme()
+    }
+
+    fun hideIme() {
+        holder.hideIme()
+    }
+
+    private inner class EditorOffsetUpdater : AnimationCallback {
+        override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
+            if (current != null) holder.requestFocus() else holder.clearFocus()
+        }
+
+        override fun onAnimationUpdate(state: AnimationState) {
+            state.apply { updateEditorOffset(currentOffset) }
+        }
+    }
+
+    private inner class AttachStateChangeListenerImpl : OnAttachStateChangeListener {
+        override fun onViewAttachedToWindow(v: View) {
+            val window = v.requireViewTreeWindow()
+            host.onAttachedToWindow(window)
+            holder.onAttachToEditorHost(host)
+            this@ImeAnimator.onAttachToEditorHost(host)
+        }
+
+        override fun onViewDetachedFromWindow(v: View) {
+            holder.onDetachFromEditorHost(host)
+            this@ImeAnimator.onDetachFromEditorHost(host)
+        }
+    }
+
+    private inner class EditorHostImpl(private val view: View) : EditorHost {
         private var window: ViewTreeWindow? = null
         override val WindowInsetsCompat.imeHeight: Int
             get() = window?.run { imeHeight } ?: NO_VALUE
