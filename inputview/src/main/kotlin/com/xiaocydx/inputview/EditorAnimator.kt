@@ -576,7 +576,7 @@ interface AnimationCallback {
     /**
      * 动画准备
      *
-     * 该函数在下一帧之前被调用，此时可以修改[InputView]的属性。
+     * 该函数在测量阶段最先被调用，此时可以修改[InputView]的属性。
      *
      * @param previous 动画起始[Editor]
      * @param current  动画结束[Editor]
