@@ -18,6 +18,8 @@ package com.xiaocydx.inputview
 
 import android.graphics.Matrix
 import android.view.MotionEvent
+import android.view.View
+import android.view.View.OnAttachStateChangeListener
 import android.view.ViewParent
 import android.widget.EditText
 import androidx.core.view.WindowInsetsCompat
@@ -31,14 +33,16 @@ import java.lang.ref.WeakReference
  * @author xcc
  * @date 2023/1/18
  */
-internal class EditTextHolder(editText: EditText, window: ViewTreeWindow?) {
+internal class EditTextHolder(editText: EditText) {
     private val point = FloatArray(2)
     private val location = IntArray(2)
     private var inverseMatrix: Matrix? = null
     private val editTextRef = WeakReference(editText)
-    private val callback = HideTextSelectHandleWhileAnimationStart()
-    private var host: EditorHost? = null
+    private val listener = CreateControllerOnAttachedToWindow()
+    private val callback = HideTextSelectHandleOnAnimationStart()
     private var controller: WindowInsetsControllerCompat? = null
+    private var pendingShowIme = false
+    private var host: EditorHost? = null
     private val editText: EditText?
         get() {
             val editText = editTextRef.get()
@@ -52,11 +56,7 @@ internal class EditTextHolder(editText: EditText, window: ViewTreeWindow?) {
     val value: Any?
         get() = editText
 
-    init {
-        controller = window?.createWindowInsetsController(editText)
-    }
-
-    fun checkEditTextParent() {
+    fun checkParentInputView() {
         val editText = editText ?: return
         var parent: ViewParent? = editText.parent
         while (parent != null && parent !is InputView) {
@@ -65,20 +65,15 @@ internal class EditTextHolder(editText: EditText, window: ViewTreeWindow?) {
         check(parent != null) { "EditText必须是InputView的子View或间接子View" }
     }
 
-    fun onAttachedToWindow(window: ViewTreeWindow) {
-        val editText = editText
-        if (controller == null && editText != null) {
-            controller = window.createWindowInsetsController(editText)
-        }
-    }
-
     fun onAttachToEditorHost(host: EditorHost) {
         this.host = host
+        listener.attach()
         host.addAnimationCallback(callback)
     }
 
     fun onDetachFromEditorHost(host: EditorHost) {
         this.host = null
+        listener.detach()
         host.removeAnimationCallback(callback)
     }
 
@@ -95,10 +90,12 @@ internal class EditTextHolder(editText: EditText, window: ViewTreeWindow?) {
     }
 
     fun showIme() {
+        pendingShowIme = controller == null
         controller?.show(WindowInsetsCompat.Type.ime())
     }
 
     fun hideIme() {
+        pendingShowIme = false
         controller?.hide(WindowInsetsCompat.Type.ime())
     }
 
@@ -164,11 +161,36 @@ internal class EditTextHolder(editText: EditText, window: ViewTreeWindow?) {
                 && point[1] >= 0 && point[1] < bottom - top
     }
 
+    private inner class CreateControllerOnAttachedToWindow : OnAttachStateChangeListener {
+
+        fun attach() {
+            val editText = editText ?: return
+            if (editText.isAttachedToWindow) onViewAttachedToWindow(editText)
+            editText.addOnAttachStateChangeListener(this)
+        }
+
+        fun detach() {
+            controller = null
+            editText?.removeOnAttachStateChangeListener(this)
+        }
+
+        override fun onViewAttachedToWindow(v: View) {
+            val editText = editText
+            if (controller == null && editText != null) {
+                val window = editText.requireViewTreeWindow()
+                controller = window.createWindowInsetsController(editText)
+                if (pendingShowIme) showIme()
+            }
+        }
+
+        override fun onViewDetachedFromWindow(v: View) = Unit
+    }
+
     /**
      * 在实际场景中，交互可能是先选中[EditText]的文本内容，再点击其它地方切换[Editor]，
      * 当动画开始时，隐藏左右水滴状指示器，避免动画运行时不断跨进程通信，进而造成卡顿。
      */
-    private inner class HideTextSelectHandleWhileAnimationStart : ReplicableAnimationCallback {
+    private inner class HideTextSelectHandleOnAnimationStart : ReplicableAnimationCallback {
 
         override fun onAnimationStart(state: AnimationState) {
             val editText = editText ?: return

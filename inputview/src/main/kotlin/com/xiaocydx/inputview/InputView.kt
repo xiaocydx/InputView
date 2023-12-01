@@ -44,6 +44,7 @@ import androidx.core.view.marginLeft
 import androidx.core.view.marginRight
 import androidx.core.view.marginTop
 import com.xiaocydx.inputview.compat.ReflectCompat
+import com.xiaocydx.inputview.compat.requestApplyInsetsCompat
 import com.xiaocydx.inputview.compat.toCompat
 
 /**
@@ -95,8 +96,8 @@ class InputView @JvmOverloads constructor(
         get() = editTextHolder?.value as? EditText
         set(value) {
             val previous = editTextHolder
-            val current = value?.let { EditTextHolder(it, window) }
-            current?.checkEditTextParent()
+            val current = value?.let(::EditTextHolder)
+            current?.checkParentInputView()
             host.onEditTextHolderChanged(previous, current)
             editTextHolder = current
         }
@@ -189,11 +190,15 @@ class InputView @JvmOverloads constructor(
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         if (window == null) {
-            window = requireNotNull(findViewTreeWindow()) {
-                "需要调用InputView.init()初始化InputView所需的配置"
-            }
+            window = requireViewTreeWindow()
             window?.let(host::onAttachedToWindow)
         }
+        requestApplyInsetsCompat()
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        editorAnimator.endAnimation()
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
@@ -381,7 +386,6 @@ class InputView @JvmOverloads constructor(
             get() = editorView.changeRecord.currentChild
 
         fun onAttachedToWindow(window: ViewTreeWindow) {
-            editTextHolder?.onAttachedToWindow(window)
             pending?.apply { setWindowInsetsAnimationCallback(durationMillis, interpolator, callback) }
         }
 

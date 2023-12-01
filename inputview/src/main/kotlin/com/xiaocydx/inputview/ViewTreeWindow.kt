@@ -127,6 +127,10 @@ internal fun View.getOrFindViewTreeWindow(): ViewTreeWindow? {
     return viewTreeWindow ?: findViewTreeWindow()?.also { viewTreeWindow = it }
 }
 
+internal fun View.requireViewTreeWindow(): ViewTreeWindow {
+    return requireNotNull(findViewTreeWindow()) { "需要调用InputView.init()完成初始化" }
+}
+
 internal class ViewTreeWindow(
     private val window: Window,
     val gestureNavBarEdgeToEdge: Boolean
@@ -147,10 +151,8 @@ internal class ViewTreeWindow(
             .firstOrNull { it is ViewGroup }?.let(::WeakReference)
         decorView.setOnApplyWindowInsetsListenerCompat { _, insets ->
             window.checkDispatchApplyInsetsCompatibility()
-
             val decorInsets = insets.toDecorInsets(statusBarEdgeToEdge)
             decorView.onApplyWindowInsetsCompat(decorInsets)
-
             // 在DecorView处理完ContentRoot的Margins后，再设置Margins
             contentRootRef?.get()?.updateMargins(
                 top = decorInsets.statusBarHeight,
