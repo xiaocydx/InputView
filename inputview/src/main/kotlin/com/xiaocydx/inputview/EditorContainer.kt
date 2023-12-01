@@ -18,6 +18,7 @@ package com.xiaocydx.inputview
 
 import android.content.Context
 import android.view.View
+import android.view.WindowInsets
 import android.widget.FrameLayout
 import androidx.annotation.VisibleForTesting
 
@@ -29,6 +30,7 @@ import androidx.annotation.VisibleForTesting
  */
 internal class EditorContainer(context: Context) : FrameLayout(context) {
     private val views = mutableMapOf<Editor, View?>()
+    private var lastInsets: WindowInsets? = null
     private var editText: EditTextHolder? = null
     private var isCheckControlImeEnabled = true
     private var removePreviousImmediately = true
@@ -41,6 +43,12 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
     init {
         id = R.id.tag_editor_container_id
         setAdapter(ImeAdapter())
+    }
+
+    override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
+        // Android 9.0以下的WindowInsets可变（Reflect模块已兼容）
+        lastInsets = insets
+        return super.onApplyWindowInsets(insets)
     }
 
     fun setAdapter(adapter: EditorAdapter<*>) {
@@ -138,7 +146,12 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
             previousChild?.let(::removeView)
         }
         currentChild?.let(::addView)
-
+        if (lastInsets != null && currentChild != null) {
+            // 布局阶段，child申请的WindowInsets分发在下一帧进行,
+            // 此时对child补偿WindowInsets分发，确保布局阶段之后，
+            // 创建动画的过程能捕获到child正确的尺寸。
+            currentChild.dispatchApplyWindowInsets(lastInsets)
+        }
         changeRecord = ChangeRecord(previous, current, previousChild, currentChild)
         return true
     }

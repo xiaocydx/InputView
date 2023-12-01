@@ -131,6 +131,8 @@ internal interface EditorHost {
 
     /**
      * 添加[OnApplyWindowInsetsListenerCompat]，`null`表示移除
+     *
+     * @param listener 必须返回传入的[WindowInsetsCompat]，不可做消费处理
      */
     fun setOnApplyWindowInsetsListener(listener: OnApplyWindowInsetsListenerCompat?)
 

@@ -44,7 +44,9 @@ import androidx.core.view.marginLeft
 import androidx.core.view.marginRight
 import androidx.core.view.marginTop
 import com.xiaocydx.inputview.compat.ReflectCompat
+import com.xiaocydx.inputview.compat.onApplyWindowInsetsCompat
 import com.xiaocydx.inputview.compat.requestApplyInsetsCompat
+import com.xiaocydx.inputview.compat.setOnApplyWindowInsetsListenerCompat
 import com.xiaocydx.inputview.compat.toCompat
 
 /**
@@ -212,6 +214,9 @@ class InputView @JvmOverloads constructor(
      * [contentView]和[editorView]之间会有一个[navBarOffset]区域，
      * 当支持手势导航栏EdgeToEdge时，[navBarOffset]等于导航栏高度，此时显示[Editor]，
      * 在[editorOffset]超过[navBarOffset]后，才会更新[contentView]的尺寸或位置。
+     *
+     * **注意**：[InputView]内部不调用[setOnApplyWindowInsetsListenerCompat]，
+     * 是为了给外部提供拦截时机，外部可以消费导航栏高度，再将消费结果传给该函数。
      */
     override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
         val lastNavBarOffset = window?.run {
@@ -450,7 +455,11 @@ class InputView @JvmOverloads constructor(
         }
 
         override fun setOnApplyWindowInsetsListener(listener: OnApplyWindowInsetsListenerCompat?) {
-            ReflectCompat { editorView.setOnApplyWindowInsetsListenerImmutable(listener) }
+            val wrapper = if (listener == null) null else OnApplyWindowInsetsListenerCompat { v, insets ->
+                editorView.onApplyWindowInsetsCompat(insets)
+                listener.onApplyWindowInsets(v, insets)
+            }
+            ReflectCompat { editorView.setOnApplyWindowInsetsListenerImmutable(wrapper) }
         }
 
         override fun setWindowInsetsAnimationCallback(
