@@ -22,6 +22,7 @@ import android.view.View
 import android.view.View.OnAttachStateChangeListener
 import android.view.ViewParent
 import android.widget.EditText
+import androidx.core.view.OneShotPreDrawListener
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
@@ -162,15 +163,17 @@ internal class EditTextHolder(editText: EditText) {
     }
 
     private inner class CreateControllerOnAttachedToWindow : OnAttachStateChangeListener {
+        private var preDrawAction: OneShotPreDrawListener? = null
 
         fun attach() {
             val editText = editText ?: return
-            if (editText.isAttachedToWindow) onViewAttachedToWindow(editText)
             editText.addOnAttachStateChangeListener(this)
+            editText.takeIf { it.isAttachedToWindow }?.let(::onViewAttachedToWindow)
         }
 
         fun detach() {
             controller = null
+            editText?.let(::onViewDetachedFromWindow)
             editText?.removeOnAttachStateChangeListener(this)
         }
 
@@ -179,11 +182,19 @@ internal class EditTextHolder(editText: EditText) {
             if (controller == null && editText != null) {
                 val window = editText.requireViewTreeWindow()
                 controller = window.createWindowInsetsController(editText)
-                if (pendingShowIme) showIme()
+                if (!pendingShowIme) return
+                // 兼容IME未跟ViewRootImpl的属性动画同步的问题
+                preDrawAction = host?.addPreDrawAction {
+                    preDrawAction = null
+                    if (pendingShowIme) showIme()
+                }
             }
         }
 
-        override fun onViewDetachedFromWindow(v: View) = Unit
+        override fun onViewDetachedFromWindow(v: View) {
+            preDrawAction?.removeListener()
+            preDrawAction = null
+        }
     }
 
     /**
