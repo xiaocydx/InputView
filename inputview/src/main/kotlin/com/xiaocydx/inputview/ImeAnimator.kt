@@ -40,7 +40,7 @@ import com.xiaocydx.inputview.compat.ReflectCompat
  * animator.addAnimationCallback(
  *     onPrepare = { previous, current ->
  *         // 显示和隐藏IME，处理editText的焦点，覆盖默认实现
- *     }
+ *     },
  *     onUpdate = { state ->
  *         // 显示和隐藏IME，运行动画平移contentView
  *         contentView.translationY = -state.currentOffset.toFloat()
@@ -51,8 +51,8 @@ import com.xiaocydx.inputview.compat.ReflectCompat
  * @param editText 首次按[durationMillis]和[interpolator]创建[EditorAnimator]，
  * 后续获取的是首次创建的[EditorAnimator]，显示IME会获得焦点，隐藏IME会清除焦点，
  * 利用[EditText.setOnTouchListener]，解决水滴状指示器导致动画卡顿的问题。
- * @param durationMillis 含义等同于[EditorAnimator.durationMillis]
- * @param interpolator   含义等同于[EditorAnimator.interpolator]
+ * @param durationMillis 参数含义跟[EditorAnimator.durationMillis]一致
+ * @param interpolator   参数含义跟[EditorAnimator.interpolator]一致
  */
 @CheckResult
 fun InputView.Companion.animator(
