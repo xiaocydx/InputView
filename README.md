@@ -26,7 +26,7 @@ allprojects {
 ```
 dependencies {
     // 修改IME动画的属性、调用FLAG_FULLSCREEN的兼容方案，需要依赖inputview-reflect
-    def version = "1.0.2"
+    def version = "1.0.3"
     implementation "com.github.xiaocydx.InputView:inputview:${version}"
     implementation "com.github.xiaocydx.InputView:inputview-reflect:${version}"
 }
