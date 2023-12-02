@@ -323,7 +323,7 @@ class InputView @JvmOverloads constructor(
         // 通过editorOffset向上偏移editorView。
         editorView.let {
             val left = 0
-            val top = measuredHeight - editorOffset
+            val top = height - editorOffset
             val right = left + it.measuredWidth
             val bottom = top + it.measuredHeight
             it.layout(left, top, right, bottom)
@@ -331,7 +331,7 @@ class InputView @JvmOverloads constructor(
 
         // 基于editorView顶部向上布局contentView
         contentView.let {
-            val left = (measuredWidth - it.measuredWidth) / 2
+            val left = (width - it.measuredWidth) / 2
             val bottom = height - it.marginBottom - navBarOffset - getLayoutOffset()
             val right = left + it.measuredWidth
             val top = bottom - it.measuredHeight
