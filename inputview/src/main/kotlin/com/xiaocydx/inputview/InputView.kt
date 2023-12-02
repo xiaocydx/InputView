@@ -58,7 +58,7 @@ import com.xiaocydx.inputview.compat.toCompat
  * 4. [editorAdapter]支持[Editor]的视图创建和显示。
  * 5. [editorAnimator]支持[Editor]的切换过渡动画。
  *
- * [contentView]的初始布局位置等同于[Gravity.CENTER]，其测量高度不受`layoutParams.height`影响，
+ * [contentView]的初始布局位置等同于[Gravity.BOTTOM]，其测量高度不受`layoutParams.height`影响，
  * 最大值是[InputView]的测量高度，测量宽度同理，[Editor]位于[contentView]下方，通知显示[Editor]时，
  * 会平移[contentView]，或者修改[contentView]的尺寸，具体是哪一种行为，取决于[EditorMode]。
  *
@@ -98,8 +98,8 @@ class InputView @JvmOverloads constructor(
         get() = editTextHolder?.value as? EditText
         set(value) {
             val previous = editTextHolder
+            if (previous?.value === value) return
             val current = value?.let(::EditTextHolder)
-            current?.checkParentInputView()
             host.onEditTextHolderChanged(previous, current)
             editTextHolder = current
         }
@@ -206,6 +206,9 @@ class InputView @JvmOverloads constructor(
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        if (ev.action == MotionEvent.ACTION_DOWN) {
+            editTextHolder?.checkParentInputView()
+        }
         editTextHolder?.beforeTouchEvent(ev)
         val consumed = super.dispatchTouchEvent(ev)
         editTextHolder?.afterTouchEvent(ev)

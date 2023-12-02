@@ -58,7 +58,7 @@ internal class EditTextHolder(editText: EditText) {
         get() = editText
 
     fun checkParentInputView() {
-        val editText = editText ?: return
+        val editText = editText?.takeIf { it.isAttachedToWindow } ?: return
         var parent: ViewParent? = editText.parent
         while (parent != null && parent !is InputView) {
             parent = parent.parent

@@ -16,7 +16,9 @@
 
 package com.xiaocydx.inputview
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
 import android.widget.FrameLayout
@@ -50,6 +52,9 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
         lastInsets = insets
         return super.onApplyWindowInsets(insets)
     }
+
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(event: MotionEvent?) = true
 
     fun setAdapter(adapter: EditorAdapter<*>) {
         this.adapter = adapter
@@ -87,12 +92,20 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
         val previous = current
         current = editor
         setPendingChange(previous, current)
+        var requestFocus = false
+        val prevEditText = editText
         if (previous === ime) {
             handleImeShown(shown = false, controlIme)
         } else if (current === ime) {
+            requestFocus = true
             handleImeShown(shown = true, controlIme)
         }
         checkedAdapter().onEditorChanged(previous, current)
+        if (requestFocus && prevEditText !== editText) {
+            // onEditorChanged()的分发过程重新设置了editText，
+            // 此时对ediText补偿requestFocus()，确保获得焦点。
+            handleImeShown(shown = true, controlIme = false)
+        }
         requestLayout()
         return true
     }

@@ -56,7 +56,7 @@ abstract class EditorAnimator(
      * **注意**：实际动画时长以[AnimationState.durationMillis]为准。
      */
     @IntRange(from = 0)
-    private val durationMillis: Long = ANIMATION_DURATION_MILLIS,
+    val durationMillis: Long = ANIMATION_DURATION_MILLIS,
 
     /**
      * 动画插值器
@@ -71,7 +71,7 @@ abstract class EditorAnimator(
      *
      * **注意**：实际动画插值器以[AnimationState.interpolator]为准。
      */
-    private val interpolator: Interpolator = ANIMATION_INTERPOLATOR
+    val interpolator: Interpolator = ANIMATION_INTERPOLATOR
 ) {
     private var host: EditorHost? = null
     private var lastInsets: WindowInsetsCompat? = null
