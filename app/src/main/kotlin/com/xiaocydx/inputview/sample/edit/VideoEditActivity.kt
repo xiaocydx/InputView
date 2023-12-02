@@ -42,17 +42,18 @@ class VideoEditActivity : AppCompatActivity() {
 
     private fun ActivityVideoEditBinding.initShowOrHide() = apply {
         val adapter = VideoEditorAdapter(this@VideoEditActivity)
-        inputView.apply {
-            editorAdapter = adapter
-            editorMode = EditorMode.ADJUST_PAN
-            editorAnimator = FadeEditorAnimator(durationMillis = 300)
-            setEditBackgroundColor(0xFF1D1D1D.toInt())
-        }
+        inputView.editorAdapter = adapter
+        inputView.editorMode = EditorMode.ADJUST_PAN
+        inputView.setEditBackgroundColor(0xFF1D1D1D.toInt())
 
         arrayOf(
             tvInput to Text.Input, btnText to Text.Emoji,
             btnVideo to Video, btnAudio to Audio, btnImage to Image
         ).forEach { (view, editor) -> view.onClick { viewModel.show(editor) } }
+
+        // 不排除有其它代码显示IME的可能性，通过EditorChangedListener完成状态同步,
+        // 双向同步的过程，EditorAdapter和StateFlow会做差异对比，不会形成循环同步。
+        adapter.addEditorChangedListener { _, current -> viewModel.show(current) }
         val commonAction = CommonGroupAction(Video, Audio, Image, show = viewModel::show)
         val textAction = TextGroupAction(Text.Input, Text.Style, Text.Emoji, show = viewModel::show)
         val action = commonAction + textAction
@@ -63,12 +64,11 @@ class VideoEditActivity : AppCompatActivity() {
                 adapter.notifyShowOrHide(it)
             }
             .launchIn(lifecycleScope)
-        // 不排除有其它代码显示IME的可能性，通过EditorChangedListener完成状态同步,
-        // 双向同步的过程，EditorAdapter和StateFlow会做差异对比，不会形成循环同步。
-        adapter.addEditorChangedListener { _, current -> viewModel.show(current) }
     }
 
     private fun ActivityVideoEditBinding.initAnimation() = apply {
+        inputView.editorAnimator = FadeEditorAnimator(durationMillis = 300)
+
         // 在动画运行时拦截触摸事件
         inputView.editorAnimator.addAnimationCallback(
             onStart = { window.isDispatchTouchEventEnabled = false },
