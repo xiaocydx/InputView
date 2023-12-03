@@ -10,7 +10,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.os.bundleOf
-import androidx.core.view.updatePadding
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Lifecycle.State.RESUMED
@@ -44,12 +43,8 @@ class CommonFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) = EdgeToEdgeHelper {
-        view.doOnApplyWindowInsets { view, insets, initialState ->
-            val supportGestureNavBarEdgeToEdge = insets.supportGestureNavBarEdgeToEdge(view)
-            val bottom = if (supportGestureNavBarEdgeToEdge) insets.navigationBarHeight else 0
-            view.updatePadding(bottom = initialState.paddings.bottom + bottom)
-        }
-
+        // 设置通用的手势导航栏EdgeToEdge处理逻辑
+        view.handleGestureNavBarEdgeToEdgeOnApply()
         viewLifecycleOwner.lifecycle.addObserver(object : LifecycleEventObserver {
             val title = arguments?.getString(KEY_TITLE) ?: ""
             override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {

@@ -1,23 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="50dp"
-    android:background="#1D1D1D"
+    android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:paddingHorizontal="5dp">
 
     <EditText
         android:id="@+id/editText"
         android:layout_width="0dp"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:maxLines="3"
+        android:minHeight="50dp"
         android:textColor="@color/white"
         android:textSize="14dp" />
 
     <TextView
         android:id="@+id/tvEmoji"
         android:layout_width="wrap_content"
-        android:layout_height="match_parent"
+        android:layout_height="50dp"
+        android:layout_gravity="bottom"
         android:gravity="center"
         android:paddingHorizontal="10dp"
         android:text="表情"
@@ -27,7 +29,8 @@
     <TextView
         android:id="@+id/tvStyle"
         android:layout_width="wrap_content"
-        android:layout_height="match_parent"
+        android:layout_height="50dp"
+        android:layout_gravity="bottom"
         android:gravity="center"
         android:paddingHorizontal="10dp"
         android:text="样式"
@@ -37,7 +40,8 @@
     <ImageView
         android:id="@+id/tvConfirm"
         android:layout_width="wrap_content"
-        android:layout_height="match_parent"
+        android:layout_height="50dp"
+        android:layout_gravity="bottom"
         android:padding="10dp"
         android:src="@drawable/ic_video_confirm" />
 </LinearLayout>

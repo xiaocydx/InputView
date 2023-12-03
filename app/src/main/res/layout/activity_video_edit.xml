@@ -19,13 +19,22 @@
         app:layout_constraintVertical_bias="0">
 
         <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|center_horizontal"
+            android:padding="10dp"
+            android:text="预览区域"
+            android:textColor="@color/white"
+            android:textSize="16dp" />
+
+        <TextView
             android:id="@+id/tvInput"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:padding="10dp"
             android:text="点击输入文字"
-            android:textColor="@color/white"
+            android:textColor="#AA726D"
             android:textSize="18dp" />
     </FrameLayout>
 
@@ -90,9 +99,9 @@
 
         <FrameLayout
             android:id="@+id/container"
-            android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="#1D1D1D"
             android:clickable="true"
             android:focusable="true" />
     </com.xiaocydx.inputview.InputView>

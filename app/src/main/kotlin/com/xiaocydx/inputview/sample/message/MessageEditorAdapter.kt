@@ -9,7 +9,6 @@ import androidx.annotation.LayoutRes
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.view.setMargins
 import androidx.core.view.updateLayoutParams
-import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.xiaocydx.inputview.EdgeToEdgeHelper
@@ -55,39 +54,7 @@ class EmojiRecyclerView(context: Context) : RecyclerView(context) {
         layoutManager = GridLayoutManager(context, spanCount)
         recycledViewPool.setMaxRecycledViews(0, 16)
         layoutParams(matchParent, 350.dp)
-        setupGestureNavBarEdgeToEdge()
-    }
-
-    /**
-     * 实现[RecyclerView]手势导航栏EdgeToEdge的示例代码
-     */
-    private fun setupGestureNavBarEdgeToEdge() = EdgeToEdgeHelper {
-        // layoutParams.height初始高度是350.dp
-        doOnApplyWindowInsets { view, insets, initialState ->
-            val navigationBarHeight = insets.navigationBarHeight
-            val supportGestureNavBarEdgeToEdge = insets.supportGestureNavBarEdgeToEdge(view)
-
-            // 1. 若支持手势导航栏EdgeToEdge，则增加高度，否则保持初始高度
-            val height = when {
-                !supportGestureNavBarEdgeToEdge -> initialState.params.height
-                else -> navigationBarHeight + initialState.params.height
-            }
-            if (view.layoutParams.height != height) {
-                view.updateLayoutParams { this.height = height }
-            }
-
-            // 2. 若支持手势导航栏EdgeToEdge，则增加paddingBottom，否则保持初始paddingBottom
-            view.updatePadding(bottom = when {
-                !supportGestureNavBarEdgeToEdge -> initialState.paddings.bottom
-                else -> navigationBarHeight + initialState.paddings.bottom
-            })
-
-            // 3. 示例代码view是RecyclerView：
-            // 支持手势导航栏EdgeToEdge会增加paddingBottom，将clipToPadding设为false，
-            // 使得RecyclerView滚动时，能将内容绘制在paddingBottom区域，当滚动到底部时，
-            // 留出paddingBottom区域，内容不会被手势导航栏遮挡。
-            (view as? ViewGroup)?.clipToPadding = !supportGestureNavBarEdgeToEdge
-        }
+        EdgeToEdgeHelper { handleGestureNavBarEdgeToEdgeOnApply() }
     }
 
     private class EmojiAdapter(spanCount: Int) : Adapter<ViewHolder>() {
