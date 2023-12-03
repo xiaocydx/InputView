@@ -26,7 +26,7 @@ allprojects {
 ```
 dependencies {
     // 修改IME动画的属性、调用FLAG_FULLSCREEN的兼容方案，需要依赖inputview-reflect
-    def version = "1.0.3"
+    def version = "1.0.4"
     implementation "com.github.xiaocydx.InputView:inputview:${version}"
     implementation "com.github.xiaocydx.InputView:inputview-reflect:${version}"
 }
@@ -42,3 +42,12 @@ https://user-images.githubusercontent.com/43429149/213995075-bfdf23a0-e758-4230-
 当前是手势导航栏时，对Emoji编辑器添加paddingBottom和增加高度，滚动时内容绘制在paddingBottom区域，滚动到底部时留出paddingBottom区域，内容不会被手势导航栏遮挡。
 
 https://user-images.githubusercontent.com/43429149/213995177-2b7cc060-d44a-463c-856b-2aaa28c44dcf.mp4
+
+&nbsp;
+#### 复杂的切换场景
+InputView可用于视频编辑这类复杂的切换场景。
+
+https://github.com/xiaocydx/InputView/assets/43429149/2d2931cb-c585-4c34-aaa2-43ed44268d5e
+
+
+
