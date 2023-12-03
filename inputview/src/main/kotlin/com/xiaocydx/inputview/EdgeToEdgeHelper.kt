@@ -93,36 +93,6 @@ interface EdgeToEdgeHelper {
 
     /**
      * 当分发到[WindowInsetsCompat]时，调用[block]
-     *
-     * 以实现RecyclerView手势导航栏EdgeToEdge为例：
-     * ```
-     * // recyclerView.layoutParams.height的初始高度是固定值
-     *
-     * recyclerView.doOnApplyWindowInsets { _, insets, initialState ->
-     *     val navigationBarHeight = insets.navigationBarHeight
-     *     val supportGestureNavBarEdgeToEdge = insets.supportGestureNavBarEdgeToEdge(recyclerView)
-     *
-     *     // 1. 若支持手势导航栏EdgeToEdge，则增加高度，否则保持初始高度
-     *     val height = when {
-     *         !supportGestureNavBarEdgeToEdge -> initialState.params.height
-     *         else -> navigationBarHeight + initialState.params.height
-     *     }
-     *     if (recyclerView.layoutParams.height != height) {
-     *         recyclerView.updateLayoutParams { this.height = height }
-     *     }
-     *
-     *     // 2. 若支持手势导航栏EdgeToEdge，则增加paddingBottom，否则保持初始paddingBottom
-     *     recyclerView.updatePadding(bottom = when {
-     *         !supportGestureNavBarEdgeToEdge -> initialState.paddings.bottom
-     *         else -> navigationBarHeight + initialState.paddings.bottom
-     *     }
-     *
-     *     // 3. 支持手势导航栏EdgeToEdge会增加paddingBottom，将clipToPadding设为false，
-     *     // 使得recyclerView滚动时，能将内容绘制在paddingBottom区域，当滚动到底部时，
-     *     // 留出paddingBottom区域，内容不会被手势导航栏遮挡。
-     *     recyclerView.clipToPadding = !supportGestureNavBarEdgeToEdge
-     * }
-     * ```
      */
     fun View.doOnApplyWindowInsets(
         block: (view: View, insets: WindowInsetsCompat, initialState: ViewState) -> Unit
@@ -135,6 +105,39 @@ interface EdgeToEdgeHelper {
         // 当view首次或再次附加到window时，可能错过WindowInsets分发,
         // 因此主动申请WindowInsets分发，确保调用block完成视图初始化。
         requestApplyInsetsOnAttach()
+    }
+
+    /**
+     * 当分发到[WindowInsetsCompat]时，调用[handleGestureNavBarEdgeToEdge]
+     */
+    fun View.handleGestureNavBarEdgeToEdgeOnApply() {
+        doOnApplyWindowInsets { _, insets, initialState ->
+            handleGestureNavBarEdgeToEdge(insets, initialState)
+        }
+    }
+
+    /**
+     * 通用的手势导航栏EdgeToEdge处理逻辑，可以跟[doOnApplyWindowInsets]结合使用
+     */
+    fun View.handleGestureNavBarEdgeToEdge(insets: WindowInsetsCompat, initialState: ViewState) {
+        val navigationBarHeight = insets.navigationBarHeight
+        val supportGestureNavBarEdgeToEdge = insets.supportGestureNavBarEdgeToEdge(this)
+        // 1. 若支持手势导航栏EdgeToEdge，则增加高度，否则保持初始高度
+        val height = when {
+            initialState.params.height < 0 -> initialState.params.height
+            !supportGestureNavBarEdgeToEdge -> initialState.params.height
+            else -> navigationBarHeight + initialState.params.height
+        }
+        if (layoutParams.height != height) updateLayoutParams { this.height = height }
+        // 2. 若支持手势导航栏EdgeToEdge，则增加paddingBottom，否则保持初始paddingBottom
+        updatePadding(bottom = when {
+            !supportGestureNavBarEdgeToEdge -> initialState.paddings.bottom
+            else -> navigationBarHeight + initialState.paddings.bottom
+        })
+        // 3. 支持手势导航栏EdgeToEdge会增加paddingBottom，将clipToPadding设为false，
+        // 使得滚动容器在滚动时，能将内容绘制在paddingBottom区域，当滚动到底部时，
+        // 留出paddingBottom区域，内容不会被手势导航栏遮挡。
+        (this as? ViewGroup)?.takeIf { it.isScrollContainer }?.clipToPadding = !supportGestureNavBarEdgeToEdge
     }
 
     /**
