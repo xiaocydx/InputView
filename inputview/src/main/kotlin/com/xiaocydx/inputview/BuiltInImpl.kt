@@ -113,7 +113,7 @@ class FadeEditorAnimator(
      * `startView.alpha`保持为`0f`，`endView.alpha`从`0f`变化到`1f`。
      */
     @FloatRange(from = 0.0, to = 0.5)
-    private val thresholdFraction: Float = 0.4f,
+    val thresholdFraction: Float = 0.4f,
 
     /**
      * 动画时长
@@ -148,58 +148,64 @@ class FadeEditorAnimator(
 ) : EditorAnimator(durationMillis, interpolator) {
 
     init {
-        setAnimationCallback(EditorOffsetAndAlphaUpdater())
+        setAnimationCallback(object : AnimationCallback {
+            override fun onAnimationStart(state: AnimationState) {
+                state.startView?.alpha = 1f
+                state.endView?.alpha = 0f
+            }
+
+            override fun onAnimationUpdate(state: AnimationState): Unit = with(state) {
+                updateEditorOffset(currentOffset)
+                if (startView == null && endView == null) return
+                startView?.alpha = calculateAlpha(state, matchNull = true, start = true)
+                endView?.alpha = calculateAlpha(state, matchNull = true, start = false)
+            }
+
+            override fun onAnimationEnd(state: AnimationState) {
+                state.startView?.alpha = 1f
+                state.endView?.alpha = 1f
+            }
+        })
     }
 
-    private inner class EditorOffsetAndAlphaUpdater : AnimationCallback {
-
-        override fun onAnimationStart(state: AnimationState) {
-            state.startView?.alpha = 1f
-            state.endView?.alpha = 0f
+    /**
+     * 根据[state]计算`startView.alpha`或`endView.alpha`
+     *
+     * @param state     [AnimationCallback]回调函数的参数
+     * @param matchNull 是否匹配`startView`或`endView`为`null`的分支
+     * @param start     `true`-计算`startView.alpha`，`false`-计算`endView.alpha`
+     */
+    fun calculateAlpha(
+        state: AnimationState,
+        matchNull: Boolean = false,
+        start: Boolean
+    ) = with(state) {
+        var startValue = startOffset
+        var endValue = endOffset
+        var current = (startValue + (endValue - startValue) * animatedFraction).toInt()
+        if (startValue > endValue) {
+            // 反转start到end的过程，只按start < end计算alpha
+            val diff = startValue - current
+            startValue = endValue.also { endValue = startValue }
+            current = startValue + diff
         }
-
-        override fun onAnimationUpdate(state: AnimationState): Unit = with(state) {
-            updateEditorOffset(currentOffset)
-            if (startView == null && endView == null) return
-
-            var start = startOffset
-            var end = endOffset
-            var offset = (start + (end - start) * animatedFraction).toInt()
-            if (start > end) {
-                // 反转start到end的过程，只按start < end计算alpha
-                val diff = start - offset
-                start = end.also { end = start }
-                offset = start + diff
+        val threshold = (endValue - startValue) * thresholdFraction
+        when {
+            matchNull && startView == null && endView != null -> {
+                if (start) 0f else animatedFraction
             }
-
-            val threshold = (end - start) * thresholdFraction
-            when {
-                startView == null && endView != null -> {
-                    endView!!.alpha = animatedFraction
-                }
-                startView != null && endView == null -> {
-                    startView!!.alpha = 1 - animatedFraction
-                }
-                offset >= 0 && offset <= start + threshold -> {
-                    val fraction = (offset - start) / threshold
-                    startView?.alpha = 1 - fraction
-                    endView?.alpha = 0f
-                }
-                offset >= end - threshold && offset <= end -> {
-                    val fraction = (offset - (end - threshold)) / threshold
-                    startView?.alpha = 0f
-                    endView?.alpha = fraction
-                }
-                else -> {
-                    startView?.alpha = 0f
-                    endView?.alpha = 0f
-                }
+            matchNull && startView != null && endView == null -> {
+                if (start) 1 - animatedFraction else 0f
             }
-        }
-
-        override fun onAnimationEnd(state: AnimationState) {
-            state.startView?.alpha = 1f
-            state.endView?.alpha = 1f
+            current >= 0 && current <= startValue + threshold -> {
+                val fraction = (current - startValue) / threshold
+                if (start) 1 - fraction else 0f
+            }
+            current >= endValue - threshold && current <= endValue -> {
+                val fraction = (current - (endValue - threshold)) / threshold
+                if (start) 0f else fraction
+            }
+            else -> 0f
         }
     }
 }
@@ -211,12 +217,10 @@ class NopEditorAnimator : EditorAnimator() {
     override val canRunAnimation: Boolean = false
 
     init {
-        setAnimationCallback(EditorOffsetUpdater())
-    }
-
-    private class EditorOffsetUpdater : AnimationCallback {
-        override fun onAnimationUpdate(state: AnimationState) {
-            state.apply { updateEditorOffset(currentOffset) }
-        }
+        setAnimationCallback(object : AnimationCallback {
+            override fun onAnimationUpdate(state: AnimationState) {
+                state.apply { updateEditorOffset(currentOffset) }
+            }
+        })
     }
 }

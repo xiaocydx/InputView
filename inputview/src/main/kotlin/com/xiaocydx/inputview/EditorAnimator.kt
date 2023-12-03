@@ -187,9 +187,10 @@ abstract class EditorAnimator(
     private fun dispatchAnimationRunning(callback: AnimationCallback) {
         val record = animationRecord ?: return
         if (record.isRunning && record.checkAnimationOffset()) {
+            // 每个函数都支持移除callback，因此需要再次检查callbacks是否包含callback
             callback.onAnimationPrepare(record.previous, record.current)
-            callback.onAnimationStart(record)
-            callback.onAnimationUpdate(record)
+            callback.takeIf { callbacks.contains(it) }?.onAnimationStart(record)
+            callback.takeIf { callbacks.contains(it) }?.onAnimationUpdate(record)
         }
     }
 
