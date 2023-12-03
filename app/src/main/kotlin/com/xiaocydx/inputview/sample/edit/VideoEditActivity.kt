@@ -93,7 +93,7 @@ class VideoEditActivity : AppCompatActivity() {
             },
             onUpdate = update@{ state ->
                 if (!state.canTranslation()) return@update
-                var fraction = state.animatedFraction
+                var fraction = state.interpolatedFraction
                 if (state.startOffset == 0) fraction = 1 - fraction
                 inputView.translationY = titleBarHeight * fraction
             }
