@@ -118,7 +118,6 @@ class VideoEditActivity : AppCompatActivity() {
                 }
             },
             onUpdate = { state ->
-                val fraction = state.interpolatedFraction
                 if (canTransform) {
                     previousBar?.alpha = animator.calculateAlpha(state, start = true)
                     currentBar?.alpha = animator.calculateAlpha(state, start = false)
@@ -126,7 +125,7 @@ class VideoEditActivity : AppCompatActivity() {
                 if (!changeBounds.isEmpty) {
                     val start = previousBar?.height ?: 0
                     val end = currentBar?.height ?: 0
-                    val dy = start + (end - start) * fraction
+                    val dy = start + (end - start) * state.interpolatedFraction
                     container.getBounds(changeBounds) { top = bottom - dy.toInt() }
                 }
             },

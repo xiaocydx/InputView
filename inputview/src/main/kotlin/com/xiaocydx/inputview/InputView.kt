@@ -70,6 +70,8 @@ class InputView @JvmOverloads constructor(
 ) : ViewGroup(context, attrs, defStyleAttr) {
     private val host = EditorHostImpl()
     private val editorView = EditorContainer(context)
+    private var layoutCount = 0
+    private var changeCount = 0
     private var contentView: View? = null
     private var window: ViewTreeWindow? = null
     private var editTextHolder: EditTextHolder? = null
@@ -97,6 +99,7 @@ class InputView @JvmOverloads constructor(
     var editText: EditText?
         get() = editTextHolder?.value as? EditText
         set(value) {
+            assertNotInLayout { "设置ediText" }
             val previous = editTextHolder
             if (previous?.value === value) return
             val current = value?.let(::EditTextHolder)
@@ -112,6 +115,7 @@ class InputView @JvmOverloads constructor(
      */
     var editorMode: EditorMode = EditorMode.ADJUST_RESIZE
         set(value) {
+            asserNotInChange { "设置editorMode" }
             if (field === value) return
             field = value
             requestLayout()
@@ -129,6 +133,7 @@ class InputView @JvmOverloads constructor(
     var editorAdapter: EditorAdapter<*>
         get() = editorView.adapter
         set(value) {
+            assertNotInLayout { "设置editorAdapter" }
             val previous = editorView.adapter
             if (previous === value) return
             host.onEditorAdapterChanged(previous, value)
@@ -145,6 +150,7 @@ class InputView @JvmOverloads constructor(
      */
     var editorAnimator: EditorAnimator = FadeEditorAnimator()
         set(value) {
+            assertNotInLayout { "设置editorAnimator" }
             val previous = field
             if (previous === value) return
             host.onEditorAnimatorChanged(previous, value)
@@ -163,6 +169,12 @@ class InputView @JvmOverloads constructor(
             field = value
             field?.invalidateSelf()
         }
+
+    /**
+     * [InputView]是否正在布局，布局期间不允许对部分属性赋值
+     */
+    val isComputingLayout: Boolean
+        get() = layoutCount > 0
 
     init {
         isFocusable = true
@@ -185,11 +197,11 @@ class InputView @JvmOverloads constructor(
 
     override fun shouldDelayChildPressedState(): Boolean = false
 
-    override fun generateLayoutParams(attrs: AttributeSet) = MarginLayoutParams(context, attrs)
+    override fun generateLayoutParams(attrs: AttributeSet) = LayoutParams(context, attrs)
 
-    override fun generateDefaultLayoutParams() = MarginLayoutParams(WRAP_CONTENT, WRAP_CONTENT)
+    override fun generateDefaultLayoutParams() = LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
 
-    override fun generateLayoutParams(p: LayoutParams) = MarginLayoutParams(p)
+    override fun generateLayoutParams(p: ViewGroup.LayoutParams) = LayoutParams(p)
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
@@ -278,11 +290,14 @@ class InputView @JvmOverloads constructor(
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         checkContentView()
         val contentView = contentView ?: return
-
+        enterLayout()
+        enterChange()
         // 消费PendingChange，仅在measure阶段创建、添加、移除子View
         if (editorView.consumePendingChange()) {
             val (previous, current, _, _) = editorView.changeRecord
+            exitChange()
             editorAnimator.onPendingChanged(previous, current)
+            enterChange()
         }
         editorView.measure(widthMeasureSpec, measuredHeight.toAtMostMeasureSpec())
 
@@ -315,10 +330,14 @@ class InputView @JvmOverloads constructor(
                 else -> height.coerceAtMost(maxContentHeight).toExactlyMeasureSpec()
             }
         )
+        exitChange()
+        exitLayout()
     }
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         val contentView = contentView ?: return
+        enterLayout()
+        enterChange()
         // 基于inputView底部向下布局editorView，
         // 通过editorOffset向上偏移editorView。
         editorView.let {
@@ -338,12 +357,30 @@ class InputView @JvmOverloads constructor(
             it.layout(left, top, right, bottom)
         }
         updateEditBackground(top = contentView.bottom)
+        exitChange()
+        exitLayout()
     }
 
     override fun onDraw(canvas: Canvas) {
         val contentView = contentView ?: return
         editBackground?.setBounds(0, contentView.bottom, width, height)
         editBackground?.takeIf { it.bounds.height() > 0 }?.draw(canvas)
+    }
+
+    private fun enterLayout() = ++layoutCount
+
+    private fun exitLayout() = --layoutCount
+
+    private fun enterChange() = ++changeCount
+
+    private fun exitChange() = --changeCount
+
+    private inline fun assertNotInLayout(reason: () -> String) {
+        check(layoutCount == 0) { "InputView布局期间，不允许${reason()}" }
+    }
+
+    private inline fun asserNotInChange(reason: () -> String) {
+        check(changeCount == 0) { "InputView更改期间，不允许${reason()}" }
     }
 
     private fun Int.toExactlyMeasureSpec() = makeMeasureSpec(this, EXACTLY)
@@ -373,6 +410,13 @@ class InputView @JvmOverloads constructor(
 
     @VisibleForTesting(otherwise = PRIVATE)
     internal fun getEditorHost(): EditorHost = host
+
+    class LayoutParams : MarginLayoutParams {
+        constructor(c: Context, attrs: AttributeSet) : super(c, attrs)
+        constructor(width: Int, height: Int) : super(width, height)
+        constructor(source: MarginLayoutParams) : super(source)
+        constructor(source: ViewGroup.LayoutParams) : super(source)
+    }
 
     private inner class EditorHostImpl : EditorHost {
         private var pending: PendingInsetsAnimationCallback? = null
@@ -428,14 +472,17 @@ class InputView @JvmOverloads constructor(
         }
 
         override fun dispatchImeShown(shown: Boolean) {
+            assertNotInLayout { "调度IME显示" }
             editorView.dispatchImeShown(shown)
         }
 
         override fun showChecked(editor: Editor) {
+            assertNotInLayout { "显示Editor" }
             editorView.showChecked(editor)
         }
 
         override fun hideChecked(editor: Editor) {
+            assertNotInLayout { "隐藏Editor" }
             editorView.hideChecked(editor)
         }
 

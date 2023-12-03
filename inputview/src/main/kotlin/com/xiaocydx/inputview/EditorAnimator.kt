@@ -92,12 +92,13 @@ abstract class EditorAnimator(
     /**
      * 添加[AnimationCallback]
      *
-     * 在[AnimationCallback]的各个函数可以调用[removeAnimationCallback]。
+     * 在[AnimationCallback]的各个函数可以调用[removeAnimationCallback]，
+     * 先添加的[AnimationCallback]后执行，即倒序遍历[AnimationCallback]。
      */
     fun addAnimationCallback(callback: AnimationCallback) {
         if (callbacks.contains(callback)) return
         callbacks.add(callback)
-        dispatchAnimationRunning(callback)
+        dispatchAddedAnimationCallback(callback)
     }
 
     /**
@@ -111,8 +112,8 @@ abstract class EditorAnimator(
      * 设置最先分发的[callback]，该函数仅由实现类调用
      */
     protected fun setAnimationCallback(callback: AnimationCallback) {
+        require(!isActive) { "实现类只能在初始化时调用该函数" }
         this.callback = callback
-        dispatchAnimationRunning(callback)
     }
 
     internal fun forEachCallback(action: (AnimationCallback) -> Unit) {
@@ -184,7 +185,7 @@ abstract class EditorAnimator(
         animationRecord = null
     }
 
-    private fun dispatchAnimationRunning(callback: AnimationCallback) {
+    private fun dispatchAddedAnimationCallback(callback: AnimationCallback) {
         val record = animationRecord ?: return
         if (record.isRunning && record.checkAnimationOffset()) {
             // 每个函数都支持移除callback，因此需要再次检查callbacks是否包含callback
@@ -577,7 +578,7 @@ interface AnimationCallback {
     /**
      * 动画准备
      *
-     * 该函数在测量阶段最先被调用，此时可以修改[InputView]的属性。
+     * 该函数在测量阶段最先被调用，此时可以修改[InputView.editorMode]以及更新`contentView`。
      *
      * @param previous 动画起始[Editor]
      * @param current  动画结束[Editor]
@@ -587,14 +588,14 @@ interface AnimationCallback {
     /**
      * 动画开始
      *
-     * @param state 编辑区的动画状态
+     * 该函数在`preDraw`阶段调用，此时可以获取View的尺寸以及对View做变换、边界处理。
      */
     fun onAnimationStart(state: AnimationState) = Unit
 
     /**
      * 动画更新
      *
-     * @param state 编辑区的动画状态
+     * 后执行的[AnimationCallback]，可以在该函数下覆盖`state.startView`和`state.endView`的变换属性。
      */
     fun onAnimationUpdate(state: AnimationState) = Unit
 
@@ -602,8 +603,6 @@ interface AnimationCallback {
      * 动画结束
      *
      * **注意**：动画结束时，应当将`state.startView`和`state.endView`恢复为初始状态。
-     *
-     * @param state 编辑区的动画状态
      */
     fun onAnimationEnd(state: AnimationState) = Unit
 }

@@ -57,6 +57,10 @@ private object LinearEditorOffsetCallback : AnimationCallback {
 /**
  * [EditorAnimator.addAnimationCallback]的简化函数
  *
+ * @param onPrepare 对应[AnimationCallback.onAnimationPrepare]
+ * @param onStart   对应[AnimationCallback.onAnimationStart]
+ * @param onUpdate  对应[AnimationCallback.onAnimationUpdate]
+ * @param onEnd     对应[AnimationCallback.onAnimationEnd]
  * @return 返回添加的[AnimationCallback]，可用于[EditorAnimator.removeAnimationCallback]
  */
 inline fun EditorAnimator.addAnimationCallback(
