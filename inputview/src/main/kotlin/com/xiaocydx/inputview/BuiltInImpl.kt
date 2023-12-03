@@ -156,7 +156,6 @@ class FadeEditorAnimator(
 
             override fun onAnimationUpdate(state: AnimationState): Unit = with(state) {
                 updateEditorOffset(currentOffset)
-                if (startView == null && endView == null) return
                 startView?.alpha = calculateAlpha(state, matchNull = true, start = true)
                 endView?.alpha = calculateAlpha(state, matchNull = true, start = false)
             }
