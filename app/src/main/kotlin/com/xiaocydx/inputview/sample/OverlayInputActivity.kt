@@ -33,7 +33,7 @@ class OverlayInputActivity : AppCompatActivity() {
                 outside.alpha = if (it.endOffset > 0) fraction else 1 - fraction
             }
         )
-        inputView.setEditBackgroundColor(0xFFF2F2F2.toInt())
+        inputView.setEditorBackgroundColor(0xFFF2F2F2.toInt())
         outside.onClick { inputView.editorAdapter.notifyHideIme() }
     }
 }

@@ -223,14 +223,14 @@ abstract class EditorAnimator(
         animationDispatcher.onPendingChanged(previous, current)
     }
 
-    internal fun onAttachToEditorHost(host: EditorHost) {
+    internal fun onAttachedToHost(host: EditorHost) {
         this.host = host
         host.setOnApplyWindowInsetsListener(animationDispatcher)
         host.takeIf { enableWindowInsetsAnimation() }
             ?.setWindowInsetsAnimationCallback(durationMillis, interpolator, animationDispatcher)
     }
 
-    internal fun onDetachFromEditorHost(host: EditorHost) {
+    internal fun onDetachedFromHost(host: EditorHost) {
         endAnimation()
         host.setOnApplyWindowInsetsListener(null)
         host.takeIf { enableWindowInsetsAnimation() }

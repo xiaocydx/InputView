@@ -77,12 +77,12 @@ abstract class EditorAdapter<T : Editor> {
     }
 
     @CallSuper
-    internal open fun onAttachToEditorHost(host: EditorHost) {
+    internal open fun onAttachedToHost(host: EditorHost) {
         this.host = host
     }
 
     @CallSuper
-    internal open fun onDetachFromEditorHost(host: EditorHost) {
+    internal open fun onDetachedFromHost(host: EditorHost) {
         this.host = null
     }
 

@@ -66,13 +66,13 @@ internal class EditTextHolder(editText: EditText) {
         check(parent != null) { "EditText必须是InputView的子View或间接子View" }
     }
 
-    fun onAttachToEditorHost(host: EditorHost) {
+    fun onAttachedToHost(host: EditorHost) {
         this.host = host
         listener.attach()
         host.addAnimationCallback(callback)
     }
 
-    fun onDetachFromEditorHost(host: EditorHost) {
+    fun onDetachedFromHost(host: EditorHost) {
         this.host = null
         listener.detach()
         host.removeAnimationCallback(callback)

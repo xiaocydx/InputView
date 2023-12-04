@@ -146,14 +146,14 @@ abstract class FragmentEditorAdapter<T : Editor>(
         view?.let(container::removeView)
     }
 
-    final override fun onAttachToEditorHost(host: EditorHost) {
-        super.onAttachToEditorHost(host)
+    final override fun onAttachedToHost(host: EditorHost) {
+        super.onAttachedToHost(host)
         fragmentRestoreEnforcer.register()
         fragmentMaxLifecycleEnforcer.register(host)
     }
 
-    final override fun onDetachFromEditorHost(host: EditorHost) {
-        super.onDetachFromEditorHost(host)
+    final override fun onDetachedFromHost(host: EditorHost) {
+        super.onDetachedFromHost(host)
         fragmentRestoreEnforcer.unregister()
         fragmentMaxLifecycleEnforcer.unregister(host)
     }

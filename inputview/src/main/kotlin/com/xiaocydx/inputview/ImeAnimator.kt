@@ -112,13 +112,13 @@ class ImeAnimator internal constructor(
         override fun onViewAttachedToWindow(v: View) {
             val window = v.requireViewTreeWindow()
             host.onAttachedToWindow(window)
-            holder.onAttachToEditorHost(host)
-            this@ImeAnimator.onAttachToEditorHost(host)
+            holder.onAttachedToHost(host)
+            this@ImeAnimator.onAttachedToHost(host)
         }
 
         override fun onViewDetachedFromWindow(v: View) {
-            holder.onDetachFromEditorHost(host)
-            this@ImeAnimator.onDetachFromEditorHost(host)
+            holder.onDetachedFromHost(host)
+            this@ImeAnimator.onDetachedFromHost(host)
         }
     }
 

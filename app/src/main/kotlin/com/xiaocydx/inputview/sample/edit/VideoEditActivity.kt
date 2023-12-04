@@ -53,7 +53,7 @@ class VideoEditActivity : AppCompatActivity() {
         inputView.apply {
             editorAdapter = adapter
             editorMode = EditorMode.ADJUST_PAN
-            setEditBackgroundColor(0xFF1D1D1D.toInt())
+            setEditorBackgroundColor(0xFF1D1D1D.toInt())
         }
         arrayOf(
             tvInput to Text.Input, btnText to Text.Emoji,

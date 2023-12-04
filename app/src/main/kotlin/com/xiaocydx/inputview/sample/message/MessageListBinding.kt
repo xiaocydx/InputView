@@ -39,7 +39,7 @@ fun MessageListBinding.init(
         editText = etMessage
         editorMode = EditorMode.ADJUST_PAN
         this.editorAdapter = editorAdapter
-        setEditBackgroundColor(0xFFF2F2F2.toInt())
+        setEditorBackgroundColor(0xFFF2F2F2.toInt())
         // 调整Editor的动画时长，需要看durationMillis的注释说明
         // editorAnimator = FadeEditorAnimator(durationMillis = 500)
         // 不运行Editor的动画，仅记录动画状态，分发动画回调

@@ -160,7 +160,7 @@ class InputView @JvmOverloads constructor(
     /**
      * [Editor]区域的[Drawable]，边界范围包含手势导航栏EdgeToEdge的偏移
      */
-    var editBackground: Drawable? = null
+    var editorBackground: Drawable? = null
         set(value) {
             if (field === value) return
             setWillNotDraw(value == null)
@@ -169,6 +169,8 @@ class InputView @JvmOverloads constructor(
             field = value
             field?.invalidateSelf()
         }
+
+    val editTextManager = EditTextManager(host)
 
     /**
      * [InputView]是否正在布局，布局期间不允许对部分属性赋值
@@ -187,11 +189,11 @@ class InputView @JvmOverloads constructor(
     /**
      * 设置[Editor]区域的背景色，边界范围包含手势导航栏EdgeToEdge的偏移
      */
-    fun setEditBackgroundColor(@ColorInt color: Int) {
-        if (editBackground is ColorDrawable) {
-            (editBackground!!.mutate() as ColorDrawable).color = color
+    fun setEditorBackgroundColor(@ColorInt color: Int) {
+        if (editorBackground is ColorDrawable) {
+            (editorBackground!!.mutate() as ColorDrawable).color = color
         } else {
-            editBackground = ColorDrawable(color)
+            editorBackground = ColorDrawable(color)
         }
     }
 
@@ -214,7 +216,7 @@ class InputView @JvmOverloads constructor(
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        editorAnimator.endAnimation()
+        window?.let(host::onDetachedFromWindow)
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
@@ -363,8 +365,8 @@ class InputView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         val contentView = contentView ?: return
-        editBackground?.setBounds(0, contentView.bottom, width, height)
-        editBackground?.takeIf { it.bounds.height() > 0 }?.draw(canvas)
+        editorBackground?.setBounds(0, contentView.bottom, width, height)
+        editorBackground?.takeIf { it.bounds.height() > 0 }?.draw(canvas)
     }
 
     private fun enterLayout() = ++layoutCount
@@ -401,11 +403,11 @@ class InputView @JvmOverloads constructor(
     }
 
     private fun updateEditBackground(top: Int) {
-        editBackground?.takeIf { it.bounds.top != top }?.invalidateSelf()
+        editorBackground?.takeIf { it.bounds.top != top }?.invalidateSelf()
     }
 
     override fun verifyDrawable(who: Drawable): Boolean {
-        return who === editBackground || super.verifyDrawable(who)
+        return who === editorBackground || super.verifyDrawable(who)
     }
 
     @VisibleForTesting(otherwise = PRIVATE)
@@ -440,26 +442,32 @@ class InputView @JvmOverloads constructor(
             get() = editorView.changeRecord.currentChild
 
         fun onAttachedToWindow(window: ViewTreeWindow) {
+            editTextManager.onAttachedToWindow(window)
             pending?.apply { setWindowInsetsAnimationCallback(durationMillis, interpolator, callback) }
+        }
+
+        fun onDetachedFromWindow(window: ViewTreeWindow) {
+            editTextManager.onDetachedFromWindow(window)
+            editorAnimator.endAnimation()
         }
 
         fun onEditorAdapterChanged(previous: EditorAdapter<*>?, current: EditorAdapter<*>) {
             editorAnimator.endAnimation()
-            previous?.onDetachFromEditorHost(this)
-            current.onAttachToEditorHost(this)
+            previous?.onDetachedFromHost(this)
+            current.onAttachedToHost(this)
             previous?.forEachListener { if (it is Replicable) current.addEditorChangedListener(it) }
         }
 
         fun onEditorAnimatorChanged(previous: EditorAnimator?, current: EditorAnimator) {
-            previous?.onDetachFromEditorHost(this)
-            current.onAttachToEditorHost(this)
+            previous?.onDetachedFromHost(this)
+            current.onAttachedToHost(this)
             previous?.forEachCallback { if (it is Replicable) current.addAnimationCallback(it) }
             editorView.setRemovePreviousImmediately(!current.canRunAnimation)
         }
 
         fun onEditTextHolderChanged(previous: EditTextHolder?, current: EditTextHolder?) {
-            previous?.onDetachFromEditorHost(this)
-            current?.onAttachToEditorHost(this)
+            previous?.onDetachedFromHost(this)
+            current?.onAttachedToHost(this)
             editorView.setEditTextHolder(current)
         }
 

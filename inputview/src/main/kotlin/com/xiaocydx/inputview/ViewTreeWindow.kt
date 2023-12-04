@@ -136,6 +136,7 @@ internal class ViewTreeWindow(
     val gestureNavBarEdgeToEdge: Boolean
 ) : EdgeToEdgeHelper {
     private val decorView = window.decorView as ViewGroup
+    private val managers = mutableListOf<EditTextManager>()
 
     fun attach() = apply {
         check(decorView.viewTreeWindow == null) { "InputView.init()只能调用一次" }
@@ -143,6 +144,7 @@ internal class ViewTreeWindow(
         window.setSoftInputMode(SOFT_INPUT_ADJUST_RESIZE)
         window.setDecorFitsSystemWindowsCompat(false)
         window.checkDispatchApplyInsetsCompatibility()
+        window.callback = WindowCallbackImpl(window.callback)
         decorView.viewTreeWindow = this
     }
 
@@ -198,5 +200,25 @@ internal class ViewTreeWindow(
 
     fun restoreImeAnimation() {
         ReflectCompat { window.restoreImeAnimation() }
+    }
+
+    fun registerManager(manager: EditTextManager) {
+        if (!managers.contains(manager)) managers.add(manager)
+    }
+
+    fun unregisterManager(manager: EditTextManager) {
+        managers.remove(manager)
+    }
+
+    private inner class WindowCallbackImpl(
+        private val delegate: Window.Callback
+    ) : Window.Callback by delegate {
+
+        override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+            for (i in managers.indices) managers[i].beforeTouchEvent(ev)
+            val consumed = delegate.dispatchTouchEvent(ev)
+            for (i in managers.indices) managers[i].afterTouchEvent(ev)
+            return consumed
+        }
     }
 }
