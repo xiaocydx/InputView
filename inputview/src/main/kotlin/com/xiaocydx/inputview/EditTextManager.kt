@@ -101,7 +101,7 @@ internal class EditTextManager(
     private inner class EditTextHandle(editText: EditText) : WeakReference<EditText>(editText) {
 
         fun imeShown(): Boolean {
-            val root = window.run { getRootWindowInsets() }
+            val root = window.getRootWindowInsets()
             return if (root == null) false else window.run { root.imeHeight > 0 }
         }
 
