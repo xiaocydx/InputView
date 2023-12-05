@@ -206,15 +206,16 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
 
     private fun handleImeShown(shown: Boolean, controlIme: Boolean) {
         val editText = editText
-        require(!isCheckControlImeEnabled || !controlIme || editText != null) {
-            "未对InputView设置EditText，无法主动${if (shown) "显示" else "隐藏"}IME"
+        require(!isCheckControlImeEnabled
+                || !shown || !controlIme || editText != null) {
+            "未对InputView设置EditText，无法主动显示IME"
         }
         editText ?: return
         if (shown) {
-            editText.requestFocus()
+            editText.requestCurrentFocus()
             if (controlIme) editText.showIme()
         } else {
-            editText.clearFocus()
+            editText.clearCurrentFocus()
             if (controlIme) editText.hideIme()
         }
     }

@@ -21,6 +21,7 @@ package com.xiaocydx.inputview
 import android.annotation.SuppressLint
 import android.view.View
 import android.view.View.OnAttachStateChangeListener
+import android.view.Window
 import android.view.animation.Interpolator
 import android.widget.EditText
 import androidx.annotation.CheckResult
@@ -32,11 +33,12 @@ import com.xiaocydx.inputview.EditorAnimator.Companion.ANIMATION_INTERPOLATOR
 import com.xiaocydx.inputview.compat.ReflectCompat
 
 /**
- * 复用[InputView]的动画实现，需要调用`InputView.init()`完成初始化
+ * 复用[InputView]的动画实现，需要先调用[init]或[initCompat]完成初始化，
+ * 该函数不能跟[InputView]一直使用，两者不是共存关系，只能选择其中一个。
  *
  * ```
  * InputView.init(window)
- * val animator = InputView.animator(editText)
+ * val animator = InputView.animator(window, editText)
  * animator.addAnimationCallback(
  *     onPrepare = { previous, current ->
  *         // 显示和隐藏IME，处理editText的焦点，覆盖默认实现
@@ -55,35 +57,34 @@ import com.xiaocydx.inputview.compat.ReflectCompat
  */
 @CheckResult
 fun InputView.Companion.animator(
+    window: Window,
     editText: EditText,
     durationMillis: Long = ANIMATION_DURATION_MILLIS,
     interpolator: Interpolator = ANIMATION_INTERPOLATOR
 ): ImeAnimator {
     val key = R.id.tag_view_ime_animator
+    val viewTreeWindow = window.decorView.requireViewTreeWindow()
     var animator = editText.getTag(key) as? ImeAnimator
     if (animator == null) {
-        animator = ImeAnimator(editText, durationMillis, interpolator)
+        animator = ImeAnimator(viewTreeWindow, editText, durationMillis, interpolator)
         editText.setTag(key, animator)
     }
     return animator
 }
 
 class ImeAnimator internal constructor(
-    editText: EditText,
+    private val window: ViewTreeWindow,
+    private val editText: EditText,
     durationMillis: Long,
     interpolator: Interpolator
 ) : EditorAnimator(durationMillis, interpolator) {
-    private val host = EditorHostImpl(editText)
+    private val host = EditorHostImpl()
     private val holder = EditTextHolder(editText)
 
     init {
         setAnimationCallback(object : AnimationCallback {
-            override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
-                if (current != null) holder.requestFocus() else holder.clearFocus()
-            }
-
             override fun onAnimationUpdate(state: AnimationState) {
-                state.apply { updateEditorOffset(currentOffset) }
+                state.updateEditorOffset(state.currentOffset)
             }
         })
         val listener = object : OnAttachStateChangeListener {
@@ -111,12 +112,11 @@ class ImeAnimator internal constructor(
         holder.hideIme()
     }
 
-    private inner class EditorHostImpl(private val editText: EditText) : EditorHost {
-        private var window: ViewTreeWindow? = null
+    private inner class EditorHostImpl : EditorHost {
         override val WindowInsetsCompat.imeHeight: Int
-            get() = window?.run { imeHeight } ?: NO_VALUE
+            get() = window.run { imeHeight }
         override val WindowInsetsCompat.imeOffset: Int
-            get() = window?.run { imeOffset } ?: NO_VALUE
+            get() = window.run { imeOffset }
         override var editorOffset = 0
         override var navBarOffset = 0
         override val ime = Ime
@@ -126,14 +126,13 @@ class ImeAnimator internal constructor(
         override val currentView = null
 
         fun onAttachedToWindow() {
-            this.window = editText.requireViewTreeWindow()
-            window?.register(this)
-            window?.addHandle(editText)
+            window.register(this)
+            window.addEditText(editText)
         }
 
         fun onDetachedFromWindow() {
-            window?.unregister(this)
-            window?.removeHandle(editText)
+            window.unregister(this)
+            window.removeEditText(editText)
         }
 
         override fun updateEditorOffset(offset: Int) {
@@ -143,6 +142,7 @@ class ImeAnimator internal constructor(
         override fun dispatchImeShown(shown: Boolean) {
             val previous = current
             current = if (shown) ime else null
+            if (shown) holder.requestCurrentFocus() else holder.clearCurrentFocus()
             this@ImeAnimator.onPendingChanged(previous, current)
         }
 
@@ -160,7 +160,7 @@ class ImeAnimator internal constructor(
 
         override fun setOnApplyWindowInsetsListener(listener: OnApplyWindowInsetsListenerCompat?) {
             val wrapper = if (listener == null) null else OnApplyWindowInsetsListenerCompat { v, insets ->
-                navBarOffset = window?.run { insets.navigationBarOffset } ?: 0
+                navBarOffset = window.run { insets.navigationBarOffset }
                 listener.onApplyWindowInsets(v, insets)
             }
             if (wrapper == null) navBarOffset = 0
@@ -172,7 +172,6 @@ class ImeAnimator internal constructor(
             interpolator: Interpolator,
             callback: WindowInsetsAnimationCompat.Callback?
         ) {
-            val window = window ?: return
             if (callback == null) {
                 window.restoreImeAnimation()
             } else {

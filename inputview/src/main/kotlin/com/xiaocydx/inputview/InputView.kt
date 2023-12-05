@@ -430,13 +430,13 @@ class InputView @JvmOverloads constructor(
 
         fun onAttachedToWindow(window: ViewTreeWindow) {
             window.register(this)
-            editTextHolder?.get()?.let(window::addHandle)
+            editTextHolder?.get()?.let(window::addEditText)
             pending?.apply { setWindowInsetsAnimationCallback(durationMillis, interpolator, callback) }
         }
 
         fun onDetachedFromWindow(window: ViewTreeWindow) {
             window.unregister(this)
-            editTextHolder?.get()?.let(window::removeHandle)
+            editTextHolder?.get()?.let(window::removeEditText)
             editorAnimator.endAnimation()
         }
 
@@ -456,8 +456,8 @@ class InputView @JvmOverloads constructor(
 
         fun onEditTextHolderChanged(previous: EditTextHolder?, current: EditTextHolder?) {
             if (window != null) {
-                previous?.get()?.let(window!!::removeHandle)
-                current?.get()?.let(window!!::addHandle)
+                previous?.get()?.let(window!!::removeEditText)
+                current?.get()?.let(window!!::addEditText)
             }
             previous?.onDetachedFromHost(this)
             current?.onAttachedToHost(this)
@@ -473,7 +473,6 @@ class InputView @JvmOverloads constructor(
         }
 
         override fun dispatchImeShown(shown: Boolean) {
-            // TODO: 补充当前焦点的判断处理
             assertNotInLayout { "调度IME显示" }
             editorView.dispatchImeShown(shown)
         }

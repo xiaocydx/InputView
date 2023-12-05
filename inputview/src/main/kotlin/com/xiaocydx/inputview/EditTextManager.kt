@@ -2,13 +2,14 @@ package com.xiaocydx.inputview
 
 import android.graphics.Matrix
 import android.view.MotionEvent
-import android.view.View
-import android.view.View.OnAttachStateChangeListener
 import android.view.Window
 import android.widget.EditText
 import androidx.core.view.isVisible
+import java.lang.ref.WeakReference
 
 /**
+ * [EditText]的管理器，负责处理[EditText]的水滴状指示器
+ *
  * @author xcc
  * @date 2023/12/4
  */
@@ -31,25 +32,34 @@ internal class EditTextManager(
         host.removeAnimationCallback(callback)
     }
 
-    fun addHandle(editText: EditText): Boolean {
-        if (indexOf(editText) >= 0) return false
-        EditTextHandle(editText).onViewAttachedToWindow(editText)
-        return true
+    fun addEditText(editText: EditText): Boolean {
+        val handle = findHandle { it === editText }
+        return if (handle == null) handles.add(EditTextHandle(editText)) else false
     }
 
-    fun removeHandle(editText: EditText): Boolean {
-        val handle = indexOf(editText).let(handles::getOrNull) ?: return false
-        handle.onViewDetachedFromWindow(editText)
-        return true
+    fun removeEditText(editText: EditText): Boolean {
+        val handle = findHandle { it === editText }
+        return if (handle != null) handles.remove(handle) else false
     }
 
-    private fun indexOf(editText: EditText): Int {
-        return handles.indexOfFirst { it.editText === editText }
+    private fun findHandle(predicate: (EditText) -> Boolean): EditTextHandle? {
+        forEach action@{ handle ->
+            val editText = handle.get() ?: return@action
+            if (predicate(editText)) return handle
+        }
+        return null
+    }
+
+    private inline fun forEach(action: (EditTextHandle) -> Unit) {
+        for (i in handles.indices.reversed()) {
+            val handle = handles[i]
+            if (handle.get() != null) action(handle) else handles.removeAt(i)
+        }
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         if (ev.action == MotionEvent.ACTION_DOWN) {
-            touchedHandle = findTouchedHandle(ev)
+            touchedHandle = findHandle { it.isTouched(ev) }
             touchedHandle?.beforeTouchEvent(ev)
         }
         val consumed = delegate.dispatchTouchEvent(ev)
@@ -59,15 +69,6 @@ internal class EditTextManager(
             touchedHandle = null
         }
         return consumed
-    }
-
-    private inline fun forEachHandle(action: (EditTextHandle) -> Unit) {
-        for (i in handles.indices.reversed()) action(handles[i])
-    }
-
-    private fun findTouchedHandle(ev: MotionEvent): EditTextHandle? {
-        forEachHandle { handle -> if (handle.editText.isTouched(ev)) return handle }
-        return null
     }
 
     private fun EditText.isTouched(ev: MotionEvent): Boolean {
@@ -91,26 +92,13 @@ internal class EditTextManager(
      * 当动画开始时，隐藏左右水滴状指示器，避免动画运行时不断跨进程通信，进而造成卡顿。
      */
     private inner class HideTextSelectHandleOnStart : ReplicableAnimationCallback {
-        override fun onAnimationStart(state: AnimationState) = forEachHandle { handle ->
+        override fun onAnimationStart(state: AnimationState) = forEach { handle ->
             handle.takeIf { it.hasTextSelectHandleLeftRight() }
                 ?.hideTextSelectHandle(keepFocus = state.isIme(state.current))
         }
     }
 
-    private inner class EditTextHandle(val editText: EditText) : OnAttachStateChangeListener {
-
-        override fun onViewAttachedToWindow(v: View) {
-            if (indexOf(editText) < 0) {
-                handles.add(this)
-                editText.addOnAttachStateChangeListener(this)
-            }
-        }
-
-        override fun onViewDetachedFromWindow(v: View) {
-            if (handles.remove(this)) {
-                editText.removeOnAttachStateChangeListener(this)
-            }
-        }
+    private inner class EditTextHandle(editText: EditText) : WeakReference<EditText>(editText) {
 
         fun imeShown(): Boolean {
             val root = window.run { getRootWindowInsets() }
@@ -123,7 +111,7 @@ internal class EditTextManager(
         fun beforeTouchEvent(ev: MotionEvent) {
             if (ev.action == MotionEvent.ACTION_DOWN) {
                 // 按下时，将EditText重置为获得焦点显示IME
-                editText.showSoftInputOnFocus = true
+                get()?.showSoftInputOnFocus = true
             }
         }
 
@@ -131,6 +119,7 @@ internal class EditTextManager(
          * 点击[EditText]显示IME，需要隐藏水滴状指示器，避免动画运行时不断跨进程通信，进而造成卡顿
          */
         fun afterTouchEvent(ev: MotionEvent) {
+            val editText = get() ?: return
             if (ev.action == MotionEvent.ACTION_UP && editText.showSoftInputOnFocus) {
                 // 点击EditText显示IME，手指抬起时隐藏水滴状指示器，
                 // 注意：此时隐藏，能确保手指抬起后完全看不到指示器。
@@ -147,6 +136,7 @@ internal class EditTextManager(
          * 因此通过`clearFocus`隐藏水滴状指示器，若[keepFocus]为`true`，则重新获得焦点。
          */
         fun hideTextSelectHandle(keepFocus: Boolean = true) {
+            val editText = get() ?: return
             if (!editText.hasFocus()) return
             editText.clearFocus()
             if (keepFocus) editText.requestFocus()
@@ -157,6 +147,7 @@ internal class EditTextManager(
          * 因此用`selectionStart != selectionEnd`为`true`表示当前有左右水滴状指示器。
          */
         fun hasTextSelectHandleLeftRight(): Boolean {
+            val editText = get() ?: return false
             return editText.selectionStart != editText.selectionEnd
         }
     }

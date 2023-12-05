@@ -28,7 +28,7 @@ class ImeAnimatorActivity : AppCompatActivity() {
     }
 
     private fun ActivityImeAnimatorBinding.init() = EdgeToEdgeHelper {
-        val animator = InputView.animator(editText)
+        val animator = InputView.animator(window, editText)
         // 1. 点击imageView，隐藏IME
         imageView.onClick(animator::hideIme)
         // 2. 当支持手势导航栏EdgeToEdge时，设置etContainer.paddingBottom

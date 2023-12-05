@@ -59,16 +59,12 @@ internal class EditTextHolder(editText: EditText) :
 
     override fun onViewDetachedFromWindow(v: View) = removePending()
 
-    fun hasFocus(): Boolean {
-        return get()?.hasFocus() ?: false
+    fun requestCurrentFocus() {
+        window?.currentFocus?.requestFocus() ?: get()?.requestFocus()
     }
 
-    fun requestFocus() {
-        get()?.requestFocus()
-    }
-
-    fun clearFocus() {
-        get()?.clearFocus()
+    fun clearCurrentFocus() {
+        window?.currentFocus?.clearFocus() ?: get()?.clearFocus()
     }
 
     fun showIme() {

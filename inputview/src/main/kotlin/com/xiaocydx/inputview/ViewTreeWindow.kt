@@ -64,6 +64,25 @@ fun InputView.Companion.initCompat(
 }
 
 /**
+ * 添加需要处理水滴状指示器的[editText]，再次添加[editText]返回`false`，
+ * 内部实现通过弱引用的方式持有[editText]，因此不必担心会有内存泄漏问题，
+ * 调用该函数之前，需要先调用[init]或[initCompat]完成初始化。
+ *
+ * 水滴状指示器的处理逻辑，可以看[EditTextManager.EditTextHandle]的实现。
+ */
+fun InputView.Companion.addEditText(window: Window, editText: EditText): Boolean {
+    return window.decorView.requireViewTreeWindow().addEditText(editText)
+}
+
+/**
+ * 移除[addEditText]添加的[editText]，再次移除[editText]返回`false`，
+ * 调用该函数之前，需要先调用[init]或[initCompat]完成初始化。
+ */
+fun InputView.Companion.removeEditText(window: Window, editText: EditText): Boolean {
+    return window.decorView.requireViewTreeWindow().removeEditText(editText)
+}
+
+/**
  * 检查Android 11以下`ViewRootImpl.dispatchApplyInsets()`的兼容性
  *
  * 以Android 10显示IME为例：
@@ -128,8 +147,8 @@ internal fun View.getOrFindViewTreeWindow(): ViewTreeWindow? {
     return viewTreeWindow ?: findViewTreeWindow()?.also { viewTreeWindow = it }
 }
 
-internal fun View.requireViewTreeWindow(): ViewTreeWindow {
-    return requireNotNull(findViewTreeWindow()) { "需要调用InputView.init()完成初始化" }
+internal fun View.requireViewTreeWindow() = requireNotNull(findViewTreeWindow()) {
+    "需要先调用InputView.init()或InputView.initCompat()完成初始化"
 }
 
 internal class ViewTreeWindow(
@@ -138,6 +157,8 @@ internal class ViewTreeWindow(
 ) : EdgeToEdgeHelper {
     private val decorView = window.decorView as ViewGroup
     private val manager = EditTextManager(this, window.callback)
+    val currentFocus: View?
+        get() = window.currentFocus
 
     fun attach() = apply {
         check(decorView.viewTreeWindow == null) { "InputView.init()只能调用一次" }
@@ -216,7 +237,7 @@ internal class ViewTreeWindow(
 
     fun unregister(host: EditorHost) = manager.unregister(host)
 
-    fun addHandle(editText: EditText) = manager.addHandle(editText)
+    fun addEditText(editText: EditText) = manager.addEditText(editText)
 
-    fun removeHandle(editText: EditText) = manager.removeHandle(editText)
+    fun removeEditText(editText: EditText) = manager.removeEditText(editText)
 }
