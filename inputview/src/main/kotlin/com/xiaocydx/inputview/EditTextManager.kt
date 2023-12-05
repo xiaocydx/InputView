@@ -42,7 +42,7 @@ internal class EditTextManager(
         return if (handle != null) handles.remove(handle) else false
     }
 
-    private fun findHandle(predicate: (EditText) -> Boolean): EditTextHandle? {
+    private inline fun findHandle(predicate: (EditText) -> Boolean): EditTextHandle? {
         forEach action@{ handle ->
             val editText = handle.get() ?: return@action
             if (predicate(editText)) return handle
