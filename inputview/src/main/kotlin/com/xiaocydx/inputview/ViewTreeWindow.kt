@@ -23,6 +23,7 @@ import android.view.*
 import android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
 import android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
 import android.view.animation.Interpolator
+import android.widget.EditText
 import androidx.core.view.*
 import androidx.core.view.WindowInsetsCompat.Type.*
 import com.xiaocydx.inputview.compat.*
@@ -136,7 +137,7 @@ internal class ViewTreeWindow(
     val gestureNavBarEdgeToEdge: Boolean
 ) : EdgeToEdgeHelper {
     private val decorView = window.decorView as ViewGroup
-    private val managers = mutableListOf<EditTextManager>()
+    private val manager = EditTextManager(this, window.callback)
 
     fun attach() = apply {
         check(decorView.viewTreeWindow == null) { "InputView.init()只能调用一次" }
@@ -144,7 +145,7 @@ internal class ViewTreeWindow(
         window.setSoftInputMode(SOFT_INPUT_ADJUST_RESIZE)
         window.setDecorFitsSystemWindowsCompat(false)
         window.checkDispatchApplyInsetsCompatibility()
-        window.callback = WindowCallbackImpl(window.callback)
+        window.callback = manager
         decorView.viewTreeWindow = this
     }
 
@@ -191,8 +192,17 @@ internal class ViewTreeWindow(
     val WindowInsetsCompat.navigationBarOffset: Int
         get() = if (supportGestureNavBarEdgeToEdge(decorView)) navigationBarHeight else 0
 
-    fun createWindowInsetsController(editText: View) =
-            window.createWindowInsetsControllerCompat(editText)
+    fun getRootWindowInsets() = decorView.getRootWindowInsetsCompat()
+
+    fun showIme(editText: EditText) {
+        // controllerCompat对象很轻量，showIme不会产生内部状态
+        window.createWindowInsetsControllerCompat(editText).show(ime())
+    }
+
+    fun hideIme() {
+        // controllerCompat对象很轻量，hideIme不会产生内部状态
+        window.createWindowInsetsControllerCompat(decorView).hide(ime())
+    }
 
     fun modifyImeAnimation(durationMillis: Long, interpolator: Interpolator) {
         ReflectCompat { window.modifyImeAnimation(durationMillis, interpolator) }
@@ -202,23 +212,11 @@ internal class ViewTreeWindow(
         ReflectCompat { window.restoreImeAnimation() }
     }
 
-    fun registerManager(manager: EditTextManager) {
-        if (!managers.contains(manager)) managers.add(manager)
-    }
+    fun register(host: EditorHost) = manager.register(host)
 
-    fun unregisterManager(manager: EditTextManager) {
-        managers.remove(manager)
-    }
+    fun unregister(host: EditorHost) = manager.unregister(host)
 
-    private inner class WindowCallbackImpl(
-        private val delegate: Window.Callback
-    ) : Window.Callback by delegate {
+    fun addHandle(editText: EditText) = manager.addHandle(editText)
 
-        override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-            for (i in managers.indices) managers[i].beforeTouchEvent(ev)
-            val consumed = delegate.dispatchTouchEvent(ev)
-            for (i in managers.indices) managers[i].afterTouchEvent(ev)
-            return consumed
-        }
-    }
+    fun removeHandle(editText: EditText) = manager.removeHandle(editText)
 }

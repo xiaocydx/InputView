@@ -49,8 +49,7 @@ import com.xiaocydx.inputview.compat.ReflectCompat
  * ```
  *
  * @param editText 首次按[durationMillis]和[interpolator]创建[EditorAnimator]，
- * 后续获取的是首次创建的[EditorAnimator]，显示IME会获得焦点，隐藏IME会清除焦点，
- * 利用[EditText.setOnTouchListener]，解决水滴状指示器导致动画卡顿的问题。
+ * 后续获取的是首次创建的[EditorAnimator]，显示IME会获得焦点，隐藏IME会清除焦点。
  * @param durationMillis 参数含义跟[EditorAnimator.durationMillis]一致
  * @param interpolator   参数含义跟[EditorAnimator.interpolator]一致
  */
@@ -78,14 +77,28 @@ class ImeAnimator internal constructor(
     private val holder = EditTextHolder(editText)
 
     init {
-        setAnimationCallback(EditorOffsetUpdater())
-        editText.setOnTouchListener { _, event ->
-            holder.beforeTouchEvent(event)
-            val consumed = editText.onTouchEvent(event)
-            holder.afterTouchEvent(event)
-            consumed
+        setAnimationCallback(object : AnimationCallback {
+            override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
+                if (current != null) holder.requestFocus() else holder.clearFocus()
+            }
+
+            override fun onAnimationUpdate(state: AnimationState) {
+                state.apply { updateEditorOffset(currentOffset) }
+            }
+        })
+        val listener = object : OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) {
+                host.onAttachedToWindow()
+                holder.onAttachedToHost(host)
+                this@ImeAnimator.onAttachedToHost(host)
+            }
+
+            override fun onViewDetachedFromWindow(v: View) {
+                host.onDetachedFromWindow()
+                holder.onDetachedFromHost(host)
+                this@ImeAnimator.onDetachedFromHost(host)
+            }
         }
-        val listener = AttachStateChangeListenerImpl()
         editText.addOnAttachStateChangeListener(listener)
         editText.takeIf { it.isAttachedToWindow }?.let(listener::onViewAttachedToWindow)
     }
@@ -98,31 +111,7 @@ class ImeAnimator internal constructor(
         holder.hideIme()
     }
 
-    private inner class EditorOffsetUpdater : AnimationCallback {
-        override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
-            if (current != null) holder.requestFocus() else holder.clearFocus()
-        }
-
-        override fun onAnimationUpdate(state: AnimationState) {
-            state.apply { updateEditorOffset(currentOffset) }
-        }
-    }
-
-    private inner class AttachStateChangeListenerImpl : OnAttachStateChangeListener {
-        override fun onViewAttachedToWindow(v: View) {
-            val window = v.requireViewTreeWindow()
-            host.onAttachedToWindow(window)
-            holder.onAttachedToHost(host)
-            this@ImeAnimator.onAttachedToHost(host)
-        }
-
-        override fun onViewDetachedFromWindow(v: View) {
-            holder.onDetachedFromHost(host)
-            this@ImeAnimator.onDetachedFromHost(host)
-        }
-    }
-
-    private inner class EditorHostImpl(private val view: View) : EditorHost {
+    private inner class EditorHostImpl(private val editText: EditText) : EditorHost {
         private var window: ViewTreeWindow? = null
         override val WindowInsetsCompat.imeHeight: Int
             get() = window?.run { imeHeight } ?: NO_VALUE
@@ -136,8 +125,15 @@ class ImeAnimator internal constructor(
         override val previousView = null
         override val currentView = null
 
-        fun onAttachedToWindow(window: ViewTreeWindow) {
-            this.window = window
+        fun onAttachedToWindow() {
+            this.window = editText.requireViewTreeWindow()
+            window?.register(this)
+            window?.addHandle(editText)
+        }
+
+        fun onDetachedFromWindow() {
+            window?.unregister(this)
+            window?.removeHandle(editText)
         }
 
         override fun updateEditorOffset(offset: Int) {
@@ -159,7 +155,7 @@ class ImeAnimator internal constructor(
         }
 
         override fun addPreDrawAction(action: () -> Unit): OneShotPreDrawListener {
-            return OneShotPreDrawListener.add(view, action)
+            return OneShotPreDrawListener.add(editText, action)
         }
 
         override fun setOnApplyWindowInsetsListener(listener: OnApplyWindowInsetsListenerCompat?) {
@@ -168,7 +164,7 @@ class ImeAnimator internal constructor(
                 listener.onApplyWindowInsets(v, insets)
             }
             if (wrapper == null) navBarOffset = 0
-            ReflectCompat { view.setOnApplyWindowInsetsListenerImmutable(wrapper) }
+            ReflectCompat { editText.setOnApplyWindowInsetsListenerImmutable(wrapper) }
         }
 
         override fun setWindowInsetsAnimationCallback(
@@ -182,7 +178,7 @@ class ImeAnimator internal constructor(
             } else {
                 window.modifyImeAnimation(durationMillis, interpolator)
             }
-            ReflectCompat { view.setWindowInsetsAnimationCallbackImmutable(callback) }
+            ReflectCompat { editText.setWindowInsetsAnimationCallbackImmutable(callback) }
         }
 
         override fun removeEditorView(view: View) = Unit

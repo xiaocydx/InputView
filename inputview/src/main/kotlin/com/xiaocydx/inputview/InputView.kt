@@ -22,7 +22,6 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.Gravity
-import android.view.MotionEvent
 import android.view.View
 import android.view.View.MeasureSpec.AT_MOST
 import android.view.View.MeasureSpec.EXACTLY
@@ -97,11 +96,11 @@ class InputView @JvmOverloads constructor(
      * ```
      */
     var editText: EditText?
-        get() = editTextHolder?.value as? EditText
+        get() = editTextHolder?.get()
         set(value) {
             assertNotInLayout { "设置ediText" }
             val previous = editTextHolder
-            if (previous?.value === value) return
+            if (previous?.get() === value) return
             val current = value?.let(::EditTextHolder)
             host.onEditTextHolderChanged(previous, current)
             editTextHolder = current
@@ -170,8 +169,6 @@ class InputView @JvmOverloads constructor(
             field?.invalidateSelf()
         }
 
-    val editTextManager = EditTextManager(host)
-
     /**
      * [InputView]是否正在布局，布局期间不允许对部分属性赋值
      */
@@ -217,16 +214,6 @@ class InputView @JvmOverloads constructor(
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         window?.let(host::onDetachedFromWindow)
-    }
-
-    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-        if (ev.action == MotionEvent.ACTION_DOWN) {
-            editTextHolder?.checkParentInputView()
-        }
-        editTextHolder?.beforeTouchEvent(ev)
-        val consumed = super.dispatchTouchEvent(ev)
-        editTextHolder?.afterTouchEvent(ev)
-        return consumed
     }
 
     /**
@@ -442,12 +429,14 @@ class InputView @JvmOverloads constructor(
             get() = editorView.changeRecord.currentChild
 
         fun onAttachedToWindow(window: ViewTreeWindow) {
-            editTextManager.onAttachedToWindow(window)
+            window.register(this)
+            editTextHolder?.get()?.let(window::addHandle)
             pending?.apply { setWindowInsetsAnimationCallback(durationMillis, interpolator, callback) }
         }
 
         fun onDetachedFromWindow(window: ViewTreeWindow) {
-            editTextManager.onDetachedFromWindow(window)
+            window.unregister(this)
+            editTextHolder?.get()?.let(window::removeHandle)
             editorAnimator.endAnimation()
         }
 
@@ -466,6 +455,10 @@ class InputView @JvmOverloads constructor(
         }
 
         fun onEditTextHolderChanged(previous: EditTextHolder?, current: EditTextHolder?) {
+            if (window != null) {
+                previous?.get()?.let(window!!::removeHandle)
+                current?.get()?.let(window!!::addHandle)
+            }
             previous?.onDetachedFromHost(this)
             current?.onAttachedToHost(this)
             editorView.setEditTextHolder(current)
@@ -480,6 +473,7 @@ class InputView @JvmOverloads constructor(
         }
 
         override fun dispatchImeShown(shown: Boolean) {
+            // TODO: 补充当前焦点的判断处理
             assertNotInLayout { "调度IME显示" }
             editorView.dispatchImeShown(shown)
         }
