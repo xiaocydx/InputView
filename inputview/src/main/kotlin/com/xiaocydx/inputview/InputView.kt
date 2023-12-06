@@ -78,11 +78,13 @@ class InputView @JvmOverloads constructor(
     private var navBarOffset = 0
 
     /**
-     * 用于兼容Android各版本显示和隐藏IME的[EditText]
+     * 用于兼容Android各版本显示IME的[EditText]
      *
-     * **注意**：[editText]必须是[InputView]的子View或间接子View。
+     * 多个[EditText]的焦点处理逻辑：
+     * 1. 调用[EditorAdapter]提供的函数显示IME，会让[editText]获得焦点。
+     * 2. 调用[EditorAdapter]提供的函数隐藏IME，或者通过其它方式隐藏IME，
+     * 会清除`currentFocus`的焦点，`currentFocus`不一定是[editText]。
      *
-     * 显示IME[editText]会获得焦点，隐藏IME会清除[editText]的焦点，
      * 可以通过[EditorChangedListener]处理[editText]的焦点，例如：
      * ```
      * enum class MessageEditor : Editor {
@@ -269,7 +271,7 @@ class InputView @JvmOverloads constructor(
                 if (contentDiff != Int.MIN_VALUE) {
                     contentView.offsetTopAndBottom(contentDiff)
                 }
-                updateEditBackground(top = contentView.bottom)
+                updateEditorBackground(top = contentView.bottom)
             }
             EditorMode.ADJUST_RESIZE -> requestLayout()
         }
@@ -345,7 +347,7 @@ class InputView @JvmOverloads constructor(
             val top = bottom - it.measuredHeight
             it.layout(left, top, right, bottom)
         }
-        updateEditBackground(top = contentView.bottom)
+        updateEditorBackground(top = contentView.bottom)
         exitChange()
         exitLayout()
     }
@@ -389,7 +391,7 @@ class InputView @JvmOverloads constructor(
         return (editorOffset - navBarOffset).coerceAtLeast(0)
     }
 
-    private fun updateEditBackground(top: Int) {
+    private fun updateEditorBackground(top: Int) {
         editorBackground?.takeIf { it.bounds.top != top }?.invalidateSelf()
     }
 

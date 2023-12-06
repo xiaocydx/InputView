@@ -20,7 +20,6 @@ import android.app.Activity
 import android.app.Dialog
 import android.graphics.*
 import android.view.*
-import android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
 import android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
 import android.view.animation.Interpolator
 import android.widget.EditText
@@ -68,7 +67,8 @@ fun InputView.Companion.initCompat(
  * 内部实现通过弱引用的方式持有[editText]，因此不必担心会有内存泄漏问题，
  * 调用该函数之前，需要先调用[init]或[initCompat]完成初始化。
  *
- * 水滴状指示器的处理逻辑，可以看[EditTextManager.EditTextHandle]的实现。
+ * 对[InputView]和[ImeAnimator]设置的`editText`，会默认调用该函数，
+ * 水滴状指示器的处理逻辑，可以看[EditTextManager.EditTextHandle]。
  */
 fun InputView.Companion.addEditText(window: Window, editText: EditText): Boolean {
     return window.decorView.requireViewTreeWindow().addEditText(editText)
@@ -82,53 +82,12 @@ fun InputView.Companion.removeEditText(window: Window, editText: EditText): Bool
     return window.decorView.requireViewTreeWindow().removeEditText(editText)
 }
 
-/**
- * 检查Android 11以下`ViewRootImpl.dispatchApplyInsets()`的兼容性
- *
- * 以Android 10显示IME为例：
- * 1. IME进程调用`WindowManagerService.setInsetsWindow()`，
- * 进而调用`DisplayPolicy.layoutWindowLw()`计算各项`insets`。
- *
- * 2. `window.attributes.flags`包含[FLAG_FULLSCREEN]，
- * 或`window.attributes.softInputMode`不包含[SOFT_INPUT_ADJUST_RESIZE]，
- * `DisplayPolicy.layoutWindowLw()`计算的`contentInsets`不会包含IME的数值。
- *
- * 3. `WindowManagerService`通知应用进程的`ViewRootImpl`重新设置`mPendingContentInsets`的数值，
- * 并申请下一帧布局，下一帧由于`mPendingContentInsets`跟`mAttachInfo.mContentInsets`的数值相等，
- * 因此不调用`ViewRootImpl.dispatchApplyInsets()`。
- */
-private fun Window.checkDispatchApplyInsetsCompatibility() = ReflectCompat {
-    check(!isFloating) {
-        "InputView需要主题的windowIsFloating = false，" +
-                "否则会导致视图树没有WindowInsets分发"
-    }
-    @Suppress("DEPRECATION")
-    check(isFullscreenCompatEnabled || (attributes.flags and FLAG_FULLSCREEN == 0)) {
-        "InputView需要主题的windowFullscreen = false，" +
-                "或window.attributes.flags不包含FLAG_FULLSCREEN，" +
-                "否则会导致Android 11以下显示或隐藏IME不进行WindowInsets分发，" +
-                "可以尝试Window.enableDispatchApplyInsetsFullscreenCompat()的兼容方案"
-    }
-    @Suppress("DEPRECATION")
-    check(attributes.softInputMode and SOFT_INPUT_ADJUST_RESIZE != 0) {
-        "InputView需要window.attributes.softInputMode包含SOFT_INPUT_ADJUST_RESIZE，" +
-                "否则会导致Android 11以下显示或隐藏IME不进行WindowInsets分发，" +
-                "可以调用Window.setSoftInputMode()设置SOFT_INPUT_ADJUST_RESIZE"
-    }
-}
-
-/**
- * 视图树的[ViewTreeWindow]
- */
 private var View.viewTreeWindow: ViewTreeWindow?
     get() = getTag(R.id.tag_view_tree_window) as? ViewTreeWindow
     set(value) {
         setTag(R.id.tag_view_tree_window, value)
     }
 
-/**
- * 查找视图树的[ViewTreeWindow]，若查找不到，则返回`null`
- */
 internal fun View.findViewTreeWindow(): ViewTreeWindow? {
     var found: ViewTreeWindow? = viewTreeWindow
     if (found != null) return found
@@ -140,9 +99,6 @@ internal fun View.findViewTreeWindow(): ViewTreeWindow? {
     return found
 }
 
-/**
- * 获取视图树的[ViewTreeWindow]，若获取不到，则查找并设置
- */
 internal fun View.getOrFindViewTreeWindow(): ViewTreeWindow? {
     return viewTreeWindow ?: findViewTreeWindow()?.also { viewTreeWindow = it }
 }
@@ -161,7 +117,9 @@ internal class ViewTreeWindow(
         get() = window.currentFocus
 
     fun attach() = apply {
-        check(decorView.viewTreeWindow == null) { "InputView.init()只能调用一次" }
+        check(decorView.viewTreeWindow == null) {
+            "InputView.init()或InputView.initCompat()只能调用一次"
+        }
         @Suppress("DEPRECATION")
         window.setSoftInputMode(SOFT_INPUT_ADJUST_RESIZE)
         window.setDecorFitsSystemWindowsCompat(false)

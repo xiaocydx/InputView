@@ -1,6 +1,7 @@
 package com.xiaocydx.inputview.sample
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.init

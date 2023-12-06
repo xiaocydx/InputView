@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-@file:SuppressLint("ClickableViewAccessibility")
-
 package com.xiaocydx.inputview
 
-import android.annotation.SuppressLint
 import android.view.View
 import android.view.View.OnAttachStateChangeListener
 import android.view.Window
@@ -34,8 +31,15 @@ import com.xiaocydx.inputview.compat.ReflectCompat
 
 /**
  * 复用[InputView]的动画实现，需要先调用[init]或[initCompat]完成初始化，
- * 该函数不能跟[InputView]一直使用，两者不是共存关系，只能选择其中一个。
+ * 该函数不能跟[InputView]一起使用，两者不是共存关系，只能选择其中一个。
  *
+ * 多个[EditText]的焦点处理逻辑：
+ * 1. 调用[ImeAnimator.showIme]显示IME，会让[editText]获得焦点。
+ * 2. 调用[ImeAnimator.hideIme]隐藏IME，或者通过其它方式隐藏IME，
+ * 会清除`currentFocus`的焦点，`currentFocus`不一定是[editText]。
+ *
+ * 首次调用按[durationMillis]和[interpolator]创建[EditorAnimator]，
+ * 后续调用获取的是首次调用创建的[EditorAnimator]：
  * ```
  * InputView.init(window)
  * val animator = InputView.animator(window, editText)
@@ -50,8 +54,7 @@ import com.xiaocydx.inputview.compat.ReflectCompat
  * )
  * ```
  *
- * @param editText 首次按[durationMillis]和[interpolator]创建[EditorAnimator]，
- * 后续获取的是首次创建的[EditorAnimator]，显示IME会获得焦点，隐藏IME会清除焦点。
+ * @param editText 用于兼容Android各版本显示IME的[EditText]
  * @param durationMillis 参数含义跟[EditorAnimator.durationMillis]一致
  * @param interpolator   参数含义跟[EditorAnimator.interpolator]一致
  */

@@ -10,8 +10,8 @@ import com.xiaocydx.inputview.sample.dialog.MessageListBottomSheetDialog
 import com.xiaocydx.inputview.sample.dialog.MessageListBottomSheetDialogFragment
 import com.xiaocydx.inputview.sample.dialog.MessageListDialog
 import com.xiaocydx.inputview.sample.dialog.MessageListDialogFragment
-import com.xiaocydx.inputview.sample.fragment.FragmentEditorAdapterActivity
 import com.xiaocydx.inputview.sample.edit.VideoEditActivity
+import com.xiaocydx.inputview.sample.fragment.FragmentEditorAdapterActivity
 
 /**
  * **注意**：需要确保`androidx.core`的版本足够高，因为高版本修复了[WindowInsetsCompat]一些常见的问题，

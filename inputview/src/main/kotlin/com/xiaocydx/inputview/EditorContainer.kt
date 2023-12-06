@@ -57,8 +57,8 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
     override fun onTouchEvent(event: MotionEvent?) = true
 
     fun setAdapter(adapter: EditorAdapter<*>) {
-        this.adapter = adapter
         current?.let(::hideChecked)
+        this.adapter = adapter
         if (views.isNotEmpty()) {
             removeAllViews()
             views.clear()
