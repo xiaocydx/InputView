@@ -87,7 +87,7 @@ interface EdgeToEdgeHelper {
      * @return 返回结果关联了`InputView.init()`的初始化配置。
      */
     fun WindowInsetsCompat.supportGestureNavBarEdgeToEdge(view: View): Boolean {
-        val window = view.getOrFindViewTreeWindow() ?: return false
+        val window = view.requireViewTreeWindow()
         return window.gestureNavBarEdgeToEdge && isGestureNavigationBar(view)
     }
 

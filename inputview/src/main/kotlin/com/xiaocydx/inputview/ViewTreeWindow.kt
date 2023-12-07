@@ -88,23 +88,16 @@ private var View.viewTreeWindow: ViewTreeWindow?
         setTag(R.id.tag_view_tree_window, value)
     }
 
-internal fun View.findViewTreeWindow(): ViewTreeWindow? {
-    var found: ViewTreeWindow? = viewTreeWindow
-    if (found != null) return found
-    var parent: ViewParent? = parent
-    while (found == null && parent is View) {
-        found = parent.viewTreeWindow
-        parent = (parent as View).parent
-    }
-    return found
-}
-
-internal fun View.getOrFindViewTreeWindow(): ViewTreeWindow? {
-    return viewTreeWindow ?: findViewTreeWindow()?.also { viewTreeWindow = it }
+internal fun View.findViewTreeWindow() = when {
+    !isAttachedToWindow -> viewTreeWindow
+    else -> rootView?.viewTreeWindow
 }
 
 internal fun View.requireViewTreeWindow() = requireNotNull(findViewTreeWindow()) {
-    "需要先调用InputView.init()或InputView.initCompat()完成初始化"
+    when {
+        !isAttachedToWindow -> "${javaClass.simpleName}当前未附加到Window"
+        else -> "需要先调用InputView.init()或InputView.initCompat()完成初始化"
+    }
 }
 
 internal class ViewTreeWindow(
