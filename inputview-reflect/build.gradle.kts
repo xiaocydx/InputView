@@ -48,6 +48,6 @@ android {
 
 dependencies {
     compileOnly(project(":inputview"))
-    compileOnly("androidx.appcompat:appcompat:1.6.1")
+    compileOnly("androidx.core:core:1.9.0")
     implementation("org.lsposed.hiddenapibypass:hiddenapibypass:4.3")
 }

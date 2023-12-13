@@ -27,7 +27,6 @@ import android.view.View
 import android.view.WindowInsets
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.RequiresApi
-import androidx.core.util.forEach
 import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsAnimationCompat
@@ -220,8 +219,9 @@ private object InsetsCompatReflection : ReflectHelper {
      */
     fun View.getLastInsetsFromProxyListener(): WindowInsetsCompat? {
         val mKeyedTags = mKeyedTagsField?.get(this) as? SparseArray<*> ?: return null
-        mKeyedTags.forEach action@{ _, value ->
-            if (!value.javaClass.isAssignableFrom(proxyListenerClass!!)) return@action
+        for (index in 0 until mKeyedTags.size()) {
+            val value = mKeyedTags.valueAt(index)
+            if (!value.javaClass.isAssignableFrom(proxyListenerClass!!)) continue
             mLastInsetsField?.get(value)?.let { it as? WindowInsetsCompat }?.let { return it }
         }
         return null

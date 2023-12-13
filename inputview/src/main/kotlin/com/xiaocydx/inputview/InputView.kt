@@ -38,10 +38,6 @@ import androidx.annotation.VisibleForTesting.PRIVATE
 import androidx.core.view.OneShotPreDrawListener
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.marginBottom
-import androidx.core.view.marginLeft
-import androidx.core.view.marginRight
-import androidx.core.view.marginTop
 import com.xiaocydx.inputview.compat.ReflectCompat
 import com.xiaocydx.inputview.compat.onApplyWindowInsetsCompat
 import com.xiaocydx.inputview.compat.requestApplyInsetsCompat

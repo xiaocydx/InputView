@@ -56,7 +56,9 @@ android {
 }
 
 dependencies {
-    compileOnly("androidx.appcompat:appcompat:1.6.1")
+    compileOnly("androidx.core:core:1.9.0")
+    compileOnly("androidx.fragment:fragment:1.6.1")
+    testImplementation("androidx.appcompat:appcompat:1.2.0")
     testImplementation("androidx.viewpager2:viewpager2:1.0.0")
     testImplementation("com.google.truth:truth:1.1.3")
     testImplementation("org.robolectric:robolectric:4.10.3")

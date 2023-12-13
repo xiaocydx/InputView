@@ -4,7 +4,6 @@ import android.graphics.Matrix
 import android.view.MotionEvent
 import android.view.Window
 import android.widget.EditText
-import androidx.core.view.isVisible
 import java.lang.ref.WeakReference
 
 /**

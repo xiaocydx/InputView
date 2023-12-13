@@ -22,7 +22,7 @@ import android.view.WindowInsets
 import androidx.annotation.CheckResult
 import androidx.annotation.Px
 import androidx.core.graphics.Insets
-import androidx.core.view.*
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsCompat.Type.*
 import com.xiaocydx.inputview.EdgeToEdgeHelper.Companion.requestApplyInsetsOnAttach
 import com.xiaocydx.inputview.compat.requestApplyInsetsCompat
