@@ -32,6 +32,7 @@ import androidx.annotation.VisibleForTesting
  */
 internal class EditorContainer(context: Context) : FrameLayout(context) {
     private val views = mutableMapOf<Editor, View?>()
+    private val compat = FragmentManagerCompat()
     private var lastInsets: WindowInsets? = null
     private var editText: EditTextHolder? = null
     private var isCheckControlImeEnabled = true
@@ -222,6 +223,14 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
 
     @Suppress("UNCHECKED_CAST")
     private fun checkedAdapter() = adapter as EditorAdapter<Editor>
+
+    override fun removeViewAt(index: Int) {
+        compat.removeViewAt { super.removeViewAt(index) }
+    }
+
+    override fun addView(child: View?, index: Int) {
+        compat.addView { super.addView(child, index) }
+    }
 
     private data class PendingChange(
         val previous: Editor?,
