@@ -200,6 +200,8 @@ class InputView @JvmOverloads constructor(
 
     override fun generateLayoutParams(p: ViewGroup.LayoutParams) = LayoutParams(p)
 
+    override fun checkLayoutParams(p: ViewGroup.LayoutParams?) = p is LayoutParams
+
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         if (window == null) {
