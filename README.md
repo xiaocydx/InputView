@@ -12,11 +12,12 @@ InputView是一个通用的输入控件
 
 [InputView的使用说明](https://www.yuque.com/u12192380/khwdgb/pi0b7rdhvr16z7gm)
 
-1. 在根目录的build.gradle添加
+1. 在根目录的settings.gradle添加
 ```
-allprojects {
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        // ...
+        mavenCentral()
         maven { url 'https://jitpack.io' }
     }
 }
