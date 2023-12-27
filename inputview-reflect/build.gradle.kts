@@ -49,5 +49,5 @@ android {
 dependencies {
     compileOnly(project(":inputview"))
     compileOnly("androidx.core:core:1.9.0")
-    implementation("org.lsposed.hiddenapibypass:hiddenapibypass:4.3")
+    implementation("com.github.xiaocydx:Insets:1.0.0")
 }
