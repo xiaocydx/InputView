@@ -26,10 +26,10 @@ dependencyResolutionManagement {
 2. 在module的build.gradle添加
 ```
 dependencies {
-    // 修改IME动画的属性、调用FLAG_FULLSCREEN的兼容方案，需要依赖inputview-reflect
-    def version = "1.1.2"
+    // 修改IME动画的属性、调用FLAG_FULLSCREEN的兼容方案，需要依赖inputview-compat
+    def version = "1.1.3"
     implementation "com.github.xiaocydx.InputView:inputview:${version}"
-    implementation "com.github.xiaocydx.InputView:inputview-reflect:${version}"
+    implementation "com.github.xiaocydx.InputView:inputview-compat:${version}"
 }
 ```
 
