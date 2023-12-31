@@ -23,11 +23,11 @@ import android.view.Window
 import android.view.animation.Interpolator
 import androidx.core.view.WindowInsetsAnimationCompat
 import com.xiaocydx.inputview.OnApplyWindowInsetsListenerCompat
-import com.xiaocydx.insets.isFullscreenCompatEnabled as isFullscreenCompatEnabledImpl
-import com.xiaocydx.insets.modifyImeAnimation as modifyImeAnimationImpl
-import com.xiaocydx.insets.restoreImeAnimation as restoreImeAnimationImpl
-import com.xiaocydx.insets.setOnApplyWindowInsetsListenerImmutable as setOnApplyWindowInsetsListenerImmutableImpl
-import com.xiaocydx.insets.setWindowInsetsAnimationCallbackImmutable as setWindowInsetsAnimationCallbackImmutableImpl
+import com.xiaocydx.insets.compat.isFullscreenCompatEnabled as isFullscreenCompatEnabledImpl
+import com.xiaocydx.insets.compat.modifyImeAnimation as modifyImeAnimationImpl
+import com.xiaocydx.insets.compat.restoreImeAnimation as restoreImeAnimationImpl
+import com.xiaocydx.insets.compat.setOnApplyWindowInsetsListenerImmutable as setOnApplyWindowInsetsListenerImmutableImpl
+import com.xiaocydx.insets.compat.setWindowInsetsAnimationCallbackImmutable as setWindowInsetsAnimationCallbackImmutableImpl
 
 /**
  * 反射兼容的实现类
