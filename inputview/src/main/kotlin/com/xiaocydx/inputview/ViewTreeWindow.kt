@@ -160,12 +160,15 @@ internal class ViewTreeWindow(
     private val WindowInsetsCompat.supportGestureNavBarEdgeToEdge: Boolean
         get() {
             if (!gestureNavBarEdgeToEdge) return false
-            var insets: WindowInsetsCompat? = this
-            if (navigationBarHeight <= 0) {
-                // 父View可能消费了导航栏Insets，尝试通过rootInsets判断手势导航栏
-                insets = decorView.getRootWindowInsetsCompat()
+            var isGestureNavigationBar = isGestureNavigationBar(decorView)
+            if (isGestureNavigationBar) {
+                val rootInsets = decorView.getRootWindowInsetsCompat()
+                if (rootInsets == null || rootInsets.navigationBarHeight > navigationBarHeight) {
+                    // 父级消费了导航栏Insets，将这种情况视为不支持手势导航栏EdgeToEdge
+                    isGestureNavigationBar = false
+                }
             }
-            return insets?.isGestureNavigationBar(decorView) == true
+            return isGestureNavigationBar
         }
 
     val WindowInsetsCompat.navBarOffset: Int

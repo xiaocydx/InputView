@@ -91,7 +91,7 @@ internal interface ReflectCompat {
     fun View.setWindowInsetsAnimationCallbackImmutable(callback: WindowInsetsAnimationCompat.Callback?)
 }
 
-internal object NotReflectCompat : ReflectCompat {
+private object NotReflectCompat : ReflectCompat {
     override val Window.isFullscreenCompatEnabled: Boolean
         get() = false
 
