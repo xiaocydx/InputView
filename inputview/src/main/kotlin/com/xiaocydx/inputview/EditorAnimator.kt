@@ -31,8 +31,10 @@ import androidx.core.view.OneShotPreDrawListener
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsCompat.Type.ime
-import com.xiaocydx.inputview.compat.contains
+import com.xiaocydx.insets.contains
+import com.xiaocydx.insets.imeHeight
 import java.lang.Integer.max
+import kotlin.math.absoluteValue
 import kotlin.math.min
 
 /**
@@ -74,7 +76,6 @@ abstract class EditorAnimator(
     val interpolator: Interpolator = ANIMATION_INTERPOLATOR
 ) {
     private var host: EditorHost? = null
-    private var lastInsets: WindowInsetsCompat? = null
     private var animationRecord: AnimationRecord? = null
     private val animationDispatcher = AnimationDispatcher()
     private var callback: AnimationCallback? = null
@@ -209,6 +210,7 @@ abstract class EditorAnimator(
             return if (current === ime) {
                 // 当前是IME，若还未进行WindowInsets分发，更新lastInsets，
                 // 则lastInsets.imeOffset为0，这种情况imeOffset不是有效值。
+                val lastInsets = animationDispatcher.lastInsets
                 val offset = lastInsets?.imeOffset ?: NO_VALUE
                 if (offset != 0) offset else NO_VALUE
             } else {
@@ -245,6 +247,8 @@ abstract class EditorAnimator(
     private inner class AnimationDispatcher : OnApplyWindowInsetsListenerCompat,
             WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_STOP) {
         private var lastImeHeight = 0
+        var stableImeHeight = 0; private set
+        var lastInsets: WindowInsetsCompat? = null; private set
 
         /**
          * ### StartView和EndView
@@ -299,6 +303,7 @@ abstract class EditorAnimator(
                     }
                 }
                 lastImeHeight = imeHeight
+                if (imeHeight > 0) stableImeHeight = imeHeight
             }
             return insets
         }
@@ -308,7 +313,7 @@ abstract class EditorAnimator(
             val record = AnimationRecord(current, current)
             resetAnimationRecord(record)
             record.setAnimationStartOffset()
-            record.setAnimationOffset(endOffset = endOffset)
+            record.setAnimationEndOffset(endOffset)
             runSimpleAnimationIfNecessary(record)
         }
 
@@ -351,16 +356,18 @@ abstract class EditorAnimator(
         override val previous: Editor?,
         override val current: Editor?
     ) : AnimationState {
+        private var realStart = NO_VALUE
+        private var realEnd = NO_VALUE
         private var preDrawListener: OneShotPreDrawListener? = null
         override var startView: View? = null; private set
         override var endView: View? = null; private set
-        override var startOffset: Int = NO_VALUE; private set
-        override var endOffset: Int = NO_VALUE; private set
-        override var currentOffset: Int = NO_VALUE; private set
-        override val navBarOffset: Int get() = host?.navBarOffset ?: 0
-        override var animatedFraction: Float = 0f; private set
-        override var durationMillis: Long = 0; private set
-        override lateinit var interpolator: Interpolator; private set
+        override var startOffset = NO_VALUE; private set
+        override var endOffset = NO_VALUE; private set
+        override var currentOffset = NO_VALUE; private set
+        override val navBarOffset get() = host?.navBarOffset ?: 0
+        override var animatedFraction = 0f; private set
+        override var durationMillis = 0L; private set
+        override var interpolator: Interpolator; private set
 
         var insetsAnimation: WindowInsetsAnimationCompat? = null; private set
         var simpleAnimation: ValueAnimator? = null; private set
@@ -405,7 +412,7 @@ abstract class EditorAnimator(
             }
         }
 
-        fun setAnimationOffset(
+        private fun setAnimationOffset(
             startOffset: Int = this.startOffset,
             endOffset: Int = this.endOffset,
             currentOffset: Int = this.currentOffset
@@ -421,10 +428,14 @@ abstract class EditorAnimator(
             setAnimationOffset(NO_VALUE, NO_VALUE, NO_VALUE)
             val startOffset = host?.editorOffset ?: return
             setAnimationOffset(startOffset, endOffset, startOffset)
+            val stableImeHeight = animationDispatcher.stableImeHeight
+            realStart = if (isIme(previous) && current == null) stableImeHeight else startOffset
         }
 
-        fun setAnimationEndOffset() {
-            setAnimationOffset(endOffset = calculateEndOffset())
+        fun setAnimationEndOffset(endOffset: Int = calculateEndOffset()) {
+            setAnimationOffset(endOffset = endOffset)
+            val stableImeHeight = animationDispatcher.stableImeHeight
+            realEnd = if (previous == null && isIme(current)) stableImeHeight else endOffset
         }
 
         fun updateAnimationCurrent() {
@@ -432,8 +443,11 @@ abstract class EditorAnimator(
                 animatedFraction = simpleAnimation?.animatedFraction
                         ?: insetsAnimation?.fraction ?: 0f
             }
-            val currentOffset = startOffset + (endOffset - startOffset) * interpolatedFraction
-            setAnimationOffset(currentOffset = currentOffset.toInt())
+            val realCurrent = realStart + (realEnd - realStart) * interpolatedFraction
+            val realTotal = (realEnd - realStart).absoluteValue
+            val total = (endOffset - startOffset).absoluteValue
+            val diff = (realTotal - total).absoluteValue
+            setAnimationOffset(currentOffset = (realCurrent - diff).toInt())
         }
 
         fun updateAnimationToEnd() {
