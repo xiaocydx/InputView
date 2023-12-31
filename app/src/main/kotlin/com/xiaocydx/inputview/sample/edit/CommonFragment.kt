@@ -15,10 +15,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Lifecycle.State.RESUMED
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
-import com.xiaocydx.inputview.EdgeToEdgeHelper
 import com.xiaocydx.inputview.sample.dp
 import com.xiaocydx.inputview.sample.layoutParams
 import com.xiaocydx.inputview.sample.matchParent
+import com.xiaocydx.insets.handleGestureNavBarEdgeToEdgeOnApply
 
 /**
  * 动画结束时，生命周期状态才转换为[RESUMED]
@@ -42,7 +42,7 @@ class CommonFragment : Fragment() {
         layoutParams(matchParent, if (size > 0) size.dp else size)
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) = EdgeToEdgeHelper {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         // 设置通用的手势导航栏EdgeToEdge处理逻辑
         view.handleGestureNavBarEdgeToEdgeOnApply()
         viewLifecycleOwner.lifecycle.addObserver(object : LifecycleEventObserver {

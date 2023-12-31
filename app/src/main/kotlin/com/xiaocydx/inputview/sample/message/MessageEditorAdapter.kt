@@ -11,7 +11,6 @@ import androidx.core.view.setMargins
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.xiaocydx.inputview.EdgeToEdgeHelper
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.sample.R
@@ -23,6 +22,7 @@ import com.xiaocydx.inputview.sample.message.MessageEditor.EXTRA
 import com.xiaocydx.inputview.sample.message.MessageEditor.IME
 import com.xiaocydx.inputview.sample.message.MessageEditor.VOICE
 import com.xiaocydx.inputview.sample.wrapContent
+import com.xiaocydx.insets.handleGestureNavBarEdgeToEdgeOnApply
 
 /**
  * @author xcc
@@ -54,7 +54,7 @@ class EmojiRecyclerView(context: Context) : RecyclerView(context) {
         layoutManager = GridLayoutManager(context, spanCount)
         recycledViewPool.setMaxRecycledViews(0, 16)
         layoutParams(matchParent, 350.dp)
-        EdgeToEdgeHelper { handleGestureNavBarEdgeToEdgeOnApply() }
+        handleGestureNavBarEdgeToEdgeOnApply()
     }
 
     private class EmojiAdapter(spanCount: Int) : Adapter<ViewHolder>() {

@@ -14,7 +14,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.transition.getBounds
 import androidx.transition.setLeftTopRightBottomCompat
 import com.xiaocydx.inputview.AnimationState
-import com.xiaocydx.inputview.EdgeToEdgeHelper
 import com.xiaocydx.inputview.EditorMode
 import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
@@ -28,6 +27,10 @@ import com.xiaocydx.inputview.sample.edit.VideoEditor.Text
 import com.xiaocydx.inputview.sample.edit.VideoEditor.Video
 import com.xiaocydx.inputview.sample.isDispatchTouchEventEnabled
 import com.xiaocydx.inputview.sample.onClick
+import com.xiaocydx.insets.doOnApplyWindowInsets
+import com.xiaocydx.insets.handleGestureNavBarEdgeToEdgeOnApply
+import com.xiaocydx.insets.statusBarHeight
+import com.xiaocydx.insets.updateMargins
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.mapLatest
@@ -157,7 +160,7 @@ class VideoEditActivity : AppCompatActivity() {
         }
     }
 
-    private fun ActivityVideoEditBinding.initEdgeToEdge() = EdgeToEdgeHelper {
+    private fun ActivityVideoEditBinding.initEdgeToEdge() = apply {
         // 禁用手势导航栏偏移，自行处理手势导航栏
         inputView.disableGestureNavBarOffset()
         // 设置通用的手势导航栏EdgeToEdge处理逻辑
@@ -165,6 +168,5 @@ class VideoEditActivity : AppCompatActivity() {
         preview.doOnApplyWindowInsets { view, insets, initialState ->
             view.updateMargins(top = initialState.params.marginTop + insets.statusBarHeight)
         }
-        return@EdgeToEdgeHelper this@initEdgeToEdge
     }
 }
