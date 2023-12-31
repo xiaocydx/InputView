@@ -35,6 +35,10 @@ class MainActivity : AppCompatActivity() {
         startActivity(Intent(this, ImeAnimatorActivity::class.java))
     }
 
+    fun startInitCompatActivity(view: View) {
+        startActivity(Intent(this, InitCompatActivity::class.java))
+    }
+
     fun startMessageListActivity(view: View) {
         startActivity(Intent(this, MessageListActivity::class.java))
     }

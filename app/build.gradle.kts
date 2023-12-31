@@ -35,6 +35,12 @@ android {
 }
 
 dependencies {
+    implementation(project(":inputview"))
+    implementation(project(":inputview-compat"))
+    val version = "1.1.2"
+    implementation("com.github.xiaocydx.Insets:insets:${version}")
+    implementation("com.github.xiaocydx.Insets:insets-compat:${version}")
+    implementation("com.github.xiaocydx.Insets:insets-systembar:${version}")
     implementation("androidx.core:core-ktx:1.7.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.7.0")
@@ -42,9 +48,4 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.2.0")
     implementation("androidx.fragment:fragment:1.6.1")
     implementation("androidx.fragment:fragment-ktx:1.6.1")
-    implementation(project(":inputview"))
-    implementation(project(":inputview-reflect"))
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 }

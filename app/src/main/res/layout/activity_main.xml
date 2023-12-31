@@ -25,6 +25,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="5dp"
+        android:onClick="startInitCompatActivity"
+        android:text="InitCompat"
+        android:textAllCaps="false" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="5dp"
         android:onClick="startMessageListActivity"
         android:text="Activity"
         android:textAllCaps="false" />

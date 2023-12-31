@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <application
+        android:name=".App"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -36,6 +37,9 @@
             android:screenOrientation="portrait" />
         <activity
             android:name=".MessageListActivity"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".InitCompatActivity"
             android:screenOrientation="portrait" />
         <activity
             android:name=".fragment.FragmentEditorAdapterActivity"
