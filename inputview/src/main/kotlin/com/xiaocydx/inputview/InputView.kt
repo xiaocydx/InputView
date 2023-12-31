@@ -39,10 +39,11 @@ import androidx.core.view.OneShotPreDrawListener
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import com.xiaocydx.inputview.compat.ReflectCompat
-import com.xiaocydx.inputview.compat.onApplyWindowInsetsCompat
-import com.xiaocydx.inputview.compat.requestApplyInsetsCompat
-import com.xiaocydx.inputview.compat.setOnApplyWindowInsetsListenerCompat
-import com.xiaocydx.inputview.compat.toCompat
+import com.xiaocydx.insets.handleGestureNavBarEdgeToEdgeOnApply
+import com.xiaocydx.insets.onApplyWindowInsetsCompat
+import com.xiaocydx.insets.requestApplyInsetsCompat
+import com.xiaocydx.insets.setOnApplyWindowInsetsListenerCompat
+import com.xiaocydx.insets.toWindowInsetsCompat
 
 /**
  * 输入控件
@@ -125,7 +126,7 @@ class InputView @JvmOverloads constructor(
      * 则继承并实现[EditorAdapter]，其注释介绍了如何实现以及注意点。
      *
      * [EditorAdapter.onCreateView]创建的视图可能需要实现手势导航栏EdgeToEdge，
-     * [EdgeToEdgeHelper]提供了实现手势导航栏EdgeToEdge的函数。
+     * [handleGestureNavBarEdgeToEdgeOnApply]是手势导航栏EdgeToEdge的通用实现。
      */
     var editorAdapter: EditorAdapter<*>
         get() = editorView.adapter
@@ -226,7 +227,7 @@ class InputView @JvmOverloads constructor(
      */
     override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
         val lastNavBarOffset = window?.run {
-            insets.toCompat(this@InputView).navigationBarOffset
+            insets.toWindowInsetsCompat(this@InputView).navBarOffset
         } ?: 0
         if (navBarOffset != lastNavBarOffset) {
             navBarOffset = lastNavBarOffset
@@ -409,8 +410,6 @@ class InputView @JvmOverloads constructor(
 
     private inner class EditorHostImpl : EditorHost {
         private var pending: PendingInsetsAnimationCallback? = null
-        override val WindowInsetsCompat.imeHeight: Int
-            get() = window?.run { imeHeight } ?: NO_VALUE
         override val WindowInsetsCompat.imeOffset: Int
             get() = window?.run { imeOffset } ?: NO_VALUE
         override val editorOffset: Int

@@ -20,18 +20,13 @@ package com.xiaocydx.inputview.compat
 
 import android.view.View
 import android.view.Window
-import android.view.WindowInsets
 import android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
 import android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
 import android.view.animation.Interpolator
-import androidx.core.view.OnApplyWindowInsetsListener
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsAnimationCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsCompat.Type.InsetsType
-import androidx.core.view.WindowInsetsControllerCompat
 import com.xiaocydx.inputview.OnApplyWindowInsetsListenerCompat
+import com.xiaocydx.insets.setOnApplyWindowInsetsListenerCompat
+import com.xiaocydx.insets.setWindowInsetsAnimationCallbackCompat
 
 /**
  * 检查Android 11以下`ViewRootImpl.dispatchApplyInsets()`的兼容性
@@ -72,40 +67,6 @@ internal fun Window.checkDispatchApplyInsetsCompatibility() = ReflectCompat {
         """.trimMargin()
     }
 }
-
-internal fun Window.setDecorFitsSystemWindowsCompat(decorFitsSystemWindows: Boolean) {
-    WindowCompat.setDecorFitsSystemWindows(this, decorFitsSystemWindows)
-}
-
-internal fun Window.createWindowInsetsControllerCompat(editText: View) =
-        WindowInsetsControllerCompat(this, editText)
-
-internal fun View.getRootWindowInsetsCompat() = ViewCompat.getRootWindowInsets(this)
-
-internal fun View.requestApplyInsetsCompat() = ViewCompat.requestApplyInsets(this)
-
-internal fun View.dispatchApplyWindowInsetsCompat(insets: WindowInsetsCompat) =
-        ViewCompat.dispatchApplyWindowInsets(this, insets)
-
-internal fun View.onApplyWindowInsetsCompat(insets: WindowInsetsCompat) =
-        ViewCompat.onApplyWindowInsets(this, insets)
-
-internal fun View.setOnApplyWindowInsetsListenerCompat(listener: OnApplyWindowInsetsListener?) {
-    ViewCompat.setOnApplyWindowInsetsListener(this, listener)
-}
-
-internal fun View.setWindowInsetsAnimationCallbackCompat(callback: WindowInsetsAnimationCompat.Callback?) {
-    ViewCompat.setWindowInsetsAnimationCallback(this, callback)
-}
-
-/**
- * 传入[view]是为了确保转换出的[WindowInsetsCompat]是正确的结果
- */
-internal fun WindowInsets.toCompat(view: View) =
-        WindowInsetsCompat.toWindowInsetsCompat(this, view)
-
-internal fun WindowInsetsAnimationCompat.contains(@InsetsType typeMask: Int) =
-        this.typeMask and typeMask == typeMask
 
 internal val reflectCompat: ReflectCompat = try {
     val className = "com.xiaocydx.inputview.compat.ReflectCompatImpl"

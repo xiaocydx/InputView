@@ -116,8 +116,6 @@ class ImeAnimator internal constructor(
     }
 
     private inner class EditorHostImpl : EditorHost {
-        override val WindowInsetsCompat.imeHeight: Int
-            get() = window.run { imeHeight }
         override val WindowInsetsCompat.imeOffset: Int
             get() = window.run { imeOffset }
         override var editorOffset = 0
@@ -163,7 +161,7 @@ class ImeAnimator internal constructor(
 
         override fun setOnApplyWindowInsetsListener(listener: OnApplyWindowInsetsListenerCompat?) {
             val wrapper = if (listener == null) null else OnApplyWindowInsetsListenerCompat { v, insets ->
-                navBarOffset = window.run { insets.navigationBarOffset }
+                navBarOffset = window.run { insets.navBarOffset }
                 listener.onApplyWindowInsets(v, insets)
             }
             if (wrapper == null) navBarOffset = 0

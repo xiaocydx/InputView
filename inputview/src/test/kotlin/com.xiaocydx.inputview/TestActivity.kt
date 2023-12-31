@@ -36,7 +36,7 @@ internal class TestActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel = ViewModelProvider(this)[TestViewModel::class.java]
+        viewModel = ViewModelProvider(this, TestViewModel)[TestViewModel::class.java]
         InputView.init(window)
         inputView = InputView(this)
         inputView.layoutParams = LayoutParams(MATCH_PARENT, MATCH_PARENT)
@@ -47,4 +47,12 @@ internal class TestActivity : AppCompatActivity() {
 
 class TestViewModel : ViewModel() {
     var canSetInputView = true
+
+    companion object Factory : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            require(modelClass === TestViewModel::class.java)
+            @Suppress("UNCHECKED_CAST")
+            return TestViewModel() as T
+        }
+    }
 }

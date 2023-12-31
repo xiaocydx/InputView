@@ -26,6 +26,18 @@ import android.widget.EditText
 import androidx.core.view.*
 import androidx.core.view.WindowInsetsCompat.Type.*
 import com.xiaocydx.inputview.compat.*
+import com.xiaocydx.insets.consumeInsets
+import com.xiaocydx.insets.getImeOffset
+import com.xiaocydx.insets.getRootWindowInsetsCompat
+import com.xiaocydx.insets.handleGestureNavBarEdgeToEdgeOnApply
+import com.xiaocydx.insets.imeHeight
+import com.xiaocydx.insets.isGestureNavigationBar
+import com.xiaocydx.insets.navigationBarHeight
+import com.xiaocydx.insets.onApplyWindowInsetsCompat
+import com.xiaocydx.insets.setDecorFitsSystemWindowsCompat
+import com.xiaocydx.insets.setOnApplyWindowInsetsListenerCompat
+import com.xiaocydx.insets.statusBarHeight
+import com.xiaocydx.insets.updateMargins
 import java.lang.ref.WeakReference
 
 /**
@@ -33,9 +45,11 @@ import java.lang.ref.WeakReference
  *
  * @param window [Activity.getWindow]或[Dialog.getWindow]。
  * @param statusBarEdgeToEdge 是否启用状态栏EdgeToEdge。
- * 若启用状态栏EdgeToEdge，则去除状态栏间距和背景色，[EdgeToEdgeHelper]提供实现EdgeToEdge的辅助函数。
+ * 若启用，则不消费[WindowInsets]的状态栏Insets，不设置状态栏高度的间距，不绘制背景色。
  * @param gestureNavBarEdgeToEdge 是否启用手势导航栏EdgeToEdge。
- * 若启用手势导航栏EdgeToEdge，则去除手势导航栏间距和背景色，[EdgeToEdgeHelper]提供实现EdgeToEdge的辅助函数。
+ * 若启用，则不消费[WindowInsets]的手势导航栏Insets，不设置手势导航栏高度的间距，不绘制背景色。
+ *
+ * 可以利用[isGestureNavigationBar]、[handleGestureNavBarEdgeToEdgeOnApply]等扩展实现EdgeToEdge。
  */
 fun InputView.Companion.init(
     window: Window,
@@ -47,13 +61,13 @@ fun InputView.Companion.init(
 }
 
 /**
- * 初始化[InputView]所需的配置
- *
- * 该函数用于兼容已有的[WindowInsets]分发处理方案。
+ * 初始化[InputView]所需的配置，该函数用于兼容已有的[WindowInsets]处理方案
  *
  * @param window [Activity.getWindow]或[Dialog.getWindow]。
  * @param gestureNavBarEdgeToEdge 是否启用手势导航栏EdgeToEdge。
- * 若启用手势导航栏EdgeToEdge，则去除手势导航栏间距，[EdgeToEdgeHelper]提供了实现EdgeToEdge的辅助函数。
+ * 若启用，则不消费[WindowInsets]的手势导航栏Insets，不设置手势导航栏高度的间距，不绘制背景色。
+ *
+ * 可以利用[isGestureNavigationBar]、[handleGestureNavBarEdgeToEdgeOnApply]等扩展实现EdgeToEdge。
  */
 fun InputView.Companion.initCompat(
     window: Window,
@@ -102,8 +116,8 @@ internal fun View.requireViewTreeWindow() = requireNotNull(findViewTreeWindow())
 
 internal class ViewTreeWindow(
     private val window: Window,
-    val gestureNavBarEdgeToEdge: Boolean
-) : EdgeToEdgeHelper {
+    private val gestureNavBarEdgeToEdge: Boolean
+) {
     private val decorView = window.decorView as ViewGroup
     private val manager = EditTextManager(this, window.callback)
     val currentFocus: View?
@@ -126,54 +140,50 @@ internal class ViewTreeWindow(
             .firstOrNull { it is ViewGroup }?.let(::WeakReference)
         decorView.setOnApplyWindowInsetsListenerCompat { _, insets ->
             window.checkDispatchApplyInsetsCompatibility()
-            val decorInsets = insets.toDecorInsets(statusBarEdgeToEdge)
+            // 不调用window.setStatusBarColor和window.setNavigationBarColor将背景颜色设为透明，
+            // 通过消费状态栏和导航栏的Insets实现不绘制背景，这种处理方式的通用性更强，侵入性更低。
+            var consumeType = 0
+            if (statusBarEdgeToEdge) consumeType = consumeType or statusBars()
+            if (insets.supportGestureNavBarEdgeToEdge) consumeType = consumeType or navigationBars()
+            val decorInsets = insets.consumeInsets(consumeType or ime())
             decorView.onApplyWindowInsetsCompat(decorInsets)
-            // 在DecorView处理完ContentRoot的Margins后，再设置Margins
+            // 在decorView处理完contentRoot的Margins后，再设置Margins
             contentRootRef?.get()?.updateMargins(
                 top = decorInsets.statusBarHeight,
                 bottom = decorInsets.navigationBarHeight
             )
-            insets
+            consumeType = consumeType.inv() and (statusBars() or navigationBars())
+            insets.consumeInsets(consumeType)
         }
     }
 
-    /**
-     * 不调用[Window.setStatusBarColor]和[Window.setNavigationBarColor]将背景颜色设为透明，
-     * 通过消费状态栏和导航栏的`Insets`实现不绘制背景，这种处理方式的通用性更强，侵入性更低。
-     */
-    private fun WindowInsetsCompat.toDecorInsets(statusBarEdgeToEdge: Boolean): WindowInsetsCompat {
-        var typeMask = 0
-        if (statusBarEdgeToEdge) {
-            typeMask = typeMask or statusBars()
+    private val WindowInsetsCompat.supportGestureNavBarEdgeToEdge: Boolean
+        get() {
+            if (!gestureNavBarEdgeToEdge) return false
+            var insets: WindowInsetsCompat? = this
+            if (navigationBarHeight <= 0) {
+                // 父View可能消费了导航栏Insets，尝试通过rootInsets判断手势导航栏
+                insets = decorView.getRootWindowInsetsCompat()
+            }
+            return insets?.isGestureNavigationBar(decorView) == true
         }
-        if (supportGestureNavBarEdgeToEdge(decorView)) {
-            typeMask = typeMask or navigationBars()
-        }
-        return consume(typeMask)
-    }
 
-    val WindowInsetsCompat.imeHeight
-        get() = getInsets(ime()).bottom
+    val WindowInsetsCompat.navBarOffset: Int
+        get() = if (supportGestureNavBarEdgeToEdge) navigationBarHeight else 0
 
     val WindowInsetsCompat.imeOffset: Int
-        get() {
-            if (supportGestureNavBarEdgeToEdge(decorView)) return imeHeight
-            return (imeHeight - navigationBarHeight).coerceAtLeast(0)
-        }
-
-    val WindowInsetsCompat.navigationBarOffset: Int
-        get() = if (supportGestureNavBarEdgeToEdge(decorView)) navigationBarHeight else 0
+        get() = if (supportGestureNavBarEdgeToEdge) imeHeight else getImeOffset(decorView)
 
     fun getRootWindowInsets() = decorView.getRootWindowInsetsCompat()
 
     fun showIme(editText: EditText) {
         // controllerCompat对象很轻量，showIme不会产生内部状态
-        window.createWindowInsetsControllerCompat(editText).show(ime())
+        WindowInsetsControllerCompat(window, editText).show(ime())
     }
 
     fun hideIme() {
         // controllerCompat对象很轻量，hideIme不会产生内部状态
-        window.createWindowInsetsControllerCompat(decorView).hide(ime())
+        WindowInsetsControllerCompat(window, decorView).hide(ime())
     }
 
     fun modifyImeAnimation(durationMillis: Long, interpolator: Interpolator) {

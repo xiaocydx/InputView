@@ -4,6 +4,7 @@ import android.graphics.Matrix
 import android.view.MotionEvent
 import android.view.Window
 import android.widget.EditText
+import com.xiaocydx.insets.imeHeight
 import java.lang.ref.WeakReference
 
 /**
@@ -101,7 +102,7 @@ internal class EditTextManager(
 
         fun imeShown(): Boolean {
             val root = window.getRootWindowInsets()
-            return if (root == null) false else window.run { root.imeHeight > 0 }
+            return if (root == null) false else root.imeHeight > 0
         }
 
         /**

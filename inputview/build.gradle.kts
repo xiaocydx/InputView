@@ -56,8 +56,8 @@ android {
 }
 
 dependencies {
-    compileOnly("androidx.core:core:1.9.0")
-    compileOnly("androidx.fragment:fragment:1.6.1")
+    api("com.github.xiaocydx.Insets:insets:1.1.2")
+    implementation("androidx.fragment:fragment:1.1.0")
     testImplementation("androidx.appcompat:appcompat:1.2.0")
     testImplementation("androidx.viewpager2:viewpager2:1.0.0")
     testImplementation("com.google.truth:truth:1.1.3")
@@ -65,6 +65,4 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.7")
     testImplementation("androidx.test:core:1.5.0")
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 }

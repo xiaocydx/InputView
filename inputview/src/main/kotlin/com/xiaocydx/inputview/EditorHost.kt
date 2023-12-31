@@ -33,11 +33,6 @@ import androidx.core.view.WindowInsetsCompat
 internal interface EditorHost {
 
     /**
-     * IME高度
-     */
-    val WindowInsetsCompat.imeHeight: Int
-
-    /**
      * IME偏移
      */
     val WindowInsetsCompat.imeOffset: Int
@@ -49,7 +44,7 @@ internal interface EditorHost {
     val editorOffset: Int
 
     /**
-     * 导航栏的偏移值
+     * 导航栏的偏移值，若不支持手势导航栏EdgeToEdge，则该属性值为0
      */
     @get:IntRange(from = 0)
     val navBarOffset: Int

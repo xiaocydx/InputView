@@ -22,7 +22,9 @@ import android.view.animation.Interpolator
 import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
 import androidx.core.view.WindowInsetsCompat.Type.navigationBars
-import com.xiaocydx.inputview.compat.onApplyWindowInsetsCompat
+import com.xiaocydx.insets.consumeInsets
+import com.xiaocydx.insets.doOnApplyWindowInsets
+import com.xiaocydx.insets.onApplyWindowInsetsCompat
 
 /**
  * 禁用手势导航栏偏移，在支持手势导航栏EdgeToEdge的情况下，
@@ -31,9 +33,9 @@ import com.xiaocydx.inputview.compat.onApplyWindowInsetsCompat
  *
  * 关于手势导航栏偏移的描述，可以看[InputView.onApplyWindowInsets]的注释。
  */
-fun InputView.disableGestureNavBarOffset() = EdgeToEdgeHelper {
+fun InputView.disableGestureNavBarOffset() {
     doOnApplyWindowInsets { _, insets, _ ->
-        onApplyWindowInsetsCompat(insets.consume(navigationBars()))
+        onApplyWindowInsetsCompat(insets.consumeInsets(navigationBars()))
     }
 }
 
