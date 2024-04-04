@@ -206,7 +206,7 @@ class InputView @JvmOverloads constructor(
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         if (window == null) {
-            window = requireViewTreeWindow()
+            window = findViewTreeWindow()
             window?.let(host::onAttachedToWindow)
         }
         requestApplyInsetsCompat()
@@ -352,6 +352,7 @@ class InputView @JvmOverloads constructor(
     }
 
     override fun onDraw(canvas: Canvas) {
+        if (window == null) requireViewTreeWindow()
         val contentView = contentView ?: return
         editorBackground?.setBounds(0, contentView.bottom, width, height)
         editorBackground?.takeIf { it.bounds.height() > 0 }?.draw(canvas)
