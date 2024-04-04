@@ -16,9 +16,11 @@
 
 package com.xiaocydx.inputview
 
+import android.app.Dialog
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.Interpolator
+import android.widget.EditText
 import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
 import androidx.core.view.WindowInsetsCompat.Type.navigationBars
@@ -36,6 +38,28 @@ import com.xiaocydx.insets.onApplyWindowInsetsCompat
 fun InputView.disableGestureNavBarOffset() {
     doOnApplyWindowInsets { _, insets, _ ->
         onApplyWindowInsetsCompat(insets.consumeInsets(navigationBars()))
+    }
+}
+
+/**
+ * 设置[createWindowFocusInterceptor]创建的拦截器
+ */
+fun EditorAnimator.setWindowFocusInterceptor() {
+    setAnimationInterceptor(createWindowFocusInterceptor())
+}
+
+/**
+ * 创建`window.decorView.hasWindowFocus()`的拦截器
+ *
+ * 当更改[Editor]时，若`window.decorView.hasWindowFocus()`为`false`，则不更改[Editor]且不运行动画，
+ * 该拦截器适用于存在多个Window的交互场景，例如显示了有[EditText]的[Dialog]，点击[EditText]显示IME，
+ * 此时不需要将[Editor]更改为IME，也不需要运行IME动画。
+ */
+fun EditorAnimator.createWindowFocusInterceptor(): AnimationInterceptor {
+    return object : AnimationInterceptor {
+        override fun onInterceptChange(current: Editor?, next: Editor?): Boolean {
+            return next != null && getEditorHost() != null && !getEditorHost()!!.hasWindowFocus
+        }
     }
 }
 

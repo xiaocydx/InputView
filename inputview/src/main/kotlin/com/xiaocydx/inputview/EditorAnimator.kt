@@ -78,8 +78,9 @@ abstract class EditorAnimator(
     private var host: EditorHost? = null
     private var animationRecord: AnimationRecord? = null
     private val animationDispatcher = AnimationDispatcher()
-    private var callback: AnimationCallback? = null
-    private val callbacks = ArrayList<AnimationCallback>(2)
+    private var animationInterceptor = emptyAnimationInterceptor()
+    private var animationCallback: AnimationCallback? = null
+    private val animationCallbacks = ArrayList<AnimationCallback>(2)
     internal open val canRunAnimation: Boolean = true
     internal val isActive: Boolean
         get() = animationRecord != null
@@ -91,14 +92,21 @@ abstract class EditorAnimator(
         get() = animationRecord?.isRunning == true
 
     /**
+     * 设置[AnimationInterceptor]，应用场景可以参考[setWindowFocusInterceptor]
+     */
+    fun setAnimationInterceptor(interceptor: AnimationInterceptor) {
+        this.animationInterceptor = interceptor
+    }
+
+    /**
      * 添加[AnimationCallback]
      *
      * 在[AnimationCallback]的各个函数可以调用[removeAnimationCallback]，
      * 先添加的[AnimationCallback]后执行，即倒序遍历[AnimationCallback]。
      */
     fun addAnimationCallback(callback: AnimationCallback) {
-        if (callbacks.contains(callback)) return
-        callbacks.add(callback)
+        if (animationCallbacks.contains(callback)) return
+        animationCallbacks.add(callback)
         dispatchAddedAnimationCallback(callback)
     }
 
@@ -106,7 +114,7 @@ abstract class EditorAnimator(
      * 移除[AnimationCallback]
      */
     fun removeAnimationCallback(callback: AnimationCallback) {
-        callbacks.remove(callback)
+        animationCallbacks.remove(callback)
     }
 
     /**
@@ -114,16 +122,16 @@ abstract class EditorAnimator(
      */
     protected fun setAnimationCallback(callback: AnimationCallback) {
         require(!isActive) { "实现类只能在初始化时调用该函数" }
-        this.callback = callback
+        this.animationCallback = callback
     }
 
     internal fun forEachCallback(action: (AnimationCallback) -> Unit) {
-        callbacks.forEach(action)
+        animationCallbacks.forEach(action)
     }
 
     @VisibleForTesting
     internal fun containsCallback(callback: AnimationCallback): Boolean {
-        return callbacks.contains(callback)
+        return animationCallbacks.contains(callback)
     }
 
     private fun resetAnimationRecord(record: AnimationRecord) {
@@ -191,14 +199,20 @@ abstract class EditorAnimator(
         if (record.isRunning && record.checkAnimationOffset()) {
             // 每个函数都支持移除callback，因此需要再次检查callbacks是否包含callback
             callback.onAnimationPrepare(record.previous, record.current)
-            callback.takeIf { callbacks.contains(it) }?.onAnimationStart(record)
-            callback.takeIf { callbacks.contains(it) }?.onAnimationUpdate(record)
+            callback.takeIf { animationCallbacks.contains(it) }?.onAnimationStart(record)
+            callback.takeIf { animationCallbacks.contains(it) }?.onAnimationUpdate(record)
         }
     }
 
     private inline fun dispatchAnimationCallback(action: AnimationCallback.() -> Unit) {
-        callback?.action()
-        for (index in callbacks.indices.reversed()) callbacks[index].apply(action)
+        animationCallback?.action()
+        for (index in animationCallbacks.indices.reversed()) animationCallbacks[index].apply(action)
+    }
+
+    internal fun getEditorHost() = host
+
+    internal fun canChangeEditor(current: Editor?, next: Editor?): Boolean {
+        return !animationInterceptor.onInterceptChange(current, next)
     }
 
     internal fun endAnimation() {
@@ -297,7 +311,7 @@ abstract class EditorAnimator(
                 when {
                     lastImeHeight == 0 && imeHeight > 0 -> dispatchImeShown(shown = true)
                     lastImeHeight > 0 && imeHeight == 0 -> dispatchImeShown(shown = false)
-                    lastImeHeight > 0 && imeHeight > 0 && lastImeHeight != imeHeight -> {
+                    lastImeHeight > 0 && imeHeight > 0 && lastImeHeight != imeHeight && current === ime -> {
                         // 调整IME高度后，运行simpleAnimation修正editorOffset
                         runSimpleAnimationFixEditorOffset(endOffset = insets.imeOffset)
                     }
@@ -619,4 +633,45 @@ interface AnimationCallback {
      * **注意**：动画结束时，应当将`state.startView`和`state.endView`恢复为初始状态。
      */
     fun onAnimationEnd(state: AnimationState) = Unit
+}
+
+/**
+ * [EditorAnimator]的动画拦截器
+ */
+interface AnimationInterceptor {
+
+    /**
+     * 返回`true`拦截[Editor]的更改，[EditorAdapter.notifyShow]不生效
+     */
+    fun onInterceptChange(current: Editor?, next: Editor?): Boolean
+
+    /**
+     * 两个[AnimationInterceptor]合并为一个，用于多个[AnimationInterceptor]一起拦截的场景
+     */
+    operator fun plus(other: AnimationInterceptor): AnimationInterceptor = when (other) {
+        is EmptyAnimationInterceptor -> this
+        else -> CombinedAnimationInterceptor(this, other)
+    }
+}
+
+/**
+ * 空实现的[AnimationInterceptor]，可用于属性初始化场景
+ */
+fun emptyAnimationInterceptor(): AnimationInterceptor = EmptyAnimationInterceptor
+
+private object EmptyAnimationInterceptor : AnimationInterceptor {
+
+    override fun onInterceptChange(current: Editor?, next: Editor?) = false
+
+    override fun plus(other: AnimationInterceptor) = other
+}
+
+private class CombinedAnimationInterceptor(
+    private val first: AnimationInterceptor,
+    private val second: AnimationInterceptor
+) : AnimationInterceptor {
+
+    override fun onInterceptChange(current: Editor?, next: Editor?): Boolean {
+        return first.onInterceptChange(current, next) && second.onInterceptChange(current, next)
+    }
 }

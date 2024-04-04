@@ -108,16 +108,18 @@ class ImeAnimator internal constructor(
     }
 
     fun showIme() {
-        holder.showIme()
+        if (canChangeEditor(host.current, host.ime)) holder.showIme()
     }
 
     fun hideIme() {
-        holder.hideIme()
+        if (canChangeEditor(host.current, null)) holder.hideIme()
     }
 
     private inner class EditorHostImpl : EditorHost {
         override val WindowInsetsCompat.imeOffset: Int
             get() = window.run { imeOffset }
+        override val hasWindowFocus: Boolean
+            get() = window.hasWindowFocus
         override var editorOffset = 0
         override var navBarOffset = 0
         override val ime = Ime
@@ -140,11 +142,14 @@ class ImeAnimator internal constructor(
             editorOffset = offset
         }
 
-        override fun dispatchImeShown(shown: Boolean) {
+        override fun dispatchImeShown(shown: Boolean): Boolean {
+            val next = if (shown) ime else null
+            if (!canChangeEditor(current, next)) return false
             val previous = current
-            current = if (shown) ime else null
+            current = next
             if (shown) holder.requestCurrentFocus() else holder.clearCurrentFocus()
             this@ImeAnimator.onPendingChanged(previous, current)
+            return true
         }
 
         override fun addAnimationCallback(callback: AnimationCallback) {
@@ -182,8 +187,8 @@ class ImeAnimator internal constructor(
         }
 
         override fun removeEditorView(view: View) = Unit
-        override fun showChecked(editor: Editor) = Unit
-        override fun hideChecked(editor: Editor) = Unit
+        override fun showChecked(editor: Editor) = false
+        override fun hideChecked(editor: Editor) = false
         override fun addEditorChangedListener(listener: EditorChangedListener<Editor>) = Unit
         override fun removeEditorChangedListener(listener: EditorChangedListener<Editor>) = Unit
     }

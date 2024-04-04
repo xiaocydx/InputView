@@ -413,6 +413,8 @@ class InputView @JvmOverloads constructor(
         private var pending: PendingInsetsAnimationCallback? = null
         override val WindowInsetsCompat.imeOffset: Int
             get() = window?.run { imeOffset } ?: NO_VALUE
+        override val hasWindowFocus: Boolean
+            get() = window?.hasWindowFocus ?: false
         override val editorOffset: Int
             get() = this@InputView.editorOffset
         override val navBarOffset: Int
@@ -472,19 +474,20 @@ class InputView @JvmOverloads constructor(
             this@InputView.updateEditorOffset(offset)
         }
 
-        override fun dispatchImeShown(shown: Boolean) {
+        override fun dispatchImeShown(shown: Boolean): Boolean {
             assertNotInLayout { "调度IME显示" }
-            editorView.dispatchImeShown(shown)
+            val next = if (shown) ime else null
+            return editorAnimator.canChangeEditor(current, next) && editorView.dispatchImeShown(shown)
         }
 
-        override fun showChecked(editor: Editor) {
+        override fun showChecked(editor: Editor): Boolean {
             assertNotInLayout { "显示Editor" }
-            editorView.showChecked(editor)
+            return editorAnimator.canChangeEditor(current, editor) && editorView.showChecked(editor)
         }
 
-        override fun hideChecked(editor: Editor) {
+        override fun hideChecked(editor: Editor): Boolean {
             assertNotInLayout { "隐藏Editor" }
-            editorView.hideChecked(editor)
+            return editorAnimator.canChangeEditor(current, editor) && editorView.hideChecked(editor)
         }
 
         override fun addAnimationCallback(callback: AnimationCallback) {
