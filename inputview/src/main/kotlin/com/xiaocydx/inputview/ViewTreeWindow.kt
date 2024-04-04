@@ -122,6 +122,8 @@ internal class ViewTreeWindow(
     private val manager = EditTextManager(this, window.callback)
     val currentFocus: View?
         get() = window.currentFocus
+    val hasWindowFocus: Boolean
+        get() = window.decorView.hasWindowFocus()
 
     fun attach() = apply {
         check(decorView.viewTreeWindow == null) {

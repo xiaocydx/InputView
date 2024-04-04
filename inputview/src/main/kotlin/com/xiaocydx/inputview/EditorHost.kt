@@ -38,6 +38,11 @@ internal interface EditorHost {
     val WindowInsetsCompat.imeOffset: Int
 
     /**
+     * Window是否具有焦点
+     */
+    val hasWindowFocus: Boolean
+
+    /**
      * 编辑区的偏移值
      */
     @get:IntRange(from = 0)
@@ -87,17 +92,17 @@ internal interface EditorHost {
     /**
      * 分发IME的显示情况，仅在`onApplyWindowInsets()`下调用
      */
-    fun dispatchImeShown(shown: Boolean)
+    fun dispatchImeShown(shown: Boolean): Boolean
 
     /**
      * 显示[Editor]
      */
-    fun showChecked(editor: Editor)
+    fun showChecked(editor: Editor): Boolean
 
     /**
      * 隐藏[Editor]
      */
-    fun hideChecked(editor: Editor)
+    fun hideChecked(editor: Editor): Boolean
 
     /**
      * 添加[EditorChangedListener]
