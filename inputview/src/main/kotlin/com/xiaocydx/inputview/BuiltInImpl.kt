@@ -43,6 +43,9 @@ fun InputView.disableGestureNavBarOffset() {
 
 /**
  * 设置[createWindowFocusInterceptor]创建的动画拦截器
+ *
+ * 若有更多的拦截条件，则自行实现和组合[AnimationInterceptor]，
+ * 详细解释可以看[EditorAnimator.setAnimationInterceptor]的注释。
  */
 fun EditorAnimator.setWindowFocusInterceptor() {
     setAnimationInterceptor(createWindowFocusInterceptor())

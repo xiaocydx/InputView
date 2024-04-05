@@ -38,8 +38,8 @@ import com.xiaocydx.inputview.compat.ReflectCompat
  * 2. 调用[ImeAnimator.hideIme]隐藏IME，或者通过其它方式隐藏IME，
  * 会清除`currentFocus`的焦点，`currentFocus`不一定是[editText]。
  *
- * 首次调用按[durationMillis]和[interpolator]创建[EditorAnimator]，
- * 后续调用获取的是首次调用创建的[EditorAnimator]：
+ * 首次调用按[durationMillis]和[interpolator]创建[ImeAnimator]，
+ * 后续调用获取的是首次调用创建的[ImeAnimator]：
  * ```
  * InputView.init(window)
  * val animator = InputView.animator(window, editText)
@@ -54,7 +54,7 @@ import com.xiaocydx.inputview.compat.ReflectCompat
  * )
  * ```
  *
- * @param editText 用于兼容Android各版本显示IME的[EditText]
+ * @param editText       用于兼容Android各版本显示IME的[EditText]
  * @param durationMillis 参数含义跟[EditorAnimator.durationMillis]一致
  * @param interpolator   参数含义跟[EditorAnimator.interpolator]一致
  */

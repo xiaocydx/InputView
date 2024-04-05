@@ -49,7 +49,7 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
     }
 
     override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
-        // Android 9.0以下的WindowInsets可变（Reflect模块已兼容）
+        // Android 9.0以下的WindowInsets可变（compat模块已兼容）
         lastInsets = insets
         return super.onApplyWindowInsets(insets)
     }

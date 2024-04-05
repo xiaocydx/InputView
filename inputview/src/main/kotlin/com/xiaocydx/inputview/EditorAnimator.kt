@@ -93,9 +93,16 @@ abstract class EditorAnimator(
 
     /**
      * 设置[AnimationInterceptor]，应用场景可以参考[setWindowFocusInterceptor]
+     *
+     * 若有更多的拦截条件，则自行实现和组合[AnimationInterceptor]，例如：
+     * ```
+     * val interceptor1 = CustomAnimationInterceptor()
+     * val interceptor2 = editorAnimator.createWindowFocusInterceptor()
+     * editorAnimator.setAnimationInterceptor(interceptor1 + interceptor2)
+     * ```
      */
     fun setAnimationInterceptor(interceptor: AnimationInterceptor) {
-        this.animationInterceptor = interceptor
+        animationInterceptor = interceptor
     }
 
     /**

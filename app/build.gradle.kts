@@ -37,7 +37,7 @@ android {
 dependencies {
     implementation(project(":inputview"))
     implementation(project(":inputview-compat"))
-    val version = "1.1.2"
+    val version = "1.1.4"
     implementation("com.github.xiaocydx.Insets:insets:${version}")
     implementation("com.github.xiaocydx.Insets:insets-compat:${version}")
     implementation("com.github.xiaocydx.Insets:insets-systembar:${version}")

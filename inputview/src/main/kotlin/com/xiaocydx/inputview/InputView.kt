@@ -29,6 +29,7 @@ import android.view.View.MeasureSpec.makeMeasureSpec
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.view.Window
 import android.view.WindowInsets
 import android.view.animation.Interpolator
 import android.widget.EditText
@@ -39,7 +40,6 @@ import androidx.core.view.OneShotPreDrawListener
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import com.xiaocydx.inputview.compat.ReflectCompat
-import com.xiaocydx.insets.handleGestureNavBarEdgeToEdgeOnApply
 import com.xiaocydx.insets.onApplyWindowInsetsCompat
 import com.xiaocydx.insets.requestApplyInsetsCompat
 import com.xiaocydx.insets.setOnApplyWindowInsetsListenerCompat
@@ -48,7 +48,7 @@ import com.xiaocydx.insets.toWindowInsetsCompat
 /**
  * 输入控件
  *
- * 1. 调用`InputView.init()`初始化[InputView]所需的配置。
+ * 1. 调用[init]或[initCompat]初始化[InputView]所需的配置。
  * 2. [InputView]初始化时只能有一个子View，该子View作为[contentView]。
  * 3. [editText]用于兼容Android各版本显示和隐藏IME。
  * 4. [editorAdapter]支持[Editor]的视图创建和显示。
@@ -77,22 +77,23 @@ class InputView @JvmOverloads constructor(
     /**
      * 用于兼容Android各版本显示IME的[EditText]
      *
-     * 多个[EditText]的焦点处理逻辑：
+     * ### 多个[EditText]的焦点处理逻辑
      * 1. 调用[EditorAdapter]提供的函数显示IME，会让[editText]获得焦点。
      * 2. 调用[EditorAdapter]提供的函数隐藏IME，或者通过其它方式隐藏IME，
      * 会清除`currentFocus`的焦点，`currentFocus`不一定是[editText]。
      *
-     * 可以通过[EditorChangedListener]处理[editText]的焦点，例如：
+     * ### 覆盖[editText]的焦点处理逻辑
+     * 可以通过[EditorChangedListener]覆盖[editText]的焦点逻辑，例如：
      * ```
-     * enum class MessageEditor : Editor {
-     *     IME, VOICE, EMOJI
-     * }
-     *
      * inputView.editorAdapter.addEditorChangedListener { previous, current ->
-     *     // 显示EMOJI，让editText获得焦点
+     *     // 显示EMOJI，也要让editText获得焦点
      *     if (current === EMOJI) inputView.editText?.requestFocus()
      * }
      * ```
+     *
+     * ### 处理[editText]的水滴状指示器
+     * 对[editText]设置的[EditText]会自动处理水滴状指示器导致动画卡顿的问题，
+     * 若其它[EditText]也需要处理，则调用`InputView.addEditText()`完成添加。
      */
     var editText: EditText?
         get() = editTextHolder?.get()
@@ -123,10 +124,10 @@ class InputView @JvmOverloads constructor(
      * [editorAdapter]默认为[ImeAdapter]
      *
      * [ImeAdapter]用于只需要IME的场景，若需要显示多种[Editor]，
-     * 则继承并实现[EditorAdapter]，其注释介绍了如何实现以及注意点。
+     * 则继承并实现[EditorAdapter]，其注释解释了如何实现以及注意点。
      *
      * [EditorAdapter.onCreateView]创建的视图可能需要实现手势导航栏EdgeToEdge，
-     * [handleGestureNavBarEdgeToEdgeOnApply]是手势导航栏EdgeToEdge的通用实现。
+     * `view.insets().gestureNavBarEdgeToEdge()`是手势导航栏EdgeToEdge的通用实现。
      */
     var editorAdapter: EditorAdapter<*>
         get() = editorView.adapter
@@ -145,6 +146,10 @@ class InputView @JvmOverloads constructor(
      *
      * 若需要调整动画的参数，则可以继承[FadeEditorAnimator]进行修改，
      * 或者参考[FadeEditorAnimator]，继承[EditorAnimator]实现动画。
+     * 若不需要运行动画，仅分发动画回调，则设置[NopEditorAnimator]。
+     *
+     * 多[Window]的交互问题，可以通过设置[AnimationInterceptor]解决，
+     * 应用场景可以参考[EditorAnimator.setWindowFocusInterceptor]。
      */
     var editorAnimator: EditorAnimator = FadeEditorAnimator()
         set(value) {
@@ -157,6 +162,9 @@ class InputView @JvmOverloads constructor(
 
     /**
      * [Editor]区域的[Drawable]，边界范围包含手势导航栏EdgeToEdge的偏移
+     *
+     * Android 11以下运行的IME动画，IME顶部不能跟视图底部完全贴合，
+     * 若不想动画运行时露出下面的内容，则可以对该属性设置[Drawable]。
      */
     var editorBackground: Drawable? = null
         set(value) {
@@ -182,6 +190,9 @@ class InputView @JvmOverloads constructor(
 
     /**
      * 设置[Editor]区域的背景色，边界范围包含手势导航栏EdgeToEdge的偏移
+     *
+     * Android 11以下运行的IME动画，IME顶部不能跟视图底部完全贴合，
+     * 若不想动画运行时露出下面的内容，则可以调用该函数设置背景色。
      */
     fun setEditorBackgroundColor(@ColorInt color: Int) {
         if (editorBackground is ColorDrawable) {

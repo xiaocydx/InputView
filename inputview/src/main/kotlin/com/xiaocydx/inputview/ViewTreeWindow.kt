@@ -29,8 +29,8 @@ import com.xiaocydx.inputview.compat.*
 import com.xiaocydx.insets.consumeInsets
 import com.xiaocydx.insets.getImeOffset
 import com.xiaocydx.insets.getRootWindowInsetsCompat
-import com.xiaocydx.insets.handleGestureNavBarEdgeToEdgeOnApply
 import com.xiaocydx.insets.imeHeight
+import com.xiaocydx.insets.insets
 import com.xiaocydx.insets.isGestureNavigationBar
 import com.xiaocydx.insets.navigationBarHeight
 import com.xiaocydx.insets.onApplyWindowInsetsCompat
@@ -47,9 +47,10 @@ import java.lang.ref.WeakReference
  * @param statusBarEdgeToEdge 是否启用状态栏EdgeToEdge。
  * 若启用，则不消费[WindowInsets]的状态栏Insets，不设置状态栏高度的间距，不绘制背景色。
  * @param gestureNavBarEdgeToEdge 是否启用手势导航栏EdgeToEdge。
- * 若启用，则不消费[WindowInsets]的手势导航栏Insets，不设置手势导航栏高度的间距，不绘制背景色。
+ * 若启用，则不消费[WindowInsets]的手势导航栏Insets，不设置手势导航栏高度的间距，不绘制背景色，
+ * [InputView]增加`navBarOffset`区域，[AnimationState.navBarOffset]有值。
  *
- * 可以利用[isGestureNavigationBar]、[handleGestureNavBarEdgeToEdgeOnApply]等扩展实现EdgeToEdge。
+ * 可以利用[View.insets]、[WindowInsetsCompat.isGestureNavigationBar]等扩展实现EdgeToEdge。
  */
 fun InputView.Companion.init(
     window: Window,
@@ -65,9 +66,9 @@ fun InputView.Companion.init(
  *
  * @param window [Activity.getWindow]或[Dialog.getWindow]。
  * @param gestureNavBarEdgeToEdge 是否启用手势导航栏EdgeToEdge。
- * 若启用，则不消费[WindowInsets]的手势导航栏Insets，不设置手势导航栏高度的间距，不绘制背景色。
+ * 若启用，[InputView]增加`navBarOffset`区域，[AnimationState.navBarOffset]有值。
  *
- * 可以利用[isGestureNavigationBar]、[handleGestureNavBarEdgeToEdgeOnApply]等扩展实现EdgeToEdge。
+ * 可以利用[View.insets]、[WindowInsetsCompat.isGestureNavigationBar]等扩展实现EdgeToEdge。
  */
 fun InputView.Companion.initCompat(
     window: Window,
@@ -81,7 +82,7 @@ fun InputView.Companion.initCompat(
  * 内部实现通过弱引用的方式持有[editText]，因此不必担心会有内存泄漏问题，
  * 调用该函数之前，需要先调用[init]或[initCompat]完成初始化。
  *
- * 对[InputView]和[ImeAnimator]设置的`editText`，会默认调用该函数，
+ * 跟[InputView]和[ImeAnimator]关联的`editText`，会自动调用该函数，
  * 水滴状指示器的处理逻辑，可以看[EditTextManager.EditTextHandle]。
  */
 fun InputView.Companion.addEditText(window: Window, editText: EditText): Boolean {
