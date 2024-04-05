@@ -2,6 +2,7 @@ package com.xiaocydx.inputview
 
 import android.graphics.Matrix
 import android.view.MotionEvent
+import android.view.ViewGroup
 import android.view.Window
 import android.widget.EditText
 import com.xiaocydx.insets.imeHeight
@@ -23,6 +24,18 @@ internal class EditTextManager(
     private val location = IntArray(2)
     private var inverseMatrix: Matrix? = null
     private var touchedHandle: EditTextHandle? = null
+
+    /**
+     * 设置焦点的兼容处理
+     *
+     * Android 9.0以下，让[EditText]的parent获得焦点，才能清除[EditText]的焦点，
+     * 实现不区分Android版本和有无[InputView]，统一处理为`contentRoot`获得焦点。
+     */
+    fun setFocusCompat(decorView: ViewGroup) {
+        val contentRoot = decorView.children.firstOrNull { it is ViewGroup }
+        contentRoot?.isFocusable = true
+        contentRoot?.isFocusableInTouchMode = true
+    }
 
     fun register(host: EditorHost) {
         host.addAnimationCallback(callback)

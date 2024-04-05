@@ -175,8 +175,6 @@ class InputView @JvmOverloads constructor(
         get() = layoutCount > 0
 
     init {
-        isFocusable = true
-        isFocusableInTouchMode = true
         addView(editorView, MATCH_PARENT, WRAP_CONTENT)
         host.onEditorAdapterChanged(previous = null, editorAdapter)
         host.onEditorAnimatorChanged(previous = null, editorAnimator)

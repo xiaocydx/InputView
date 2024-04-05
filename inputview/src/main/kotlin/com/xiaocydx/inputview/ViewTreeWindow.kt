@@ -134,6 +134,7 @@ internal class ViewTreeWindow(
         window.setDecorFitsSystemWindowsCompat(false)
         window.checkDispatchApplyInsetsCompatibility()
         window.callback = manager
+        manager.setFocusCompat(decorView)
         decorView.viewTreeWindow = this
     }
 
