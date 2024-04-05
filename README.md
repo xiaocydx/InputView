@@ -27,7 +27,7 @@ dependencyResolutionManagement {
 ```
 dependencies {
     // 修改IME动画的属性、调用FLAG_FULLSCREEN的兼容方案，需要依赖inputview-compat
-    def version = "1.1.4"
+    def version = "1.1.5"
     implementation "com.github.xiaocydx.InputView:inputview:${version}"
     implementation "com.github.xiaocydx.InputView:inputview-compat:${version}"
 }
