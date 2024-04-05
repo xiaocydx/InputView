@@ -4,11 +4,12 @@
     android:layout_height="match_parent">
 
     <TextView
+        android:id="@+id/textView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center"
         android:background="#A8C8D6"
-        android:text="OverlayInput"
+        android:gravity="center"
+        android:text="点击显示Dialog"
         android:textSize="22sp" />
 
     <com.xiaocydx.inputview.InputView
@@ -29,24 +30,39 @@
                 android:background="#66000000"
                 android:visibility="invisible" />
 
-            <FrameLayout
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="#F2F2F2"
+                android:orientation="vertical"
                 android:paddingTop="6dp">
 
                 <EditText
-                    android:id="@+id/editText"
+                    android:id="@+id/editText1"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="6dp"
                     android:layout_marginBottom="6dp"
                     android:background="@color/white"
                     android:gravity="center_vertical"
+                    android:hint="点击EditText1显示IME"
                     android:minHeight="38dp"
                     android:padding="5dp"
                     android:textSize="15sp" />
-            </FrameLayout>
+
+                <EditText
+                    android:id="@+id/editText2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="6dp"
+                    android:layout_marginBottom="6dp"
+                    android:background="@color/white"
+                    android:gravity="center_vertical"
+                    android:hint="点击EditText2显示IME"
+                    android:minHeight="38dp"
+                    android:padding="5dp"
+                    android:textSize="15sp" />
+            </LinearLayout>
         </LinearLayout>
     </com.xiaocydx.inputview.InputView>
 </FrameLayout>

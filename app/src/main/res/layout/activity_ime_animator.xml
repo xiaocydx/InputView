@@ -12,23 +12,38 @@
         android:scaleType="centerCrop"
         android:src="@mipmap/ic_launcher" />
 
-    <FrameLayout
+    <LinearLayout
         android:id="@+id/etContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#F2F2F2"
+        android:orientation="vertical"
         android:paddingTop="6dp">
 
         <EditText
-            android:id="@+id/editText"
+            android:id="@+id/editText1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="6dp"
             android:layout_marginBottom="6dp"
             android:background="@color/white"
             android:gravity="center_vertical"
+            android:hint="点击EdiText1显示IME"
             android:minHeight="38dp"
             android:padding="5dp"
             android:textSize="15sp" />
-    </FrameLayout>
+
+        <EditText
+            android:id="@+id/editText2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="6dp"
+            android:layout_marginBottom="6dp"
+            android:background="@color/white"
+            android:gravity="center_vertical"
+            android:hint="点击EdiText2显示IME"
+            android:minHeight="38dp"
+            android:padding="5dp"
+            android:textSize="15sp" />
+    </LinearLayout>
 </LinearLayout>

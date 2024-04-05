@@ -27,10 +27,8 @@ import com.xiaocydx.inputview.sample.edit.VideoEditor.Text
 import com.xiaocydx.inputview.sample.edit.VideoEditor.Video
 import com.xiaocydx.inputview.sample.isDispatchTouchEventEnabled
 import com.xiaocydx.inputview.sample.onClick
-import com.xiaocydx.insets.doOnApplyWindowInsets
-import com.xiaocydx.insets.handleGestureNavBarEdgeToEdgeOnApply
-import com.xiaocydx.insets.statusBarHeight
-import com.xiaocydx.insets.updateMargins
+import com.xiaocydx.insets.insets
+import com.xiaocydx.insets.statusBars
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.mapLatest
@@ -164,9 +162,7 @@ class VideoEditActivity : AppCompatActivity() {
         // 禁用手势导航栏偏移，自行处理手势导航栏
         inputView.disableGestureNavBarOffset()
         // 设置通用的手势导航栏EdgeToEdge处理逻辑
-        space.handleGestureNavBarEdgeToEdgeOnApply()
-        preview.doOnApplyWindowInsets { view, insets, initialState ->
-            view.updateMargins(top = initialState.params.marginTop + insets.statusBarHeight)
-        }
+        space.insets().gestureNavBarEdgeToEdge()
+        preview.insets().margins(statusBars())
     }
 }

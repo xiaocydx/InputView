@@ -5,10 +5,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.updatePadding
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.addAnimationCallback
+import com.xiaocydx.inputview.addEditText
 import com.xiaocydx.inputview.animator
 import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.databinding.ActivityImeAnimatorBinding
-import com.xiaocydx.insets.handleGestureNavBarEdgeToEdgeOnApply
+import com.xiaocydx.insets.insets
 
 /**
  * `InputView.animator()`的示例代码
@@ -27,15 +28,28 @@ class ImeAnimatorActivity : AppCompatActivity() {
     }
 
     private fun ActivityImeAnimatorBinding.init() = apply {
-        val animator = InputView.animator(window, editText)
-        // 1. 点击imageView，隐藏IME
+        // 1. 当有多个EditText时，选其中一个EditText创建ImeAnimator即可,
+        // 多个EditText的焦点处理逻辑，可以看InputView.animator()的注释。
+        val animator = InputView.animator(window, editText1)
+
+        // 2. 创建animator的EditText会自动处理水滴状指示器导致动画卡顿问题，
+        // 若其它EditText也需要处理，则调用InputView.addEditText()完成添加。
+        InputView.addEditText(window, editText2)
+
+        // 3. 点击imageView，隐藏IME
         imageView.onClick(animator::hideIme)
-        // 2. 当支持手势导航栏EdgeToEdge时，设置etContainer.paddingBottom
-        etContainer.handleGestureNavBarEdgeToEdgeOnApply()
-        // 3. 显示和隐藏IME，运行动画设置root.paddingBottom
+
+        // 4. 当支持手势导航栏EdgeToEdge时，设置etContainer.paddingBottom
+        etContainer.insets().gestureNavBarEdgeToEdge()
+
+        // 5. 显示和隐藏IME，运行动画设置root.paddingBottom
         animator.addAnimationCallback(onUpdate = { state ->
             val bottom = state.currentOffset - state.navBarOffset
             root.updatePadding(bottom = bottom.coerceAtLeast(0))
         })
+
+        // 5. 碰到OverlayInputActivity的多Window交互问题，仍可以通过动画拦截器解决
+        // animator.setWindowFocusInterceptor()
+        // imageView.onClick { InputDialog(this@ImeAnimatorActivity).show() }
     }
 }
