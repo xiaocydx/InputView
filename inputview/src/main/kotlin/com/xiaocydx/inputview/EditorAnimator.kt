@@ -679,6 +679,6 @@ private class CombinedAnimationInterceptor(
 ) : AnimationInterceptor {
 
     override fun onInterceptChange(current: Editor?, next: Editor?): Boolean {
-        return first.onInterceptChange(current, next) && second.onInterceptChange(current, next)
+        return first.onInterceptChange(current, next) || second.onInterceptChange(current, next)
     }
 }
