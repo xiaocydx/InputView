@@ -22,6 +22,7 @@ import android.view.Window
 import android.view.animation.Interpolator
 import android.widget.EditText
 import androidx.annotation.CheckResult
+import androidx.annotation.VisibleForTesting
 import androidx.core.view.OneShotPreDrawListener
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
@@ -129,13 +130,11 @@ class ImeAnimator internal constructor(
         override val currentView = null
 
         fun onAttachedToWindow() {
-            window.register(this)
-            window.addEditText(editText)
+            window.registerHost(this)
         }
 
         fun onDetachedFromWindow() {
-            window.unregister(this)
-            window.removeEditText(editText)
+            window.unregisterHost(this)
         }
 
         override fun updateEditorOffset(offset: Int) {
@@ -158,6 +157,11 @@ class ImeAnimator internal constructor(
 
         override fun removeAnimationCallback(callback: AnimationCallback) {
             this@ImeAnimator.removeAnimationCallback(callback)
+        }
+
+        @VisibleForTesting
+        override fun containsAnimationCallback(callback: AnimationCallback): Boolean {
+            return this@ImeAnimator.containsCallback(callback)
         }
 
         override fun addPreDrawAction(action: () -> Unit): OneShotPreDrawListener {
@@ -189,7 +193,5 @@ class ImeAnimator internal constructor(
         override fun removeEditorView(view: View) = Unit
         override fun showChecked(editor: Editor) = false
         override fun hideChecked(editor: Editor) = false
-        override fun addEditorChangedListener(listener: EditorChangedListener<Editor>) = Unit
-        override fun removeEditorChangedListener(listener: EditorChangedListener<Editor>) = Unit
     }
 }

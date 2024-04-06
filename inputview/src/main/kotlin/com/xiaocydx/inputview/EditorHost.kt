@@ -20,6 +20,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.Interpolator
 import androidx.annotation.IntRange
+import androidx.annotation.VisibleForTesting
 import androidx.core.view.OneShotPreDrawListener
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
@@ -105,16 +106,6 @@ internal interface EditorHost {
     fun hideChecked(editor: Editor): Boolean
 
     /**
-     * 添加[EditorChangedListener]
-     */
-    fun addEditorChangedListener(listener: EditorChangedListener<Editor>)
-
-    /**
-     * 移除[EditorChangedListener]
-     */
-    fun removeEditorChangedListener(listener: EditorChangedListener<Editor>)
-
-    /**
      * 添加[AnimationCallback]
      */
     fun addAnimationCallback(callback: AnimationCallback)
@@ -123,6 +114,12 @@ internal interface EditorHost {
      * 移除[AnimationCallback]
      */
     fun removeAnimationCallback(callback: AnimationCallback)
+
+    /**
+     * 是否包含[AnimationCallback]
+     */
+    @VisibleForTesting
+    fun containsAnimationCallback(callback: AnimationCallback): Boolean
 
     /**
      * 添加绘制帧draw之前的任务，[OneShotPreDrawListener.removeListener]移除任务
@@ -154,7 +151,5 @@ internal const val NO_VALUE = -1
 internal interface Replicable
 
 internal interface ReplicableAnimationCallback : AnimationCallback, Replicable
-
-internal fun interface ReplicableEditorChangedListener : EditorChangedListener<Editor>, Replicable
 
 internal typealias OnApplyWindowInsetsListenerCompat = androidx.core.view.OnApplyWindowInsetsListener

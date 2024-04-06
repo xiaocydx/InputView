@@ -47,8 +47,9 @@ internal class EditTextHolder(editText: EditText) :
         get()?.let(::onViewDetachedFromWindow)
     }
 
-    override fun onViewAttachedToWindow(v: View) {
-        window = v.requireViewTreeWindow()
+    override fun onViewAttachedToWindow(view: View) {
+        window = window ?: view.requireViewTreeWindow()
+        (view as? EditText)?.let { window?.addEditText(it) }
         if (!pendingShowIme) return
         // 兼容IME未跟ViewRootImpl的属性动画同步的问题
         preDrawAction = host?.addPreDrawAction {
@@ -57,7 +58,10 @@ internal class EditTextHolder(editText: EditText) :
         }
     }
 
-    override fun onViewDetachedFromWindow(v: View) = removePending()
+    override fun onViewDetachedFromWindow(view: View) {
+        (view as? EditText)?.let { window?.removeEditText(it) }
+        removePending()
+    }
 
     fun requestCurrentFocus() {
         val currentFocus = window?.currentFocus

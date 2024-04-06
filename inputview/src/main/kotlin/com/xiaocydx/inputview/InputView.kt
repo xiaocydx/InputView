@@ -35,7 +35,6 @@ import android.view.animation.Interpolator
 import android.widget.EditText
 import androidx.annotation.ColorInt
 import androidx.annotation.VisibleForTesting
-import androidx.annotation.VisibleForTesting.PRIVATE
 import androidx.core.view.OneShotPreDrawListener
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
@@ -214,10 +213,8 @@ class InputView @JvmOverloads constructor(
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        if (window == null) {
-            window = findViewTreeWindow()
-            window?.let(host::onAttachedToWindow)
-        }
+        window = window ?: findViewTreeWindow()
+        window?.let(host::onAttachedToWindow)
         requestApplyInsetsCompat()
     }
 
@@ -408,7 +405,7 @@ class InputView @JvmOverloads constructor(
         return who === editorBackground || super.verifyDrawable(who)
     }
 
-    @VisibleForTesting(otherwise = PRIVATE)
+    @VisibleForTesting
     internal fun getEditorHost(): EditorHost = host
 
     class LayoutParams : MarginLayoutParams {
@@ -440,14 +437,12 @@ class InputView @JvmOverloads constructor(
             get() = editorView.changeRecord.currentChild
 
         fun onAttachedToWindow(window: ViewTreeWindow) {
-            window.register(this)
-            editTextHolder?.get()?.let(window::addEditText)
+            window.registerHost(this)
             pending?.apply { setWindowInsetsAnimationCallback(durationMillis, interpolator, callback) }
         }
 
         fun onDetachedFromWindow(window: ViewTreeWindow) {
-            window.unregister(this)
-            editTextHolder?.get()?.let(window::removeEditText)
+            window.unregisterHost(this)
             editorAnimator.endAnimation()
         }
 
@@ -466,10 +461,6 @@ class InputView @JvmOverloads constructor(
         }
 
         fun onEditTextHolderChanged(previous: EditTextHolder?, current: EditTextHolder?) {
-            if (window != null) {
-                previous?.get()?.let(window!!::removeEditText)
-                current?.get()?.let(window!!::addEditText)
-            }
             previous?.onDetachedFromHost(this)
             current?.onAttachedToHost(this)
             editorView.setEditTextHolder(current)
@@ -507,12 +498,9 @@ class InputView @JvmOverloads constructor(
             editorAnimator.removeAnimationCallback(callback)
         }
 
-        override fun addEditorChangedListener(listener: EditorChangedListener<Editor>) {
-            editorAdapter.addEditorChangedListener(listener)
-        }
-
-        override fun removeEditorChangedListener(listener: EditorChangedListener<Editor>) {
-            editorAdapter.removeEditorChangedListener(listener)
+        @VisibleForTesting
+        override fun containsAnimationCallback(callback: AnimationCallback): Boolean {
+            return editorAnimator.containsCallback(callback)
         }
 
         override fun addPreDrawAction(action: () -> Unit): OneShotPreDrawListener {
