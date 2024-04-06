@@ -18,8 +18,8 @@ package com.xiaocydx.inputview
 
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import androidx.annotation.CallSuper
-import androidx.annotation.VisibleForTesting
 
 /**
  * [Editor]的适配器，负责创建和通知显示[Editor]的视图
@@ -91,11 +91,6 @@ abstract class EditorAdapter<T : Editor> {
         listeners.forEach { action(it as EditorChangedListener<Editor>) }
     }
 
-    @VisibleForTesting
-    internal fun containsListener(listener: EditorChangedListener<*>): Boolean {
-        return listeners.contains(listener)
-    }
-
     internal fun onEditorChanged(previous: T?, current: T?) {
         for (index in listeners.indices.reversed()) {
             listeners[index].onEditorChanged(previous, current)
@@ -130,4 +125,73 @@ fun interface EditorChangedListener<in T : Editor> {
      * @param current  当前的[Editor]，`null`表示当前没有[Editor]
      */
     fun onEditorChanged(previous: T?, current: T?)
+}
+
+/**
+ * 当前显示的[Editor]，若为`null`，则当前是初始化状态
+ */
+@Suppress("UNCHECKED_CAST")
+val <T : Editor> EditorAdapter<T>.current: T?
+    get() = host?.current as? T
+
+/**
+ * 当前显示的[Editor]是否为[editor]
+ */
+fun <T : Editor> EditorAdapter<T>.isShowing(editor: T): Boolean = current === editor
+
+/**
+ * 通知显示[editor]，多个[EditText]的焦点处理逻辑，详细解释可以看[InputView.editText]的注释
+ *
+ * @return `true`-显示[editor]成功，`false`-未关联[InputView]、已显示[editor]、显示[editor]被拦截。
+ */
+fun <T : Editor> EditorAdapter<T>.notifyShow(editor: T): Boolean {
+    return host?.showChecked(editor) ?: false
+}
+
+/**
+ * 通知隐藏[editor]，多个[EditText]的焦点处理逻辑，详细解释可以看[InputView.editText]的注释
+ *
+ * @return `true`-隐藏[editor]成功，`false`-未关联[InputView]、已隐藏[editor]、隐藏[editor]被拦截。
+ */
+fun <T : Editor> EditorAdapter<T>.notifyHide(editor: T): Boolean {
+    return host?.hideChecked(editor) ?: false
+}
+
+/**
+ * 通知隐藏当前[Editor]，多个[EditText]的焦点处理逻辑，详细解释可以看[InputView.editText]的注释
+ *
+ * @return `true`-隐藏[current]成功，`false`-未关联[InputView]、已隐藏[current]、隐藏[current]被拦截。
+ */
+fun <T : Editor> EditorAdapter<T>.notifyHideCurrent(): Boolean {
+    return current?.let(::notifyHide) ?: false
+}
+
+/**
+ * 通知显示IME，多个[EditText]的焦点处理逻辑，详细解释可以看[InputView.editText]的注释
+ *
+ * @return `true`-显示IME成功，`false`-未关联[InputView]、已显示IME、显示IME被拦截。
+ */
+fun EditorAdapter<*>.notifyShowIme(): Boolean {
+    return host?.run { ime?.let(::showChecked) } ?: false
+}
+
+/**
+ * 通知隐藏IME，多个[EditText]的焦点处理逻辑，详细解释可以看[InputView.editText]的注释
+ *
+ * @return `true`-隐藏IME成功，`false`-未关联[InputView]、已隐藏IME、隐藏IME被拦截。
+ */
+fun EditorAdapter<*>.notifyHideIme(): Boolean {
+    return host?.run { ime?.let(::hideChecked) } ?: false
+}
+
+/**
+ * 通知切换显示[Editor]，多个[EditText]的焦点处理逻辑，详细解释可以看[InputView.editText]的注释
+ *
+ * 1. 当前未显示[editor]，则显示[editor]。
+ * 2. 当前已显示[editor]，则显示IME。
+ *
+ * @return `true`-切换显示[editor]成功，`false`-未关联[InputView]、切换显示[editor]被拦截。
+ */
+fun <T : Editor> EditorAdapter<T>.notifyToggle(editor: T): Boolean {
+    return if (current !== editor) notifyShow(editor) else notifyShowIme()
 }
