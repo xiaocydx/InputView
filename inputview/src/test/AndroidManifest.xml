@@ -2,7 +2,10 @@
 
     <application>
         <activity
-            android:name="com.xiaocydx.inputview.TestActivity"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"/>
+            android:name="com.xiaocydx.inputview.TestInputViewActivity"
+            android:theme="@style/Theme.AppCompat.Light.DarkActionBar" />
+        <activity
+            android:name="com.xiaocydx.inputview.TestImeAnimatorActivity"
+            android:theme="@style/Theme.AppCompat.Light.DarkActionBar" />
     </application>
 </manifest>

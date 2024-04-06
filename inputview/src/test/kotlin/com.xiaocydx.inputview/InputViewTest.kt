@@ -40,11 +40,11 @@ import org.robolectric.annotation.Config
 @Config(sdk = [Build.VERSION_CODES.Q])
 @RunWith(RobolectricTestRunner::class)
 internal class InputViewTest {
-    private lateinit var scenario: ActivityScenario<TestActivity>
+    private lateinit var scenario: ActivityScenario<TestInputViewActivity>
 
     @Before
     fun setup() {
-        scenario = launch(TestActivity::class.java).moveToState(RESUMED)
+        scenario = launch(TestInputViewActivity::class.java).moveToState(RESUMED)
     }
 
     @After
@@ -87,24 +87,6 @@ internal class InputViewTest {
             verify(exactly = 1) { animator1.onAttachedToHost(host) }
             verify(exactly = 1) { animator1.onDetachedFromHost(host) }
             verify(exactly = 1) { animator2.onAttachedToHost(host) }
-        }
-    }
-
-    @Test
-    fun replicableEditorChangedListener() {
-        scenario.onActivity {
-            val adapter1 = ImeAdapter()
-            it.inputView.editorAdapter = adapter1
-
-            val listener1 = EditorChangedListener<Editor> { _, _ -> }
-            val listener2 = ReplicableEditorChangedListener { _, _ -> }
-            adapter1.addEditorChangedListener(listener1)
-            adapter1.addEditorChangedListener(listener2)
-
-            val adapter2 = ImeAdapter()
-            it.inputView.editorAdapter = adapter2
-            assertThat(adapter2.containsListener(listener1)).isFalse()
-            assertThat(adapter2.containsListener(listener2)).isTrue()
         }
     }
 

@@ -42,11 +42,11 @@ import org.robolectric.annotation.Config
 @Config(sdk = [Build.VERSION_CODES.Q])
 @RunWith(RobolectricTestRunner::class)
 internal class EditorContainerTest {
-    private lateinit var scenario: ActivityScenario<TestActivity>
+    private lateinit var scenario: ActivityScenario<TestInputViewActivity>
 
     @Before
     fun setup() {
-        scenario = launch(TestActivity::class.java).moveToState(RESUMED)
+        scenario = launch(TestInputViewActivity::class.java).moveToState(RESUMED)
     }
 
     @After

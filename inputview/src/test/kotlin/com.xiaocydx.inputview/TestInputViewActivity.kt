@@ -17,9 +17,11 @@
 package com.xiaocydx.inputview
 
 import android.os.Bundle
-import android.view.View
+import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.widget.EditText
+import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -28,31 +30,45 @@ import androidx.lifecycle.ViewModelProvider
  * @author xcc
  * @date 2023/1/13
  */
-internal class TestActivity : AppCompatActivity() {
-    lateinit var viewModel: TestViewModel
-        private set
-    lateinit var inputView: InputView
-        private set
+internal class TestInputViewActivity : AppCompatActivity() {
+    private var _editText: EditText? = null
+    lateinit var viewModel: TestInputViewViewModel; private set
+    lateinit var inputView: InputView; private set
+    lateinit var contentView: FrameLayout; private set
+    val editText: EditText
+        get() = requireNotNull(_editText)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel = ViewModelProvider(this, TestViewModel)[TestViewModel::class.java]
         InputView.init(window)
+        viewModel = ViewModelProvider(this, TestInputViewViewModel)[TestInputViewViewModel::class.java]
         inputView = InputView(this)
+        contentView = FrameLayout(this)
+        _editText = EditText(this)
+        inputView.editText = _editText
+
+        contentView.addView(_editText)
         inputView.layoutParams = LayoutParams(MATCH_PARENT, MATCH_PARENT)
-        inputView.addView(View(this), MATCH_PARENT, MATCH_PARENT)
+        inputView.addView(contentView, MATCH_PARENT, MATCH_PARENT)
         if (viewModel.canSetInputView) setContentView(inputView)
+    }
+
+    fun clearEditText() {
+        val editText = _editText ?: return
+        val parent = editText.parent as? ViewGroup
+        parent?.removeView(editText)
+        _editText = null
     }
 }
 
-class TestViewModel : ViewModel() {
+class TestInputViewViewModel : ViewModel() {
     var canSetInputView = true
 
     companion object Factory : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            require(modelClass === TestViewModel::class.java)
+            require(modelClass === TestInputViewViewModel::class.java)
             @Suppress("UNCHECKED_CAST")
-            return TestViewModel() as T
+            return TestInputViewViewModel() as T
         }
     }
 }
