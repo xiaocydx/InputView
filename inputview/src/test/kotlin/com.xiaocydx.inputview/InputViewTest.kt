@@ -55,7 +55,11 @@ internal class InputViewTest {
     @Test
     fun initViewTreeWindow() {
         scenario.onActivity {
+            assertThat(InputView.init(it.window)).isFalse()
+            assertThat(InputView.initCompat(it.window)).isFalse()
             assertThat(it.inputView.findViewTreeWindow()).isNotNull()
+            val result = runCatching { it.inputView.findViewTreeWindow()?.attach() }
+            assertThat(result.exceptionOrNull()).isNotNull()
         }
     }
 

@@ -52,14 +52,18 @@ import java.lang.ref.WeakReference
  * [InputView]增加`navBarOffset`区域，[AnimationState.navBarOffset]有值。
  *
  * 可以利用[View.insets]、[WindowInsetsCompat.isGestureNavigationBar]等扩展实现EdgeToEdge。
+ *
+ * @return 首次初始化返回`true`，再次初始化返回`false`。
  */
 fun InputView.Companion.init(
     window: Window,
     statusBarEdgeToEdge: Boolean = false,
     gestureNavBarEdgeToEdge: Boolean = false
-) {
+): Boolean {
+    if (ViewTreeWindow.isAttached(window)) return false
     ViewTreeWindow(window, gestureNavBarEdgeToEdge).attach()
         .setOnApplyWindowInsetsListener(statusBarEdgeToEdge)
+    return true
 }
 
 /**
@@ -70,12 +74,16 @@ fun InputView.Companion.init(
  * 若启用，[InputView]增加`navBarOffset`区域，[AnimationState.navBarOffset]有值。
  *
  * 可以利用[View.insets]、[WindowInsetsCompat.isGestureNavigationBar]等扩展实现EdgeToEdge。
+ *
+ * @return 首次初始化返回`true`，再次初始化返回`false`。
  */
 fun InputView.Companion.initCompat(
     window: Window,
     gestureNavBarEdgeToEdge: Boolean = false,
-) {
+): Boolean {
+    if (ViewTreeWindow.isAttached(window)) return false
     ViewTreeWindow(window, gestureNavBarEdgeToEdge).attach()
+    return true
 }
 
 /**
@@ -128,9 +136,7 @@ internal class ViewTreeWindow(
         get() = window.decorView.hasWindowFocus()
 
     fun attach() = apply {
-        check(decorView.viewTreeWindow == null) {
-            "InputView.init()或InputView.initCompat()只能调用一次"
-        }
+        check(!isAttached(window)) { "只能调用一次attach()" }
         @Suppress("DEPRECATION")
         window.setSoftInputMode(SOFT_INPUT_ADJUST_RESIZE)
         window.setDecorFitsSystemWindowsCompat(false)
@@ -212,4 +218,10 @@ internal class ViewTreeWindow(
 
     @VisibleForTesting
     fun getEditTextManager() = editTextManager
+
+    companion object {
+        fun isAttached(window: Window): Boolean {
+            return window.decorView.viewTreeWindow != null
+        }
+    }
 }
