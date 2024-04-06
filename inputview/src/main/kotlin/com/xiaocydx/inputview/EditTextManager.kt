@@ -21,6 +21,7 @@ import android.view.MotionEvent
 import android.view.ViewGroup
 import android.view.Window
 import android.widget.EditText
+import androidx.annotation.VisibleForTesting
 import com.xiaocydx.insets.imeHeight
 import java.lang.ref.WeakReference
 
@@ -53,11 +54,11 @@ internal class EditTextManager(
         contentRoot?.isFocusableInTouchMode = true
     }
 
-    fun register(host: EditorHost) {
+    fun registerHost(host: EditorHost) {
         host.addAnimationCallback(callback)
     }
 
-    fun unregister(host: EditorHost) {
+    fun unregisterHost(host: EditorHost) {
         host.removeAnimationCallback(callback)
     }
 
@@ -69,6 +70,27 @@ internal class EditTextManager(
     fun removeEditText(editText: EditText): Boolean {
         val handle = findHandle { it === editText }
         return if (handle != null) handles.remove(handle) else false
+    }
+
+    @VisibleForTesting
+    fun isHostRegistered(host: EditorHost): Boolean {
+        return host.containsAnimationCallback(callback)
+    }
+
+    @VisibleForTesting
+    fun isEditTextAdded(editText: EditText): Boolean {
+        return findHandle { it === editText } != null
+    }
+
+    @VisibleForTesting
+    fun peekEditTextHandleSize(): Int {
+        return handles.size
+    }
+
+    @VisibleForTesting
+    fun getEditTextHandleSize(): Int {
+        forEach {}
+        return peekEditTextHandleSize()
     }
 
     private inline fun findHandle(predicate: (EditText) -> Boolean): EditTextHandle? {

@@ -23,6 +23,7 @@ import android.view.*
 import android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
 import android.view.animation.Interpolator
 import android.widget.EditText
+import androidx.annotation.VisibleForTesting
 import androidx.core.view.*
 import androidx.core.view.WindowInsetsCompat.Type.*
 import com.xiaocydx.inputview.compat.*
@@ -120,7 +121,7 @@ internal class ViewTreeWindow(
     private val gestureNavBarEdgeToEdge: Boolean
 ) {
     private val decorView = window.decorView as ViewGroup
-    private val manager = EditTextManager(this, window.callback)
+    private val editTextManager = EditTextManager(this, window.callback)
     val currentFocus: View?
         get() = window.currentFocus
     val hasWindowFocus: Boolean
@@ -134,8 +135,8 @@ internal class ViewTreeWindow(
         window.setSoftInputMode(SOFT_INPUT_ADJUST_RESIZE)
         window.setDecorFitsSystemWindowsCompat(false)
         window.checkDispatchApplyInsetsCompatibility()
-        window.callback = manager
-        manager.setFocusCompat(decorView)
+        window.callback = editTextManager
+        editTextManager.setFocusCompat(decorView)
         decorView.viewTreeWindow = this
     }
 
@@ -201,11 +202,14 @@ internal class ViewTreeWindow(
         ReflectCompat { window.restoreImeAnimation() }
     }
 
-    fun register(host: EditorHost) = manager.register(host)
+    fun registerHost(host: EditorHost) = editTextManager.registerHost(host)
 
-    fun unregister(host: EditorHost) = manager.unregister(host)
+    fun unregisterHost(host: EditorHost) = editTextManager.unregisterHost(host)
 
-    fun addEditText(editText: EditText) = manager.addEditText(editText)
+    fun addEditText(editText: EditText) = editTextManager.addEditText(editText)
 
-    fun removeEditText(editText: EditText) = manager.removeEditText(editText)
+    fun removeEditText(editText: EditText) = editTextManager.removeEditText(editText)
+
+    @VisibleForTesting
+    fun getEditTextManager() = editTextManager
 }
