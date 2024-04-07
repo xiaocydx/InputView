@@ -60,7 +60,6 @@ internal class EditorContainerTest {
             val container = EditorContainer(it)
             val adapter = spyk(TestEditorAdapter())
             container.setAdapter(adapter)
-            container.setCheckControlImeEnabled(false)
 
             assertThat(container.showChecked(TestEditor.IME)).isTrue()
             assertThat(container.current).isEqualTo(TestEditor.IME)
@@ -85,7 +84,6 @@ internal class EditorContainerTest {
             val container = EditorContainer(it)
             val adapter = spyk(TestEditorAdapter())
             container.setAdapter(adapter)
-            container.setCheckControlImeEnabled(false)
 
             assertThat(container.showChecked(TestEditor.A)).isTrue()
             assertThat(container.current).isEqualTo(TestEditor.A)
@@ -105,7 +103,6 @@ internal class EditorContainerTest {
             val container = EditorContainer(it)
             val adapter = spyk(TestEditorAdapter())
             container.setAdapter(adapter)
-            container.setCheckControlImeEnabled(false)
             assertThat(container.showChecked(TestEditor.A)).isTrue()
             assertThat(container.showChecked(TestEditor.A)).isFalse()
             verify(exactly = 1) { adapter.onEditorChanged(null, TestEditor.A) }
@@ -118,7 +115,6 @@ internal class EditorContainerTest {
             val container = EditorContainer(it)
             val adapter = spyk(TestEditorAdapter())
             container.setAdapter(adapter)
-            container.setCheckControlImeEnabled(false)
             assertThat(container.showChecked(TestEditor.A)).isTrue()
             assertThat(container.hideChecked(TestEditor.A)).isTrue()
             assertThat(container.hideChecked(TestEditor.A)).isFalse()
@@ -132,7 +128,6 @@ internal class EditorContainerTest {
             val container = EditorContainer(it)
             val adapter = TestEditorAdapter()
             container.setAdapter(adapter)
-            container.setCheckControlImeEnabled(false)
 
             assertThat(container.showChecked(TestEditor.A)).isTrue()
             assertThat(container.consumePendingChange()).isTrue()
@@ -158,7 +153,6 @@ internal class EditorContainerTest {
             val container = EditorContainer(it)
             val adapter = TestEditorAdapter()
             container.setAdapter(adapter)
-            container.setCheckControlImeEnabled(false)
 
             assertThat(container.showChecked(TestEditor.A)).isTrue()
             assertThat(container.consumePendingChange()).isTrue()
@@ -171,7 +165,6 @@ internal class EditorContainerTest {
         scenario.onActivity {
             val container = EditorContainer(it)
             container.setRemovePreviousImmediately(false)
-            container.setCheckControlImeEnabled(false)
             val adapter = TestEditorAdapter()
             container.setAdapter(adapter)
             container.showChecked(TestEditor.A)
@@ -189,7 +182,6 @@ internal class EditorContainerTest {
         scenario.onActivity {
             val container = EditorContainer(it)
             container.setRemovePreviousImmediately(false)
-            container.setCheckControlImeEnabled(false)
             val adapter = TestEditorAdapter()
             container.setAdapter(adapter)
             container.showChecked(TestEditor.A)

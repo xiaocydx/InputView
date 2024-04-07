@@ -34,8 +34,7 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
     private val views = mutableMapOf<Editor, View?>()
     private val compat = FragmentManagerCompat()
     private var lastInsets: WindowInsets? = null
-    private var editText: EditTextHolder? = null
-    private var isCheckControlImeEnabled = true
+    private var handler: ImeFocusHandler? = null
     private var removePreviousImmediately = true
     private var pendingChange: PendingChange? = null
     var ime: Editor? = null; private set
@@ -74,13 +73,9 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
         clearPendingChange()
     }
 
-    fun setEditTextHolder(editText: EditTextHolder?) {
-        this.editText = editText
-    }
-
-    @VisibleForTesting
-    fun setCheckControlImeEnabled(isEnabled: Boolean) {
-        isCheckControlImeEnabled = isEnabled
+    fun setImeFocusHandler(handler: ImeFocusHandler?) {
+        this.handler = handler
+        // TODO: 动态添加，补偿焦点的获取？
     }
 
     fun setRemovePreviousImmediately(immediately: Boolean) {
@@ -94,7 +89,7 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
         current = editor
         setPendingChange(previous, current)
         var requestFocus = false
-        val prevEditText = editText
+        val prevHandler = handler
         if (previous === ime) {
             handleImeShown(shown = false, controlIme)
         } else if (current === ime) {
@@ -102,7 +97,7 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
             handleImeShown(shown = true, controlIme)
         }
         checkedAdapter().onEditorChanged(previous, current)
-        if (requestFocus && prevEditText !== editText) {
+        if (requestFocus && prevHandler !== handler) {
             // onEditorChanged()的分发过程重新设置了editText，
             // 此时对ediText补偿requestFocus()，确保获得焦点。
             handleImeShown(shown = true, controlIme = false)
@@ -206,18 +201,13 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
     }
 
     private fun handleImeShown(shown: Boolean, controlIme: Boolean) {
-        val editText = editText
-        require(!isCheckControlImeEnabled
-                || !shown || !controlIme || editText != null) {
-            "未对InputView设置EditText，无法主动显示IME"
-        }
-        editText ?: return
+        val handler = handler ?: return
         if (shown) {
-            editText.requestCurrentFocus()
-            if (controlIme) editText.showIme()
+            handler.requestCurrentFocus()
+            if (controlIme) handler.showIme()
         } else {
-            editText.clearCurrentFocus()
-            if (controlIme) editText.hideIme()
+            handler.clearCurrentFocus()
+            if (controlIme) handler.hideIme()
         }
     }
 

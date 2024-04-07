@@ -142,7 +142,7 @@ internal class ViewTreeWindow(
         window.setDecorFitsSystemWindowsCompat(false)
         window.checkDispatchApplyInsetsCompatibility()
         window.callback = editTextManager
-        editTextManager.setFocusCompat(decorView)
+        editTextManager.setFocusableCompat(decorView)
         decorView.viewTreeWindow = this
     }
 
@@ -215,6 +215,8 @@ internal class ViewTreeWindow(
     fun addEditText(editText: EditText) = editTextManager.addEditText(editText)
 
     fun removeEditText(editText: EditText) = editTextManager.removeEditText(editText)
+
+    fun getFocusableView() = editTextManager.getFocusableView(decorView)
 
     @VisibleForTesting
     fun getEditTextManager() = editTextManager

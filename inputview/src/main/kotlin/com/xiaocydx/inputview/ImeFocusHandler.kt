@@ -23,13 +23,13 @@ import androidx.core.view.OneShotPreDrawListener
 import java.lang.ref.WeakReference
 
 /**
- * 显示和隐藏IME的Window焦点逻辑
+ * 显示和隐藏IME的Window焦点处理器
  *
  * @author xcc
  * @date 2024/4/7
  */
-internal open class ImeWindowFocus<V : View>(view: V) :
-        WeakReference<V>(view), View.OnAttachStateChangeListener {
+internal open class ImeFocusHandler(view: View) :
+        WeakReference<View>(view), View.OnAttachStateChangeListener {
     private var host: EditorHost? = null
     private var hasFocusAction: OneShotHasFocusListener? = null
     protected var window: ViewTreeWindow? = null; private set

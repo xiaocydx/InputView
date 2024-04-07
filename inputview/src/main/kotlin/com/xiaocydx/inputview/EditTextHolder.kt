@@ -25,7 +25,7 @@ import android.widget.EditText
  * @author xcc
  * @date 2023/1/18
  */
-internal class EditTextHolder(editText: EditText) : ImeWindowFocus<EditText>(editText) {
+internal class EditTextHolder(editText: EditText) : ImeFocusHandler(editText) {
 
     override fun onViewAttachedToWindow(view: View) {
         super.onViewAttachedToWindow(view)
