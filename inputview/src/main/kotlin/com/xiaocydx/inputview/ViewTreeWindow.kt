@@ -190,9 +190,9 @@ internal class ViewTreeWindow(
 
     fun getRootWindowInsets() = decorView.getRootWindowInsetsCompat()
 
-    fun showIme(editText: EditText) {
+    fun showIme(view: View) {
         // controllerCompat对象很轻量，showIme不会产生内部状态
-        WindowInsetsControllerCompat(window, editText).show(ime())
+        WindowInsetsControllerCompat(window, view).show(ime())
     }
 
     fun hideIme() {

@@ -17,53 +17,27 @@
 package com.xiaocydx.inputview
 
 import android.view.View
-import android.view.View.OnAttachStateChangeListener
 import android.widget.EditText
-import androidx.core.view.OneShotPreDrawListener
-import java.lang.ref.WeakReference
 
 /**
- * [EditText]的持有类，负责处理焦点和显示IME
+ * [EditText]的持有类，负责处理`editText`的焦点和对[window]添加[EditText]
  *
  * @author xcc
  * @date 2023/1/18
  */
-internal class EditTextHolder(editText: EditText) :
-        WeakReference<EditText>(editText), OnAttachStateChangeListener {
-    private var host: EditorHost? = null
-    private var window: ViewTreeWindow? = null
-    private var pendingShowIme = false
-    private var preDrawAction: OneShotPreDrawListener? = null
-
-    fun onAttachedToHost(host: EditorHost) {
-        this.host = host
-        get()?.addOnAttachStateChangeListener(this)
-        get()?.takeIf { it.isAttachedToWindow }?.let(::onViewAttachedToWindow)
-    }
-
-    fun onDetachedFromHost(host: EditorHost) {
-        this.host = null
-        get()?.removeOnAttachStateChangeListener(this)
-        get()?.let(::onViewDetachedFromWindow)
-    }
+internal class EditTextHolder(editText: EditText) : ImeWindowFocus<EditText>(editText) {
 
     override fun onViewAttachedToWindow(view: View) {
-        window = window ?: view.requireViewTreeWindow()
+        super.onViewAttachedToWindow(view)
         (view as? EditText)?.let { window?.addEditText(it) }
-        if (!pendingShowIme) return
-        // 兼容IME未跟ViewRootImpl的属性动画同步的问题
-        preDrawAction = host?.addPreDrawAction {
-            preDrawAction = null
-            if (pendingShowIme) showIme()
-        }
     }
 
     override fun onViewDetachedFromWindow(view: View) {
+        super.onViewDetachedFromWindow(view)
         (view as? EditText)?.let { window?.removeEditText(it) }
-        removePending()
     }
 
-    fun requestCurrentFocus() {
+    override fun requestCurrentFocus() {
         val currentFocus = window?.currentFocus
         if (currentFocus == null) {
             get()?.requestFocus()
@@ -72,29 +46,12 @@ internal class EditTextHolder(editText: EditText) :
         }
     }
 
-    fun clearCurrentFocus() {
+    override fun clearCurrentFocus() {
         val currentFocus = window?.currentFocus
         if (currentFocus == null) {
             get()?.clearFocus()
         } else {
             (currentFocus as? EditText)?.clearFocus()
         }
-    }
-
-    fun showIme() {
-        val editText = get() ?: return
-        pendingShowIme = !editText.isAttachedToWindow
-        if (!pendingShowIme) window?.showIme(editText)
-    }
-
-    fun hideIme() {
-        removePending()
-        window?.hideIme()
-    }
-
-    private fun removePending() {
-        pendingShowIme = false
-        preDrawAction?.removeListener()
-        preDrawAction = null
     }
 }
