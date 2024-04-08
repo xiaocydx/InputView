@@ -61,6 +61,11 @@ abstract class EditorAdapter<T : Editor> {
     abstract fun onCreateView(parent: ViewGroup, editor: T): View?
 
     /**
+     * 获取可保存显示状态的[T]集合
+     */
+    open fun getStatefulEditorList(): List<T> = emptyList()
+
+    /**
      * 添加[EditorChangedListener]
      *
      * 在[EditorChangedListener.onEditorChanged]可以调用[removeEditorChangedListener]。

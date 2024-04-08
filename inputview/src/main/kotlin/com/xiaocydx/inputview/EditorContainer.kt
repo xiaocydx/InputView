@@ -18,12 +18,15 @@ package com.xiaocydx.inputview
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Parcel
 import android.os.Parcelable
+import android.os.Parcelable.ClassLoaderCreator
 import android.util.SparseArray
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
 import android.widget.FrameLayout
+import androidx.customview.view.AbsSavedState
 
 /**
  * [InputView]的编辑区，负责管理[Editor]
@@ -38,13 +41,13 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
     private var handler: ImeFocusHandler? = null
     private var removePreviousImmediately = true
     private var pendingChange: PendingChange? = null
+    private var pendingSavedState: SavedState? = null
     var ime: Editor? = null; private set
     var current: Editor? = null; private set
     var changeRecord = ChangeRecord(); private set
     lateinit var adapter: EditorAdapter<*>; private set
 
     init {
-        isSaveEnabled = false
         id = R.id.tag_editor_container_id
         setAdapter(ImeAdapter())
     }
@@ -64,6 +67,35 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
 
     override fun dispatchRestoreInstanceState(container: SparseArray<Parcelable>?) {
         dispatchThawSelfOnly(container)
+    }
+
+    override fun onSaveInstanceState(): Parcelable? {
+        val superState = super.onSaveInstanceState()
+        if (current == null) return superState
+        val editorIndex = checkedAdapter().getStatefulEditorList().indexOfFirst { it === current }
+        return SavedState(superState, editorIndex)
+    }
+
+    override fun onRestoreInstanceState(state: Parcelable?) {
+        var superState = state
+        if (state is SavedState) {
+            pendingSavedState = state
+            superState = state.superState
+        }
+        super.onRestoreInstanceState(superState)
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        if (pendingSavedState != null && pendingChange == null) {
+            // TODO: 支持不运行动画的show
+            // TODO: 注意：必须在视图初始化之后，布局之前消费掉pendingSavedState，
+            //      初始化之后确保设置了adapter和editText，布局之前确保listener不抛异常。
+            val editorIndex = pendingSavedState!!.editorIndex
+            val editor = checkedAdapter().getStatefulEditorList().getOrNull(editorIndex)
+            if (editor != null) showChecked(editor)
+        }
+        pendingSavedState = null
     }
 
     fun setAdapter(adapter: EditorAdapter<*>) {
@@ -243,4 +275,44 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
         val previousChild: View? = null,
         val currentChild: View? = null
     )
+
+    class SavedState : AbsSavedState {
+        var editorIndex = NO_EDITOR_INDEX
+            private set
+
+        constructor(
+            source: Parcel,
+            loader: ClassLoader?
+        ) : super(source, loader) {
+            editorIndex = source.readInt().coerceAtLeast(NO_EDITOR_INDEX)
+        }
+
+        constructor(
+            superState: Parcelable?,
+            editorIndex: Int
+        ) : super(superState ?: EMPTY_STATE) {
+            this.editorIndex = editorIndex.coerceAtLeast(NO_EDITOR_INDEX)
+        }
+
+        override fun writeToParcel(dest: Parcel, flags: Int) {
+            super.writeToParcel(dest, flags)
+            dest.writeInt(editorIndex)
+        }
+
+        companion object CREATOR : ClassLoaderCreator<SavedState?> {
+            const val NO_EDITOR_INDEX = -1
+
+            override fun createFromParcel(source: Parcel, loader: ClassLoader?): SavedState {
+                return SavedState(source, loader)
+            }
+
+            override fun createFromParcel(source: Parcel): SavedState {
+                return SavedState(source, loader = null)
+            }
+
+            override fun newArray(size: Int): Array<SavedState?> {
+                return arrayOfNulls(size)
+            }
+        }
+    }
 }
