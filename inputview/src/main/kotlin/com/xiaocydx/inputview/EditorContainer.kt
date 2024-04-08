@@ -22,7 +22,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
 import android.widget.FrameLayout
-import androidx.annotation.VisibleForTesting
 
 /**
  * [InputView]的编辑区，负责管理[Editor]

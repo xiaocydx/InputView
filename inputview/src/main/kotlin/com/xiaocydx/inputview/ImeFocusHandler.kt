@@ -31,7 +31,7 @@ import java.lang.ref.WeakReference
 internal open class ImeFocusHandler(view: View) :
         WeakReference<View>(view), View.OnAttachStateChangeListener {
     private var host: EditorHost? = null
-    private var hasFocusAction: OneShotHasFocusListener? = null
+    private var focusAction: OneShotHasWindowFocusListener? = null
     protected var window: ViewTreeWindow? = null; private set
 
     fun onAttachedToHost(host: EditorHost) {
@@ -73,9 +73,9 @@ internal open class ImeFocusHandler(view: View) :
             removePending()
             view.ensureCanShowIme()
             window?.showIme(view)
-        } else if (hasFocusAction == null) {
-            hasFocusAction = OneShotHasFocusListener.add(view) {
-                hasFocusAction = null
+        } else if (focusAction == null) {
+            focusAction = OneShotHasWindowFocusListener.add(view) {
+                focusAction = null
                 view.ensureCanShowIme()
                 window?.showIme(view)
             }
@@ -88,8 +88,8 @@ internal open class ImeFocusHandler(view: View) :
     }
 
     private fun removePending() {
-        hasFocusAction?.removeListener()
-        hasFocusAction = null
+        focusAction?.removeListener()
+        focusAction = null
     }
 
     private fun View.ensureCanShowIme() {
@@ -101,7 +101,7 @@ internal open class ImeFocusHandler(view: View) :
 /**
  * 实现逻辑参考自[OneShotPreDrawListener]
  */
-private class OneShotHasFocusListener private constructor(
+private class OneShotHasWindowFocusListener private constructor(
     private val view: View,
     private val runnable: Runnable
 ) : ViewTreeObserver.OnWindowFocusChangeListener, View.OnAttachStateChangeListener {
@@ -133,8 +133,8 @@ private class OneShotHasFocusListener private constructor(
 
     companion object {
 
-        fun add(view: View, runnable: Runnable): OneShotHasFocusListener {
-            val listener = OneShotHasFocusListener(view, runnable)
+        fun add(view: View, runnable: Runnable): OneShotHasWindowFocusListener {
+            val listener = OneShotHasWindowFocusListener(view, runnable)
             view.viewTreeObserver.addOnWindowFocusChangeListener(listener)
             view.addOnAttachStateChangeListener(listener)
             return listener
