@@ -73,8 +73,8 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
     }
 
     fun setImeFocusHandler(handler: ImeFocusHandler?) {
+        // 设置新的handler，不做requestFocus()补偿处理
         this.handler = handler
-        // TODO: 动态添加，补偿焦点的获取？
     }
 
     fun setRemovePreviousImmediately(immediately: Boolean) {
