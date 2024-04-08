@@ -18,6 +18,8 @@ package com.xiaocydx.inputview
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Parcelable
+import android.util.SparseArray
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
@@ -42,9 +44,13 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
     lateinit var adapter: EditorAdapter<*>; private set
 
     init {
+        isSaveEnabled = false
         id = R.id.tag_editor_container_id
         setAdapter(ImeAdapter())
     }
+
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(event: MotionEvent?) = true
 
     override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
         // Android 9.0以下的WindowInsets可变（compat模块已兼容）
@@ -52,8 +58,13 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
         return super.onApplyWindowInsets(insets)
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onTouchEvent(event: MotionEvent?) = true
+    override fun dispatchSaveInstanceState(container: SparseArray<Parcelable>?) {
+        dispatchFreezeSelfOnly(container)
+    }
+
+    override fun dispatchRestoreInstanceState(container: SparseArray<Parcelable>?) {
+        dispatchThawSelfOnly(container)
+    }
 
     fun setAdapter(adapter: EditorAdapter<*>) {
         current?.let(::hideChecked)
