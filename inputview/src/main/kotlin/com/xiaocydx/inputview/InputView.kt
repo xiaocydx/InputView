@@ -487,7 +487,7 @@ class InputView @JvmOverloads constructor(
 
         override fun hideChecked(editor: Editor): Boolean {
             assertNotInLayout { "隐藏Editor" }
-            return editorAnimator.canChangeEditor(current, editor) && editorView.hideChecked(editor)
+            return editorAnimator.canChangeEditor(editor, null) && editorView.hideChecked(editor)
         }
 
         override fun addAnimationCallback(callback: AnimationCallback) {
