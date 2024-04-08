@@ -65,16 +65,16 @@ class InputView @JvmOverloads constructor(
 ) : ViewGroup(context, attrs, defStyleAttr) {
     private val host = EditorHostImpl()
     private val editorView = EditorContainer(context)
+    private var imeFocusHandler = ImeFocusHandler(this)
     private var layoutCount = 0
     private var changeCount = 0
     private var contentView: View? = null
     private var window: ViewTreeWindow? = null
-    private var editTextHolder: EditTextHolder? = null
     private var editorOffset = 0
     private var navBarOffset = 0
 
     /**
-     * 用于兼容Android各版本显示IME的[EditText]
+     * 设置需要处理的[EditText]
      *
      * ### 多个[EditText]的焦点处理逻辑
      * 1. 调用[EditorAdapter]提供的函数显示IME，会让[editText]获得焦点。
@@ -95,14 +95,17 @@ class InputView @JvmOverloads constructor(
      * 若其它[EditText]也需要处理，则调用`InputView.addEditText()`完成添加。
      */
     var editText: EditText?
-        get() = editTextHolder?.get()
+        get() = imeFocusHandler.get() as? EditText
         set(value) {
             assertNotInLayout { "设置ediText" }
-            val previous = editTextHolder
-            if (previous?.get() === value) return
-            val current = value?.let(::EditTextHolder)
-            host.onEditTextHolderChanged(previous, current)
-            editTextHolder = current
+            val previous = imeFocusHandler
+            if (previous.get() === value) return
+            val current = when {
+                value != null -> EditTextHolder(value)
+                else -> ImeFocusHandler(this)
+            }
+            host.onImeFocusHandlerChanged(previous, current)
+            imeFocusHandler = current
         }
 
     /**
@@ -185,6 +188,7 @@ class InputView @JvmOverloads constructor(
         addView(editorView, MATCH_PARENT, WRAP_CONTENT)
         host.onEditorAdapterChanged(previous = null, editorAdapter)
         host.onEditorAnimatorChanged(previous = null, editorAnimator)
+        host.onImeFocusHandlerChanged(previous = null, imeFocusHandler)
     }
 
     /**
@@ -460,10 +464,10 @@ class InputView @JvmOverloads constructor(
             editorView.setRemovePreviousImmediately(!current.canRunAnimation)
         }
 
-        fun onEditTextHolderChanged(previous: EditTextHolder?, current: EditTextHolder?) {
+        fun onImeFocusHandlerChanged(previous: ImeFocusHandler?, current: ImeFocusHandler) {
             previous?.onDetachedFromHost(this)
-            current?.onAttachedToHost(this)
-            editorView.setEditTextHolder(current)
+            current.onAttachedToHost(this)
+            editorView.setImeFocusHandler(current)
         }
 
         override fun removeEditorView(view: View) {
