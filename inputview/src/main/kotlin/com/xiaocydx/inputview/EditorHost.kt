@@ -39,6 +39,11 @@ internal interface EditorHost {
     val WindowInsetsCompat.imeOffset: Int
 
     /**
+     * 是否已恢复保存的状态
+     */
+    val isRestored: Boolean
+
+    /**
      * Window是否具有焦点
      */
     val hasWindowFocus: Boolean

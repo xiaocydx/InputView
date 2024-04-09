@@ -424,6 +424,7 @@ class InputView @JvmOverloads constructor(
         private var pending: PendingInsetsAnimationCallback? = null
         override val WindowInsetsCompat.imeOffset: Int
             get() = window?.run { imeOffset } ?: NO_VALUE
+        override var isRestored = false
         override val hasWindowFocus: Boolean
             get() = window?.hasWindowFocus ?: false
         override val editorOffset: Int
@@ -446,6 +447,7 @@ class InputView @JvmOverloads constructor(
             pending?.apply { setWindowInsetsAnimationCallback(durationMillis, interpolator, callback) }
             editorView.peekPendingRestoreEditor()?.let(::showChecked)
             editorView.consumePendingSavedState()
+            isRestored = true
         }
 
         fun onDetachedFromWindow(window: ViewTreeWindow) {

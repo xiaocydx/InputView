@@ -119,6 +119,7 @@ class ImeAnimator internal constructor(
     private inner class EditorHostImpl : EditorHost {
         override val WindowInsetsCompat.imeOffset: Int
             get() = window.run { imeOffset }
+        override var isRestored = false
         override val hasWindowFocus: Boolean
             get() = window.hasWindowFocus
         override var editorOffset = 0
@@ -131,6 +132,7 @@ class ImeAnimator internal constructor(
 
         fun onAttachedToWindow() {
             window.registerHost(this)
+            isRestored = true
         }
 
         fun onDetachedFromWindow() {

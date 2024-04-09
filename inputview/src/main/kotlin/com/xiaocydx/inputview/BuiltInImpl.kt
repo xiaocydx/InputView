@@ -61,7 +61,8 @@ fun EditorAnimator.setWindowFocusInterceptor() {
 fun EditorAnimator.createWindowFocusInterceptor(): AnimationInterceptor {
     return object : AnimationInterceptor {
         override fun onInterceptChange(current: Editor?, next: Editor?): Boolean {
-            return next != null && getEditorHost() != null && !getEditorHost()!!.hasWindowFocus
+            val host = getEditorHost() ?: return false
+            return next != null && host.isRestored && !host.hasWindowFocus
         }
     }
 }
