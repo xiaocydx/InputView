@@ -149,7 +149,7 @@ abstract class EditorAnimator(
     }
 
     private fun runSimpleAnimationIfNecessary(record: AnimationRecord) {
-        if (!canRunAnimation || record.startOffset == record.endOffset) {
+        if (record.isImmediately()) {
             dispatchAnimationStart(record)
             dispatchAnimationEnd(record)
             return
@@ -241,9 +241,9 @@ abstract class EditorAnimator(
         return NO_VALUE
     }
 
-    internal fun onPendingChanged(previous: Editor?, current: Editor?) {
+    internal fun onPendingChanged(previous: Editor?, current: Editor?, immediately: Boolean) {
         if (host == null) return
-        animationDispatcher.onPendingChanged(previous, current)
+        animationDispatcher.onPendingChanged(previous, current, immediately)
     }
 
     internal fun onAttachedToHost(host: EditorHost) {
@@ -286,8 +286,8 @@ abstract class EditorAnimator(
          * 点击EditText显示IME、按返回键隐藏IME等操作，会在[onApplyWindowInsets]判断IME的显示情况，
          * 然后调用[EditorHost.dispatchImeShown]更改[Editor]，这属于被动更改。
          */
-        fun onPendingChanged(previous: Editor?, current: Editor?) {
-            val record = AnimationRecord(previous, current)
+        fun onPendingChanged(previous: Editor?, current: Editor?, immediately: Boolean) {
+            val record = AnimationRecord(previous, current, immediately)
             resetAnimationRecord(record)
             record.setStartViewAndEndView()
             record.setAnimationStartOffset()
@@ -331,7 +331,7 @@ abstract class EditorAnimator(
 
         private fun runSimpleAnimationFixEditorOffset(endOffset: Int) {
             val current = host?.current ?: return
-            val record = AnimationRecord(current, current)
+            val record = AnimationRecord(current, current, immediately = false)
             resetAnimationRecord(record)
             record.setAnimationStartOffset()
             record.setAnimationEndOffset(endOffset)
@@ -350,7 +350,7 @@ abstract class EditorAnimator(
                 removePreDrawRunSimpleAnimation()
             }
             dispatchAnimationStart(record)
-            if (record.startOffset == record.endOffset) {
+            if (record.isImmediately()) {
                 dispatchAnimationEnd(record)
             }
             return bounds
@@ -375,7 +375,8 @@ abstract class EditorAnimator(
 
     private inner class AnimationRecord(
         override val previous: Editor?,
-        override val current: Editor?
+        override val current: Editor?,
+        private val immediately: Boolean
     ) : AnimationState {
         private var realStart = NO_VALUE
         private var realEnd = NO_VALUE
@@ -400,6 +401,10 @@ abstract class EditorAnimator(
         init {
             durationMillis = this@EditorAnimator.durationMillis
             interpolator = this@EditorAnimator.interpolator
+        }
+
+        fun isImmediately(): Boolean {
+            return !canRunAnimation || immediately || startOffset == endOffset
         }
 
         override fun isIme(editor: Editor?): Boolean {

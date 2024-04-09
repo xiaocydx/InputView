@@ -147,7 +147,7 @@ class ImeAnimator internal constructor(
             val previous = current
             current = next
             if (shown) holder.requestCurrentFocus() else holder.clearCurrentFocus()
-            this@ImeAnimator.onPendingChanged(previous, current)
+            this@ImeAnimator.onPendingChanged(previous, current, immediately = false)
             return true
         }
 

@@ -27,6 +27,7 @@ import android.view.View
 import android.view.WindowInsets
 import android.widget.FrameLayout
 import androidx.customview.view.AbsSavedState
+import com.xiaocydx.inputview.EditorContainer.SavedState.CREATOR.NO_EDITOR_INDEX
 
 /**
  * [InputView]的编辑区，负责管理[Editor]
@@ -69,9 +70,10 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
         dispatchThawSelfOnly(container)
     }
 
-    override fun onSaveInstanceState(): Parcelable? {
+    override fun onSaveInstanceState(): Parcelable {
         val superState = super.onSaveInstanceState()
-        if (current == null) return superState
+        // current = null也需要保存SavedState，确保重建后的视图初始化阶段显示Editor不运行动画
+        if (current == null) return SavedState(superState, NO_EDITOR_INDEX)
         val editorIndex = checkedAdapter().getStatefulEditorList().indexOfFirst { it === current }
         return SavedState(superState, editorIndex)
     }
@@ -85,15 +87,20 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
         super.onRestoreInstanceState(superState)
     }
 
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        if (pendingSavedState != null && pendingChange == null) {
-            // TODO: 支持不运行动画的show
-            // TODO: 注意：必须在视图初始化之后，布局之前消费掉pendingSavedState，
-            //      初始化之后确保设置了adapter和editText，布局之前确保listener不抛异常。
-            val editorIndex = pendingSavedState!!.editorIndex
-            val editor = checkedAdapter().getStatefulEditorList().getOrNull(editorIndex)
-            if (editor != null) showChecked(editor)
+    fun peekPendingRestoreEditor(): Editor? {
+        if (pendingChange != null) return null
+        val editorIndex = pendingSavedState?.editorIndex ?: return null
+        return checkedAdapter().getStatefulEditorList().getOrNull(editorIndex)
+    }
+
+    fun consumePendingSavedState() {
+        if (pendingSavedState != null) {
+            // pendingChange可能是恢复restoreEditor的变更，
+            // 或者是重建后，视图初始化阶段显示Editor的变更。
+            // 注意：显示IME的变更仍然运行动画，因为无法控制IME的调度逻辑，
+            // 在onSaveInstanceState()之前，可能分发隐藏IME的WindowInsets，
+            // 在重建恢复restoreEditor后，也可能分发隐藏IME的WindowInsets。
+            pendingChange?.immediately = current !== ime
         }
         pendingSavedState = null
     }
@@ -158,12 +165,15 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
         return true
     }
 
-    fun hasPendingChange(): Boolean = pendingChange != null
+    fun hasPendingChange(): Boolean {
+        return pendingChange != null
+    }
 
     fun consumePendingChange(): Boolean {
         if (pendingChange == null) return false
-        val previous = pendingChange?.previous
+        val previous = pendingChange!!.previous
         val current = current
+        val immediately = pendingChange!!.immediately
         if (pendingChange!!.waitDispatchImeShown) {
             // previous和current都是ime，属于无效等待情况
             if (previous === current) clearPendingChange()
@@ -203,7 +213,7 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
             // 创建动画的过程能捕获到child正确的尺寸。
             currentChild.dispatchApplyWindowInsets(lastInsets)
         }
-        changeRecord = ChangeRecord(previous, current, previousChild, currentChild)
+        changeRecord = ChangeRecord(previous, current, previousChild, currentChild, immediately)
         return true
     }
 
@@ -216,6 +226,7 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
             // pendingChange.previous不需要wait，最后的current决定是否wait
             pendingChange?.waitDispatchImeShown = current === ime
         }
+        pendingChange!!.immediately = false
     }
 
     private fun clearPendingChange() {
@@ -266,14 +277,16 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
 
     private data class PendingChange(
         val previous: Editor?,
-        var waitDispatchImeShown: Boolean = false
+        var waitDispatchImeShown: Boolean = false,
+        var immediately: Boolean = false
     )
 
     data class ChangeRecord(
         val previous: Editor? = null,
         val current: Editor? = null,
         val previousChild: View? = null,
-        val currentChild: View? = null
+        val currentChild: View? = null,
+        val immediately: Boolean = false
     )
 
     class SavedState : AbsSavedState {

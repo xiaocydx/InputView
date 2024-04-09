@@ -294,9 +294,9 @@ class InputView @JvmOverloads constructor(
         enterChange()
         // 消费PendingChange，仅在measure阶段创建、添加、移除子View
         if (editorView.consumePendingChange()) {
-            val (previous, current, _, _) = editorView.changeRecord
+            val (previous, current, _, _, immediately) = editorView.changeRecord
             exitChange()
-            editorAnimator.onPendingChanged(previous, current)
+            editorAnimator.onPendingChanged(previous, current, immediately)
             enterChange()
         }
         editorView.measure(widthMeasureSpec, measuredHeight.toAtMostMeasureSpec())
@@ -443,6 +443,8 @@ class InputView @JvmOverloads constructor(
         fun onAttachedToWindow(window: ViewTreeWindow) {
             window.registerHost(this)
             pending?.apply { setWindowInsetsAnimationCallback(durationMillis, interpolator, callback) }
+            editorView.peekPendingRestoreEditor()?.let(::showChecked)
+            editorView.consumePendingSavedState()
         }
 
         fun onDetachedFromWindow(window: ViewTreeWindow) {
