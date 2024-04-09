@@ -36,6 +36,7 @@ import android.widget.EditText
 import androidx.annotation.ColorInt
 import androidx.annotation.VisibleForTesting
 import androidx.core.view.OneShotPreDrawListener
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import com.xiaocydx.inputview.compat.ReflectCompat
@@ -269,7 +270,7 @@ class InputView @JvmOverloads constructor(
         when (editorMode) {
             EditorMode.ADJUST_PAN -> {
                 val editorDiff = previous - current
-                editorView.offsetTopAndBottom(editorDiff)
+                ViewCompat.offsetTopAndBottom(editorView, editorDiff)
                 val threshold = navBarOffset
                 val contentDiff = when {
                     previous >= threshold && current >= threshold -> editorDiff
@@ -278,7 +279,7 @@ class InputView @JvmOverloads constructor(
                     else -> Int.MIN_VALUE
                 }
                 if (contentDiff != Int.MIN_VALUE) {
-                    contentView.offsetTopAndBottom(contentDiff)
+                    ViewCompat.offsetTopAndBottom(contentView, contentDiff)
                 }
                 updateEditorBackground(top = contentView.bottom)
             }
