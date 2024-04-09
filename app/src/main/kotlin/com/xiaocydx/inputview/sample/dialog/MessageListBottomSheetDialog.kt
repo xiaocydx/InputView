@@ -75,13 +75,6 @@ class MessageListBottomSheetDialog(
     }
 }
 
-class MessageListBottomSheetDialogFragment : BottomSheetDialogFragment() {
-
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return MessageListBottomSheetDialog(requireContext(), theme)
-    }
-}
-
 private class StatusBarEdgeToEdgeCallback(
     window: Window,
     private val color: Int,

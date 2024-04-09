@@ -37,10 +37,16 @@ android {
 dependencies {
     implementation(project(":inputview"))
     implementation(project(":inputview-compat"))
-    val version = "1.1.4"
-    implementation("com.github.xiaocydx.Insets:insets:${version}")
-    implementation("com.github.xiaocydx.Insets:insets-compat:${version}")
-    implementation("com.github.xiaocydx.Insets:insets-systembar:${version}")
+
+    val cxrvVersion = "1.5.4"
+    implementation("com.github.xiaocydx.CXRV:cxrv:${cxrvVersion}")
+    implementation("com.github.xiaocydx.CXRV:cxrv-binding:${cxrvVersion}")
+
+    val insertsVersion = "1.1.4"
+    implementation("com.github.xiaocydx.Insets:insets:${insertsVersion}")
+    implementation("com.github.xiaocydx.Insets:insets-compat:${insertsVersion}")
+    implementation("com.github.xiaocydx.Insets:insets-systembar:${insertsVersion}")
+
     implementation("androidx.core:core-ktx:1.7.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.7.0")

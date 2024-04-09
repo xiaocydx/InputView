@@ -1,17 +1,24 @@
 package com.xiaocydx.inputview.sample
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import com.xiaocydx.inputview.sample.dialog.MessageListBottomSheetDialog
-import com.xiaocydx.inputview.sample.dialog.MessageListBottomSheetDialogFragment
-import com.xiaocydx.inputview.sample.dialog.MessageListDialog
-import com.xiaocydx.inputview.sample.dialog.MessageListDialogFragment
-import com.xiaocydx.inputview.sample.edit.VideoEditActivity
-import com.xiaocydx.inputview.sample.fragment.FragmentEditorAdapterActivity
+import androidx.recyclerview.widget.RecyclerView
+import com.xiaocydx.cxrv.binding.bindingDelegate
+import com.xiaocydx.cxrv.concat.Concat
+import com.xiaocydx.cxrv.concat.toAdapter
+import com.xiaocydx.cxrv.divider.divider
+import com.xiaocydx.cxrv.itemclick.doOnSimpleItemClick
+import com.xiaocydx.cxrv.list.adapter
+import com.xiaocydx.cxrv.list.linear
+import com.xiaocydx.cxrv.list.submitList
+import com.xiaocydx.cxrv.multitype.listAdapter
+import com.xiaocydx.cxrv.multitype.register
+import com.xiaocydx.inputview.sample.databinding.ItemSampleCategoryBinding
+import com.xiaocydx.inputview.sample.databinding.ItemSampleElementBinding
+import com.xiaocydx.inputview.sample.databinding.SmapleHeaderBinding
 
 /**
  * **注意**：需要确保`androidx.core`的版本足够高，因为高版本修复了[WindowInsetsCompat]一些常见的问题，
@@ -24,46 +31,45 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(contentView())
     }
 
-    fun startOverlayInputActivity(view: View) {
-        startActivity(Intent(this, OverlayInputActivity::class.java))
-    }
+    private fun contentView(): View {
+        val header = SmapleHeaderBinding
+            .inflate(layoutInflater).root
+            .layoutParams(matchParent, 100.dp)
+            .toAdapter()
 
-    fun startImeAnimatorActivity(view: View) {
-        startActivity(Intent(this, ImeAnimatorActivity::class.java))
-    }
+        val sampleList = SampleList()
+        val content = listAdapter {
+            submitList(sampleList.filter())
+            register(bindingDelegate(
+                uniqueId = SampleItem.Category::title,
+                inflate = ItemSampleCategoryBinding::inflate
+            ) {
+                onBindView {
+                    tvTitle.text = it.title
+                    ivSelected.setImageResource(it.selectedResId)
+                }
+                getChangePayload(sampleList::categoryPayload)
+                doOnSimpleItemClick { submitList(sampleList.toggle(it)) }
+            })
 
-    fun startInitCompatActivity(view: View) {
-        startActivity(Intent(this, InitCompatActivity::class.java))
-    }
+            register(bindingDelegate(
+                uniqueId = SampleItem.Element::title,
+                inflate = ItemSampleElementBinding::inflate
+            ) {
+                onBindView {
+                    tvTitle.text = it.title
+                    tvDesc.text = it.desc
+                }
+                doOnSimpleItemClick { it.perform(this@MainActivity) }
+            })
+        }
 
-    fun startMessageListActivity(view: View) {
-        startActivity(Intent(this, MessageListActivity::class.java))
-    }
-
-    fun showMessageListDialog(view: View) {
-        MessageListDialog(this).show()
-    }
-
-    fun showMessageListDialogFragment(view: View) {
-        MessageListDialogFragment().show(supportFragmentManager, null)
-    }
-
-    fun showMessageListBottomSheetDialog(view: View) {
-        MessageListBottomSheetDialog(this).show()
-    }
-
-    fun showMessageListBottomSheetDialogFragment(view: View) {
-        MessageListBottomSheetDialogFragment().show(supportFragmentManager, null)
-    }
-
-    fun startFragmentEditorAdapterActivity(view: View) {
-        startActivity(Intent(this, FragmentEditorAdapterActivity::class.java))
-    }
-
-    fun startVideoEditActivity(view: View) {
-        startActivity(Intent(this, VideoEditActivity::class.java))
+        return RecyclerView(this)
+            .linear().divider(height = 1.dp)
+            .layoutParams(matchParent, matchParent)
+            .adapter(Concat.header(header).content(content).concat())
     }
 }

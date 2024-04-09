@@ -2,7 +2,6 @@
 
 package com.xiaocydx.inputview.sample.dialog
 
-import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
 import android.view.Window
@@ -15,7 +14,6 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.doOnAttach
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
-import androidx.fragment.app.DialogFragment
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.init
@@ -54,12 +52,5 @@ class MessageListDialog(
             tvTitle.updateLayoutParams { height += statusBars.top }
         }
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
-    }
-}
-
-class MessageListDialogFragment : DialogFragment() {
-
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return MessageListDialog(requireContext(), R.style.MessageListDialog)
     }
 }
