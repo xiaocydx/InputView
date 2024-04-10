@@ -101,8 +101,6 @@
             android:id="@+id/container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#1D1D1D"
-            android:clickable="true"
-            android:focusable="true" />
+            android:background="#1D1D1D" />
     </com.xiaocydx.inputview.InputView>
 </androidx.constraintlayout.widget.ConstraintLayout>
