@@ -3,6 +3,7 @@ package com.xiaocydx.inputview.sample.edit.transform
 import android.view.ViewGroup
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.sample.edit.transform.Transformation.EnforcerScope
 import com.xiaocydx.inputview.sample.edit.transform.Transformation.State
 import kotlinx.coroutines.CoroutineScope
 
@@ -20,11 +21,16 @@ interface Transformation<in S : State> {
 
     fun end(state: S) = Unit
 
-    fun launch(state: S, scope: CoroutineScope) = Unit
+    fun launch(state: S, scope: EnforcerScope) = Unit
+
+    interface EnforcerScope : CoroutineScope {
+        fun requestDispatch(state: State)
+    }
 
     open class State(val inputView: InputView, val container: ViewGroup) {
         var previous: Editor? = null; private set
         var current: Editor? = null; private set
+        var initialAnchorY = 0; private set
         var startAnchorY = 0; private set
         var endAnchorY = 0; private set
         var currentAnchorY = 0; private set
@@ -37,7 +43,8 @@ interface Transformation<in S : State> {
             this.current = current
         }
 
-        fun setAnchorY(start: Int, end: Int) {
+        fun setAnchorY(initial: Int, start: Int, end: Int) {
+            initialAnchorY = initial
             startAnchorY = start
             endAnchorY = end
             currentAnchorY = start
@@ -83,7 +90,7 @@ private class CombinedTransformation<S : State>(
         second.end(state)
     }
 
-    override fun launch(state: S, scope: CoroutineScope) {
+    override fun launch(state: S, scope: EnforcerScope) {
         first.launch(state, scope)
         second.launch(state, scope)
     }

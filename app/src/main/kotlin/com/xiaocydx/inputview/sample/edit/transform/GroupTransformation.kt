@@ -4,6 +4,7 @@ import android.view.View
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import com.xiaocydx.inputview.Editor
+import com.xiaocydx.inputview.sample.edit.transform.Transformation.EnforcerScope
 import com.xiaocydx.inputview.sample.edit.transform.Transformation.State
 import kotlinx.coroutines.CoroutineScope
 
@@ -64,7 +65,7 @@ abstract class GroupTransformation<S : State>(
         onEnd(state)
     }
 
-    final override fun launch(state: S, scope: CoroutineScope) {
+    final override fun launch(state: S, scope: EnforcerScope) {
         if (!isCurrent(state)) return
         onLaunch(state, scope)
     }

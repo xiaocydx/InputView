@@ -18,8 +18,8 @@ import com.xiaocydx.inputview.sample.edit.VideoEditor.Text.Input
 import com.xiaocydx.inputview.sample.edit.VideoEditor.Text.Style
 import com.xiaocydx.inputview.sample.edit.VideoEditor.Video
 import com.xiaocydx.inputview.sample.edit.transform.CommonGroupTransformation
-import com.xiaocydx.inputview.sample.edit.transform.ContainerHeightTransformation
-import com.xiaocydx.inputview.sample.edit.transform.PreviewScaleTransformation
+import com.xiaocydx.inputview.sample.edit.transform.ContainerTransformation
+import com.xiaocydx.inputview.sample.edit.transform.PreviewTransformation
 import com.xiaocydx.inputview.sample.edit.transform.TextGroupTransformation
 import com.xiaocydx.inputview.sample.edit.transform.Transformation
 import com.xiaocydx.inputview.sample.edit.transform.TransformationEnforcer
@@ -65,18 +65,23 @@ class VideoEditActivity : AppCompatActivity() {
         )
         inputView.editorAnimator = animator
 
-        val enforcer = TransformationEnforcer(lifecycle, animator, adapter) {
-            Transformation.State(inputView, container)
-        }
+        val enforcer = TransformationEnforcer(
+            owner = this@VideoEditActivity,
+            editorAnimator = animator,
+            editorAdapter = adapter,
+            createState = { Transformation.State(inputView, container) }
+        )
+        enforcer.addToOnBackPressedDispatcher(onBackPressedDispatcher)
+
         arrayOf(
             tvInput to Input, btnText to Emoji,
             btnVideo to Video, btnAudio to Audio, btnImage to Image
         ).forEach { (view, editor) -> view.onClick { enforcer.notify(editor) } }
 
-        val previewScale = PreviewScaleTransformation(preview)
-        val containerHeight = ContainerHeightTransformation()
+        val container = ContainerTransformation()
+        val preview = PreviewTransformation(preview)
         val textGroup = TextGroupTransformation(Input, Style, Emoji, notify = enforcer::notify)
         val commonGroup = CommonGroupTransformation(Video, Audio, Image, notify = enforcer::notify)
-        enforcer.attach(previewScale + containerHeight + textGroup + commonGroup)
+        enforcer.attach(container + preview + textGroup + commonGroup)
     }
 }
