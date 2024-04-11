@@ -1,38 +1,41 @@
 package com.xiaocydx.inputview.sample.edit.transform
 
 import android.view.ViewGroup
+import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.InputView
-import com.xiaocydx.inputview.sample.edit.VideoEditor
+import com.xiaocydx.inputview.sample.edit.transform.Transformation.State
 import kotlinx.coroutines.CoroutineScope
 
 /**
  * @author xcc
  * @date 2024/4/10
  */
-interface Transformation {
+interface Transformation<in S : State> {
 
-    fun attach(state: State) = Unit
+    fun prepare(state: S) = Unit
 
-    fun start(state: State) = Unit
+    fun start(state: S) = Unit
 
-    fun update(state: State) = Unit
+    fun update(state: S) = Unit
 
-    fun end(state: State) = Unit
+    fun end(state: S) = Unit
 
-    fun launch(state: State, scope: CoroutineScope) = Unit
+    fun launch(state: S, scope: CoroutineScope) = Unit
 
-    class State(
-        val inputView: InputView,
-        val container: ViewGroup,
-        val previous: VideoEditor?,
-        val current: VideoEditor?
-    ) {
+    open class State(val inputView: InputView, val container: ViewGroup) {
+        var previous: Editor? = null; private set
+        var current: Editor? = null; private set
         var startAnchorY = 0; private set
         var endAnchorY = 0; private set
         var currentAnchorY = 0; private set
         var startViewAlpha = 1f; private set
         var endViewAlpha = 1f; private set
         var interpolatedFraction = 0f; private set
+
+        fun setEditor(previous: Editor?, current: Editor?) {
+            this.previous = previous
+            this.current = current
+        }
 
         fun setAnchorY(start: Int, end: Int) {
             startAnchorY = start
@@ -52,35 +55,35 @@ interface Transformation {
     }
 }
 
-operator fun Transformation.plus(
-    other: Transformation
-): Transformation = CombinedTransformation(this, other)
+operator fun <S : State> Transformation<S>.plus(
+    other: Transformation<S>
+): Transformation<S> = CombinedTransformation(this, other)
 
-private class CombinedTransformation(
-    private val first: Transformation,
-    private val second: Transformation
-) : Transformation {
-    override fun attach(state: Transformation.State) {
-        first.attach(state)
-        second.attach(state)
+private class CombinedTransformation<S : State>(
+    private val first: Transformation<S>,
+    private val second: Transformation<S>
+) : Transformation<S> {
+    override fun prepare(state: S) {
+        first.prepare(state)
+        second.prepare(state)
     }
 
-    override fun start(state: Transformation.State) {
+    override fun start(state: S) {
         first.start(state)
         second.start(state)
     }
 
-    override fun update(state: Transformation.State) {
+    override fun update(state: S) {
         first.update(state)
         second.update(state)
     }
 
-    override fun end(state: Transformation.State) {
+    override fun end(state: S) {
         first.end(state)
         second.end(state)
     }
 
-    override fun launch(state: Transformation.State, scope: CoroutineScope) {
+    override fun launch(state: S, scope: CoroutineScope) {
         first.launch(state, scope)
         second.launch(state, scope)
     }

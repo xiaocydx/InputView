@@ -11,7 +11,7 @@ import com.xiaocydx.inputview.sample.edit.VideoEditor
 import com.xiaocydx.inputview.sample.edit.transform.Transformation.State
 import com.xiaocydx.inputview.sample.onClick
 
-class PreviewScaleTransformation(private val preview: View) : Transformation {
+class PreviewScaleTransformation(private val preview: View) : Transformation<State> {
 
     override fun update(state: State) {
         val dy = (preview.bottom - state.currentAnchorY).coerceAtLeast(0)
@@ -25,14 +25,14 @@ class PreviewScaleTransformation(private val preview: View) : Transformation {
     }
 }
 
-class ContainerHeightTransformation : Transformation {
+class ContainerHeightTransformation : Transformation<State> {
     private val previousBounds = Rect()
     private val currentBounds = Rect()
     private var canTransform = false
     private var startHeight = 0
     private var endHeight = 0
 
-    override fun attach(state: State) {
+    override fun prepare(state: State) {
         state.container.getBounds(previousBounds)
     }
 
@@ -56,8 +56,8 @@ class ContainerHeightTransformation : Transformation {
 
 class TextGroupTransformation(
     vararg editor: VideoEditor.Text,
-    private val show: (VideoEditor?) -> Unit
-) : GroupTransformation(*editor) {
+    private val notify: (VideoEditor?) -> Unit
+) : GroupTransformation<State>(*editor) {
     private var binding: VideoTextTitlebarBinding? = null
 
     override fun getView(state: State): View {
@@ -66,24 +66,31 @@ class TextGroupTransformation(
                 LayoutInflater.from(state.container.context),
                 state.container, false
             ).apply {
-                tvEmoji.onClick { show(VideoEditor.Text.Emoji) }
-                tvStyle.onClick { show(VideoEditor.Text.Style) }
-                tvConfirm.onClick { show(null) }
+                tvEmoji.onClick { notify(VideoEditor.Text.Emoji) }
+                tvStyle.onClick { notify(VideoEditor.Text.Style) }
+                tvConfirm.onClick { notify(null) }
             }
         }
         return binding!!.root
     }
 
-    override fun onAttach(state: State) {
-        val binding = binding ?: return
-        state.inputView.editText = binding.editText
+    override fun onPrepare(state: State) = with(state) {
+        if (state.current == VideoEditor.Text.Input
+                && inputView.editText !== binding?.editText) {
+            inputView.editText = binding?.editText
+            inputView.editText?.requestFocus()
+        }
+    }
+
+    override fun onEnd(state: State) {
+        if (!isCurrent(state)) state.inputView.editText = null
     }
 }
 
 class CommonGroupTransformation(
     vararg editor: VideoEditor,
-    private val show: (VideoEditor?) -> Unit
-) : GroupTransformation(*editor) {
+    private val notify: (VideoEditor?) -> Unit
+) : GroupTransformation<State>(*editor) {
     private var binding: VideoCommonTitlebarBinding? = null
 
     override fun getView(state: State): View {
@@ -92,14 +99,15 @@ class CommonGroupTransformation(
                 LayoutInflater.from(state.container.context),
                 state.container, false
             ).apply {
-                tvConfirm.onClick { show(null) }
+                tvConfirm.onClick { notify(null) }
             }
         }
         return binding!!.root
     }
 
-    override fun onAttach(state: State) {
+    override fun onPrepare(state: State) {
         if (!isCurrent(state)) return
-        binding?.tvTitle?.text = state.current?.title ?: ""
+        val current = state.current as? VideoEditor
+        binding?.tvTitle?.text = current?.title ?: ""
     }
 }

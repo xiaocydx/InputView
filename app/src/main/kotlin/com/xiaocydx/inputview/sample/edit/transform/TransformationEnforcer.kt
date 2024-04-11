@@ -2,17 +2,15 @@
 
 package com.xiaocydx.inputview.sample.edit.transform
 
-import android.view.ViewGroup
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.coroutineScope
 import com.xiaocydx.inputview.AnimationCallback
 import com.xiaocydx.inputview.AnimationState
+import com.xiaocydx.inputview.Editor
+import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.FadeEditorAnimator
-import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.notifyHideCurrent
 import com.xiaocydx.inputview.notifyShow
-import com.xiaocydx.inputview.sample.edit.VideoEditor
-import com.xiaocydx.inputview.sample.edit.VideoEditorAdapter
 import com.xiaocydx.inputview.sample.edit.transform.Transformation.State
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Job
@@ -20,57 +18,56 @@ import kotlinx.coroutines.launch
 
 /**
  * @author xcc
- * @date 2024/4/10
+ * @date 2024/4/11
  */
-class TransformationEnforcer(
+class TransformationEnforcer<T : Editor, S : State>(
     private val lifecycle: Lifecycle,
-    private val inputView: InputView,
-    private val container: ViewGroup
+    private val animator: FadeEditorAnimator,
+    private val adapter: EditorAdapter<T>,
+    private val createState: () -> S
 ) : AnimationCallback {
-    private val animator = requireNotNull(inputView.editorAnimator as? FadeEditorAnimator)
-    private val adapter = requireNotNull(inputView.editorAdapter as? VideoEditorAdapter)
-    private var state: State? = null
+    private var state: S? = null
     private var translationY = 0
     private var animationEndJob: Job? = null
-    private var previous: VideoEditor? = null
-    private var canBegin = true
-    private var transformation: Transformation? = null
+    private var transformation: Transformation<S>? = null
+    private val handler = CoroutineExceptionHandler { _, _ -> }
 
-    fun attach(transformation: Transformation) = apply {
+    fun attach(transformation: Transformation<S>) {
         this.transformation = transformation
         animator.addAnimationCallback(this)
-        adapter.addEditorChangedListener { _, current -> begin(current) }
     }
 
-    @Suppress("INVISIBLE_MEMBER")
-    fun begin(current: VideoEditor?) {
-        if (!canBegin) return
-        animator.endAnimation()
+    fun notify(editor: T?) {
+        if (editor == null) {
+            adapter.notifyHideCurrent()
+        } else {
+            adapter.notifyShow(editor)
+        }
+    }
+
+    override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
         animationEndJob?.cancel()
-        state = State(inputView, container, previous, current)
-        previous = current
-        transformation?.attach(state!!)
-        canBegin = false
-        if (current == null) adapter.notifyHideCurrent() else adapter.notifyShow(current)
-        canBegin = true
+        state = createState()
+        state!!.setEditor(previous, current)
+        transformation?.prepare(state!!)
     }
 
     override fun onAnimationStart(animation: AnimationState) {
         val state = state ?: return
-        var start = container.top
+        var start = state.container.top
         var end = start - (animation.endOffset - animation.startOffset)
         when {
             animation.startOffset == 0 -> {
-                translationY = container.height
+                translationY = state.container.height
                 start += translationY
             }
             animation.endOffset == 0 -> {
-                translationY = container.height
+                translationY = state.container.height
                 end += translationY
             }
             else -> translationY = 0
         }
-        inputView.translationY = translationY.toFloat()
+        state.inputView.translationY = translationY.toFloat()
         state.setAnchorY(start, end)
         transformation?.start(state)
     }
@@ -89,7 +86,7 @@ class TransformationEnforcer(
         if (translationY > 0f) {
             var fraction = state.interpolatedFraction
             if (animation.startOffset == 0) fraction = 1 - fraction
-            inputView.translationY = translationY * fraction
+            state.inputView.translationY = translationY * fraction
         }
         transformation?.update(state)
     }
@@ -97,7 +94,6 @@ class TransformationEnforcer(
     override fun onAnimationEnd(animation: AnimationState) {
         val state = state ?: return
         transformation?.end(state)
-        val handler = CoroutineExceptionHandler { _, _ -> }
         animationEndJob = lifecycle.coroutineScope.launch(handler) {
             transformation?.launch(state, this)
         }

@@ -3,7 +3,7 @@ package com.xiaocydx.inputview.sample.edit.transform
 import android.view.View
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
-import com.xiaocydx.inputview.sample.edit.VideoEditor
+import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.sample.edit.transform.Transformation.State
 import kotlinx.coroutines.CoroutineScope
 
@@ -11,32 +11,34 @@ import kotlinx.coroutines.CoroutineScope
  * @author xcc
  * @date 2024/4/10
  */
-abstract class GroupTransformation(vararg editors: VideoEditor) : Transformation {
+abstract class GroupTransformation<S : State>(
+    vararg editors: Editor
+) : Transformation<S> {
     private val editors = editors.toSet()
-    protected abstract fun getView(state: State): View
-    protected open fun onAttach(state: State) = Unit
-    protected open fun onStart(state: State) = Unit
-    protected open fun onUpdate(state: State) = Unit
-    protected open fun onEnd(state: State) = Unit
-    protected open fun onLaunch(state: State, scope: CoroutineScope) = Unit
+    protected abstract fun getView(state: S): View
+    protected open fun onPrepare(state: S) = Unit
+    protected open fun onStart(state: S) = Unit
+    protected open fun onUpdate(state: S) = Unit
+    protected open fun onEnd(state: S) = Unit
+    protected open fun onLaunch(state: S, scope: CoroutineScope) = Unit
 
-    override fun attach(state: State) {
+    final override fun prepare(state: S) {
         if (!isPrevious(state) && !isCurrent(state)) return
         val view = getView(state)
         if (view.parent !== state.container) {
             view.isInvisible = true
             state.container.addView(view)
         }
-        onAttach(state)
+        onPrepare(state)
     }
 
-    override fun start(state: State) {
+    final override fun start(state: S) {
         if (!isPrevious(state) && !isCurrent(state)) return
         getView(state).isVisible = true
         onStart(state)
     }
 
-    override fun update(state: State) {
+    final override fun update(state: S) {
         val isPrevious = isPrevious(state)
         val isCurrent = isCurrent(state)
         when {
@@ -52,7 +54,7 @@ abstract class GroupTransformation(vararg editors: VideoEditor) : Transformation
         onUpdate(state)
     }
 
-    override fun end(state: State) {
+    final override fun end(state: S) {
         if (!isPrevious(state) && !isCurrent(state)) return
         if (!isCurrent(state)) {
             val view = getView(state)
@@ -62,17 +64,17 @@ abstract class GroupTransformation(vararg editors: VideoEditor) : Transformation
         onEnd(state)
     }
 
-    override fun launch(state: State, scope: CoroutineScope) {
+    final override fun launch(state: S, scope: CoroutineScope) {
         if (!isCurrent(state)) return
         onLaunch(state, scope)
     }
 
-    protected fun isPrevious(state: State): Boolean {
+    protected fun isPrevious(state: S): Boolean {
         if (state.previous == null) return false
         return editors.contains(state.previous)
     }
 
-    protected fun isCurrent(state: State): Boolean {
+    protected fun isCurrent(state: S): Boolean {
         if (state.current == null) return false
         return editors.contains(state.current)
     }
