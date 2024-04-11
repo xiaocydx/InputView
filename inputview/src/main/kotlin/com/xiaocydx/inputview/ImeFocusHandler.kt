@@ -48,7 +48,7 @@ internal open class ImeFocusHandler(view: View) :
 
     @CallSuper
     override fun onViewAttachedToWindow(view: View) {
-        window = window ?: view.requireViewTreeWindow()
+        window = window ?: view.findViewTreeWindow()
     }
 
     @CallSuper
