@@ -98,7 +98,6 @@ class InputView @JvmOverloads constructor(
     var editText: EditText?
         get() = imeFocusHandler.get() as? EditText
         set(value) {
-            assertNotInLayout { "设置ediText" }
             val previous = imeFocusHandler
             if (previous.get() === value) return
             val current = when {
