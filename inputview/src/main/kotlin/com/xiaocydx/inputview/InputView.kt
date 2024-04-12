@@ -34,6 +34,7 @@ import android.view.WindowInsets
 import android.view.animation.Interpolator
 import android.widget.EditText
 import androidx.annotation.ColorInt
+import androidx.annotation.IntRange
 import androidx.annotation.VisibleForTesting
 import androidx.core.view.OneShotPreDrawListener
 import androidx.core.view.ViewCompat
@@ -71,7 +72,6 @@ class InputView @JvmOverloads constructor(
     private var changeCount = 0
     private var contentView: View? = null
     private var window: ViewTreeWindow? = null
-    private var editorOffset = 0
     private var navBarOffset = 0
 
     /**
@@ -177,6 +177,13 @@ class InputView @JvmOverloads constructor(
             field = value
             field?.invalidateSelf()
         }
+
+    /**
+     * [Editor]区域的偏移值
+     */
+    @get:IntRange(from = 0)
+    var editorOffset = 0
+        private set
 
     /**
      * [InputView]是否正在布局，布局期间不允许对部分属性赋值
