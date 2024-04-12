@@ -26,7 +26,7 @@ class SampleList {
     private val source = listOf(
         basicList(), dialogList(),
         adapterList(), animatorList(),
-        statefulList(), complexList()
+        emptyList(), sceneList()
     ).flatten().toMutableList()
 
     @CheckResult
@@ -65,11 +65,11 @@ class SampleList {
 
     private fun basicList() = listOf(
         Category(title = "Basic", selectedResId = unselectedId),
-        StartActivity(
-            title = "Basic",
-            desc = "InputView的基础用法",
-            clazz = MessageListActivity::class
-        ),
+        // StartActivity(
+        //     title = "Basic",
+        //     desc = "InputView的基础用法",
+        //     clazz = MessageListActivity::class
+        // ),
         StartActivity(
             title = "MessageListActivity",
             desc = "消息列表Activity",
@@ -126,7 +126,7 @@ class SampleList {
         StartActivity(title = "Stateful标题3", desc = "描述3", MessageListActivity::class)
     )
 
-    private fun complexList() = listOf(
+    private fun sceneList() = listOf(
         Category(title = "Scene", selectedResId = unselectedId),
         StartActivity(title = "VideoEdit", desc = "剪辑类的交互场景", VideoEditActivity::class)
     )
@@ -135,28 +135,26 @@ class SampleList {
 sealed class SampleItem {
     data class Category(val title: String, val selectedResId: Int) : SampleItem()
     sealed class Element(open val title: String, open val desc: String) : SampleItem() {
-        abstract fun perform(activity: FragmentActivity)
+        abstract fun perform(context: Context)
     }
 }
 
-data class StartActivity(
+private data class StartActivity(
     override val title: String,
     override val desc: String,
     val clazz: KClass<out Activity>
 ) : Element(title, desc) {
-
-    override fun perform(activity: FragmentActivity) {
-        activity.startActivity(Intent(activity, clazz.java))
+    override fun perform(context: Context) {
+        context.startActivity(Intent(context, clazz.java))
     }
 }
 
-data class ShowDialog(
+private data class ShowDialog(
     override val title: String,
     override val desc: String,
     val create: (context: Context) -> Dialog
 ) : Element(title, desc) {
-
-    override fun perform(activity: FragmentActivity) {
-        create(activity).show()
+    override fun perform(context: Context) {
+        create(context).show()
     }
 }

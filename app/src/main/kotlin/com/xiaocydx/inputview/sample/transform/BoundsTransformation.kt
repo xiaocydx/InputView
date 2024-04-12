@@ -1,17 +1,34 @@
+/*
+ * Copyright 2023 xiaocydx
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.xiaocydx.inputview.sample.transform
 
 import android.graphics.Rect
-import android.os.Looper
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.view.ViewTreeObserver
 import androidx.transition.getBounds
 import androidx.transition.setLeftTopRightBottomCompat
 import com.xiaocydx.inputview.sample.transform.OverlayTransformation.ContainerState
 import com.xiaocydx.inputview.sample.transform.OverlayTransformation.EnforcerScope
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
+ * 通用的容器边界变换动画，处理容器高度和锚点Y的变更
+ *
  * @author xcc
  * @date 2024/4/12
  */
@@ -76,23 +93,22 @@ class BoundsTransformation : OverlayTransformation<ContainerState> {
     override fun launch(state: ContainerState, scope: EnforcerScope): Unit = with(state) {
         if (current == null) return
         scope.launch {
-            suspendCancellableCoroutine<Unit> { cont ->
-                var previousHeight = container.height
-                val listener = ViewTreeObserver.OnDrawListener {
-                    val currentHeight = container.height
-                    if (previousHeight != currentHeight) {
-                        val anchorY = initialAnchorY - inputView.editorOffset
-                        state.setEditor(current, current)
-                        state.setAnchorY(initialAnchorY, anchorY, anchorY)
-                        scope.requestDispatch(state)
-                        previousHeight = currentHeight
-                    }
+            var previousHeight = container.height
+            val listener = ViewTreeObserver.OnDrawListener {
+                val currentHeight = container.height
+                if (previousHeight != currentHeight) {
+                    val anchorY = initialAnchorY - inputView.editorOffset
+                    state.setEditor(current, current)
+                    state.setAnchorY(initialAnchorY, anchorY, anchorY)
+                    scope.requestDispatch(state)
+                    previousHeight = currentHeight
                 }
+            }
+            try {
                 container.viewTreeObserver.addOnDrawListener(listener)
-                cont.invokeOnCancellation {
-                    assert(Thread.currentThread() === Looper.getMainLooper().thread)
-                    container.viewTreeObserver.removeOnDrawListener(listener)
-                }
+                awaitCancellation()
+            } finally {
+                container.viewTreeObserver.removeOnDrawListener(listener)
             }
         }
     }

@@ -13,10 +13,16 @@ import com.xiaocydx.inputview.sample.transform.OverlayTransformation.State
 class PreviewTransformation(
     private val preview: View
 ) : OverlayTransformation<State> {
+    private val point = IntArray(2)
+    private var bottom = 0
+
+    override fun start(state: State) {
+        preview.getLocationOnScreen(point)
+        bottom = point[1] + preview.height
+    }
 
     override fun update(state: State) {
-        // TODO: 补充坐标换算
-        val dy = (preview.bottom - state.currentAnchorY).coerceAtLeast(0)
+        val dy = (bottom - state.currentAnchorY).coerceAtLeast(0)
         val scale = 1f - dy.toFloat() / preview.height
         preview.apply {
             scaleX = scale

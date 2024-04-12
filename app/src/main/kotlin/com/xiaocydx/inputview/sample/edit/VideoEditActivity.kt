@@ -8,7 +8,6 @@ import com.xiaocydx.inputview.EditorMode
 import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.addAnimationCallback
-import com.xiaocydx.inputview.disableGestureNavBarOffset
 import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.databinding.ActivityVideoEditBinding
 import com.xiaocydx.inputview.sample.edit.VideoEditor.Audio
@@ -40,8 +39,6 @@ class VideoEditActivity : AppCompatActivity() {
     }
 
     private fun ActivityVideoEditBinding.init() = apply {
-        // 禁用手势导航栏偏移，自行处理手势导航栏
-        inputView.disableGestureNavBarOffset()
         // 设置通用的手势导航栏EdgeToEdge处理逻辑
         space.insets().gestureNavBarEdgeToEdge()
         preview.insets().margins(statusBars())
@@ -63,15 +60,14 @@ class VideoEditActivity : AppCompatActivity() {
 
         val enforcer = OverlayTransformationEnforcer(
             owner = this@VideoEditActivity,
-            editorAnimator = animator,
-            editorAdapter = adapter,
+            editorAnimator = animator, editorAdapter = adapter,
             stateProvider = { ContainerState(inputView, container) }
         )
         enforcer.add(BoundsTransformation())
             .add(PreviewTransformation(preview))
             .add(TextGroupTransformation(Input, Style, Emoji, notify = enforcer::notify))
             .add(CommonGroupTransformation(Video, Audio, Image, notify = enforcer::notify))
-            .attach(onBackPressedDispatcher)
+            .attach(inputView, onBackPressedDispatcher)
 
         arrayOf(
             tvInput to Input, btnText to Emoji,

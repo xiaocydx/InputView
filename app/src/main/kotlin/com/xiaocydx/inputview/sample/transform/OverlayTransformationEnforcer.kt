@@ -1,8 +1,23 @@
+/*
+ * Copyright 2023 xiaocydx
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 @file:Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
 
 package com.xiaocydx.inputview.sample.transform
 
-import android.os.Looper
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewTreeObserver
 import androidx.activity.OnBackPressedCallback
@@ -15,6 +30,8 @@ import com.xiaocydx.inputview.AnimationState
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.FadeEditorAnimator
+import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.disableGestureNavBarOffset
 import com.xiaocydx.inputview.notifyHideCurrent
 import com.xiaocydx.inputview.notifyShow
 import com.xiaocydx.inputview.sample.transform.OverlayTransformation.EnforcerScope
@@ -22,12 +39,14 @@ import com.xiaocydx.inputview.sample.transform.OverlayTransformation.State
 import com.xiaocydx.inputview.sample.transform.OverlayTransformation.StateProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
+ * [OverlayTransformation]的执行器
+ *
  * @author xcc
  * @date 2024/4/11
  */
@@ -43,6 +62,10 @@ class OverlayTransformationEnforcer<T : Editor, S : State>(
     private val enforceScope = EnforcerScopeImpl(owner.lifecycle)
     private val animationCallback = AnimationCallbackImpl()
 
+    /**
+     * 添加[OverlayTransformation]，按添加的顺序执行各个函数，
+     * 调用[attach]后再添加，会抛出[IllegalArgumentException]。
+     */
     fun add(transformation: OverlayTransformation<S>) = apply {
         require(!isAttached) { "在attach()之前完成添加" }
         if (!transformations.contains(transformation)) {
@@ -50,13 +73,21 @@ class OverlayTransformationEnforcer<T : Editor, S : State>(
         }
     }
 
-    fun attach(dispatcher: OnBackPressedDispatcher? = null) {
+    /**
+     * 关联[inputView]，禁用手势导航栏偏移，覆盖层不做处理，
+     * 若[dispatcher]不为`null`，则按返回键会隐藏[Editor]。
+     */
+    fun attach(inputView: InputView, dispatcher: OnBackPressedDispatcher? = null) {
         if (isAttached) return
         isAttached = true
+        inputView.disableGestureNavBarOffset()
         editorAnimator.addAnimationCallback(animationCallback)
         dispatcher?.let(::addToOnBackPressedDispatcher)
     }
 
+    /**
+     * 若[editor]为`null`，则通知隐藏，否则通知显示
+     */
     fun notify(editor: T?) {
         if (editor == null) {
             editorAdapter.notifyHideCurrent()
@@ -79,10 +110,8 @@ class OverlayTransformationEnforcer<T : Editor, S : State>(
         for (i in transformations.indices) transformations[i].action()
     }
 
-    @Suppress("UNCHECKED_CAST")
     private fun dispatch(state: State) {
-        require(state === this.state)
-        state as S
+        if (state !== this.state) return
         dispatchTransformation { prepare(state) }
         dispatchTransformation { start(state) }
         dispatchTransformation { update(state) }
@@ -96,6 +125,7 @@ class OverlayTransformationEnforcer<T : Editor, S : State>(
     }
 
     private inner class AnimationCallbackImpl : AnimationCallback {
+        private val point = IntArray(2)
 
         override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
             enforceScope.coroutineContext.cancelChildren()
@@ -110,8 +140,8 @@ class OverlayTransformationEnforcer<T : Editor, S : State>(
 
         override fun onAnimationStart(animation: AnimationState) {
             val state = state ?: return
-            // TODO: 补充坐标换算
-            val initial = state.inputView.bottom
+            state.inputView.getLocationOnScreen(point)
+            val initial = point[1] + state.inputView.height
             val start = initial - animation.startOffset
             val end = initial - animation.endOffset
             state.setAnchorY(initial, start, end)
@@ -128,7 +158,10 @@ class OverlayTransformationEnforcer<T : Editor, S : State>(
                 start = editorAnimator.calculateAlpha(animation, start = true),
                 end = editorAnimator.calculateAlpha(animation, start = false)
             )
-            state.setInterpolatedFraction(animation.interpolatedFraction)
+            state.setFraction(
+                animated = animation.animatedFraction,
+                interpolated = animation.interpolatedFraction
+            )
             dispatchTransformation { update(state) }
         }
 
@@ -141,23 +174,22 @@ class OverlayTransformationEnforcer<T : Editor, S : State>(
             dispatchTransformation { launch(state, enforceScope) }
         }
 
-        private suspend fun collectAnchorYChange(state: S) = with(state) {
-            suspendCancellableCoroutine<Unit> { cont ->
-                var previousAnchorY = endAnchorY
-                val listener = ViewTreeObserver.OnDrawListener {
-                    val currentAnchorY = initialAnchorY - inputView.editorOffset
-                    if (currentAnchorY != previousAnchorY) {
-                        state.setEditor(current, current)
-                        state.setAnchorY(initialAnchorY, currentAnchorY, currentAnchorY)
-                        dispatch(state)
-                        previousAnchorY = currentAnchorY
-                    }
+        private suspend fun collectAnchorYChange(state: S): Unit = with(state) {
+            var previousAnchorY = endAnchorY
+            val listener = ViewTreeObserver.OnDrawListener {
+                val currentAnchorY = initialAnchorY - inputView.editorOffset
+                if (currentAnchorY != previousAnchorY) {
+                    state.setEditor(current, current)
+                    state.setAnchorY(initialAnchorY, currentAnchorY, currentAnchorY)
+                    dispatch(state)
+                    previousAnchorY = currentAnchorY
                 }
+            }
+            try {
                 inputView.viewTreeObserver.addOnDrawListener(listener)
-                cont.invokeOnCancellation {
-                    assert(Thread.currentThread() === Looper.getMainLooper().thread)
-                    inputView.viewTreeObserver.removeOnDrawListener(listener)
-                }
+                awaitCancellation()
+            } finally {
+                inputView.viewTreeObserver.removeOnDrawListener(listener)
             }
         }
     }
