@@ -43,20 +43,19 @@ class VideoEditActivity : AppCompatActivity() {
         space.insets().gestureNavBarEdgeToEdge()
         preview.insets().margins(statusBars())
 
+        val animator = FadeEditorAnimator(durationMillis = 300)
         val adapter = VideoEditorAdapter(this@VideoEditActivity)
         inputView.apply {
+            editorAnimator = animator
             editorAdapter = adapter
             editorMode = EditorMode.ADJUST_PAN
             setEditorBackgroundColor(0xFF1D1D1D.toInt())
         }
-
-        val animator = FadeEditorAnimator(durationMillis = 300)
         // 在动画运行时拦截触摸事件
         animator.addAnimationCallback(
             onStart = { window.isDispatchTouchEventEnabled = false },
             onEnd = { window.isDispatchTouchEventEnabled = true },
         )
-        inputView.editorAnimator = animator
 
         val enforcer = OverlayTransformationEnforcer(
             owner = this@VideoEditActivity,
