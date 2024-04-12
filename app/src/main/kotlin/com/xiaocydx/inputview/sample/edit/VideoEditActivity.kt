@@ -17,15 +17,11 @@ import com.xiaocydx.inputview.sample.edit.VideoEditor.Text.Emoji
 import com.xiaocydx.inputview.sample.edit.VideoEditor.Text.Input
 import com.xiaocydx.inputview.sample.edit.VideoEditor.Text.Style
 import com.xiaocydx.inputview.sample.edit.VideoEditor.Video
-import com.xiaocydx.inputview.sample.edit.transform.CommonGroupTransformation
-import com.xiaocydx.inputview.sample.edit.transform.ContainerTransformation
-import com.xiaocydx.inputview.sample.edit.transform.PreviewTransformation
-import com.xiaocydx.inputview.sample.edit.transform.TextGroupTransformation
-import com.xiaocydx.inputview.sample.edit.transform.Transformation
-import com.xiaocydx.inputview.sample.edit.transform.TransformationEnforcer
-import com.xiaocydx.inputview.sample.edit.transform.plus
 import com.xiaocydx.inputview.sample.isDispatchTouchEventEnabled
 import com.xiaocydx.inputview.sample.onClick
+import com.xiaocydx.inputview.sample.transform.BoundsTransformation
+import com.xiaocydx.inputview.sample.transform.OverlayTransformation.ContainerState
+import com.xiaocydx.inputview.sample.transform.OverlayTransformationEnforcer
 import com.xiaocydx.insets.insets
 import com.xiaocydx.insets.statusBars
 
@@ -65,23 +61,21 @@ class VideoEditActivity : AppCompatActivity() {
         )
         inputView.editorAnimator = animator
 
-        val enforcer = TransformationEnforcer(
+        val enforcer = OverlayTransformationEnforcer(
             owner = this@VideoEditActivity,
             editorAnimator = animator,
             editorAdapter = adapter,
-            createState = { Transformation.State(inputView, container) }
+            stateProvider = { ContainerState(inputView, container) }
         )
-        enforcer.addToOnBackPressedDispatcher(onBackPressedDispatcher)
+        enforcer.add(BoundsTransformation())
+            .add(PreviewTransformation(preview))
+            .add(TextGroupTransformation(Input, Style, Emoji, notify = enforcer::notify))
+            .add(CommonGroupTransformation(Video, Audio, Image, notify = enforcer::notify))
+            .attach(onBackPressedDispatcher)
 
         arrayOf(
             tvInput to Input, btnText to Emoji,
             btnVideo to Video, btnAudio to Audio, btnImage to Image
         ).forEach { (view, editor) -> view.onClick { enforcer.notify(editor) } }
-
-        val container = ContainerTransformation()
-        val preview = PreviewTransformation(preview)
-        val textGroup = TextGroupTransformation(Input, Style, Emoji, notify = enforcer::notify)
-        val commonGroup = CommonGroupTransformation(Video, Audio, Image, notify = enforcer::notify)
-        enforcer.attach(container + preview + textGroup + commonGroup)
     }
 }

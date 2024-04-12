@@ -1,16 +1,21 @@
-package com.xiaocydx.inputview.sample.edit.transform
+package com.xiaocydx.inputview.sample.edit
 
 import android.view.LayoutInflater
 import android.view.View
 import com.xiaocydx.inputview.sample.databinding.VideoCommonTitlebarBinding
 import com.xiaocydx.inputview.sample.databinding.VideoTextTitlebarBinding
-import com.xiaocydx.inputview.sample.edit.VideoEditor
-import com.xiaocydx.inputview.sample.edit.transform.Transformation.State
 import com.xiaocydx.inputview.sample.onClick
+import com.xiaocydx.inputview.sample.transform.ContainerTransformation
+import com.xiaocydx.inputview.sample.transform.OverlayTransformation
+import com.xiaocydx.inputview.sample.transform.OverlayTransformation.ContainerState
+import com.xiaocydx.inputview.sample.transform.OverlayTransformation.State
 
-class PreviewTransformation(private val preview: View) : Transformation<State> {
+class PreviewTransformation(
+    private val preview: View
+) : OverlayTransformation<State> {
 
     override fun update(state: State) {
+        // TODO: 补充坐标换算
         val dy = (preview.bottom - state.currentAnchorY).coerceAtLeast(0)
         val scale = 1f - dy.toFloat() / preview.height
         preview.apply {
@@ -25,10 +30,10 @@ class PreviewTransformation(private val preview: View) : Transformation<State> {
 class TextGroupTransformation(
     vararg editor: VideoEditor.Text,
     private val notify: (VideoEditor?) -> Unit
-) : GroupTransformation<State>(*editor) {
+) : ContainerTransformation<ContainerState>(*editor) {
     private var binding: VideoTextTitlebarBinding? = null
 
-    override fun getView(state: State): View {
+    override fun getView(state: ContainerState): View {
         if (binding == null) {
             binding = VideoTextTitlebarBinding.inflate(
                 LayoutInflater.from(state.container.context),
@@ -42,7 +47,7 @@ class TextGroupTransformation(
         return binding!!.root
     }
 
-    override fun onPrepare(state: State) = with(state) {
+    override fun onPrepare(state: ContainerState) = with(state) {
         if (state.current == VideoEditor.Text.Input
                 && inputView.editText !== binding?.editText) {
             inputView.editText = binding?.editText
@@ -50,7 +55,7 @@ class TextGroupTransformation(
         }
     }
 
-    override fun onEnd(state: State) {
+    override fun onEnd(state: ContainerState) {
         if (!isCurrent(state)) state.inputView.editText = null
     }
 }
@@ -58,10 +63,10 @@ class TextGroupTransformation(
 class CommonGroupTransformation(
     vararg editor: VideoEditor,
     private val notify: (VideoEditor?) -> Unit
-) : GroupTransformation<State>(*editor) {
+) : ContainerTransformation<ContainerState>(*editor) {
     private var binding: VideoCommonTitlebarBinding? = null
 
-    override fun getView(state: State): View {
+    override fun getView(state: ContainerState): View {
         if (binding == null) {
             binding = VideoCommonTitlebarBinding.inflate(
                 LayoutInflater.from(state.container.context),
@@ -73,7 +78,7 @@ class CommonGroupTransformation(
         return binding!!.root
     }
 
-    override fun onPrepare(state: State) {
+    override fun onPrepare(state: ContainerState) {
         if (!isCurrent(state)) return
         val current = state.current as? VideoEditor
         binding?.tvTitle?.text = current?.title ?: ""

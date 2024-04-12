@@ -1,17 +1,16 @@
-package com.xiaocydx.inputview.sample.edit.transform
+package com.xiaocydx.inputview.sample.transform
 
 import android.view.ViewGroup
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.InputView
-import com.xiaocydx.inputview.sample.edit.transform.Transformation.EnforcerScope
-import com.xiaocydx.inputview.sample.edit.transform.Transformation.State
+import com.xiaocydx.inputview.sample.transform.OverlayTransformation.State
 import kotlinx.coroutines.CoroutineScope
 
 /**
  * @author xcc
  * @date 2024/4/10
  */
-interface Transformation<in S : State> {
+interface OverlayTransformation<in S : State> {
 
     fun prepare(state: S) = Unit
 
@@ -27,7 +26,16 @@ interface Transformation<in S : State> {
         fun requestDispatch(state: State)
     }
 
-    open class State(val inputView: InputView, val container: ViewGroup) {
+    fun interface StateProvider<S : State> {
+        fun createState(): S
+    }
+
+    open class ContainerState(
+        inputView: InputView,
+        val container: ViewGroup
+    ) : State(inputView)
+
+    open class State(val inputView: InputView) {
         var previous: Editor? = null; private set
         var current: Editor? = null; private set
         var initialAnchorY = 0; private set
@@ -59,39 +67,5 @@ interface Transformation<in S : State> {
             interpolatedFraction = fraction
             currentAnchorY = startAnchorY + ((endAnchorY - startAnchorY) * fraction).toInt()
         }
-    }
-}
-
-operator fun <S : State> Transformation<S>.plus(
-    other: Transformation<S>
-): Transformation<S> = CombinedTransformation(this, other)
-
-private class CombinedTransformation<S : State>(
-    private val first: Transformation<S>,
-    private val second: Transformation<S>
-) : Transformation<S> {
-    override fun prepare(state: S) {
-        first.prepare(state)
-        second.prepare(state)
-    }
-
-    override fun start(state: S) {
-        first.start(state)
-        second.start(state)
-    }
-
-    override fun update(state: S) {
-        first.update(state)
-        second.update(state)
-    }
-
-    override fun end(state: S) {
-        first.end(state)
-        second.end(state)
-    }
-
-    override fun launch(state: S, scope: EnforcerScope) {
-        first.launch(state, scope)
-        second.launch(state, scope)
     }
 }

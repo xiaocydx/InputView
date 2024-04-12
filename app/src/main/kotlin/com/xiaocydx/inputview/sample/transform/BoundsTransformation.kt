@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.edit.transform
+package com.xiaocydx.inputview.sample.transform
 
 import android.graphics.Rect
 import android.os.Looper
@@ -6,8 +6,8 @@ import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.view.ViewTreeObserver
 import androidx.transition.getBounds
 import androidx.transition.setLeftTopRightBottomCompat
-import com.xiaocydx.inputview.sample.edit.transform.Transformation.EnforcerScope
-import com.xiaocydx.inputview.sample.edit.transform.Transformation.State
+import com.xiaocydx.inputview.sample.transform.OverlayTransformation.ContainerState
+import com.xiaocydx.inputview.sample.transform.OverlayTransformation.EnforcerScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 
@@ -15,7 +15,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
  * @author xcc
  * @date 2024/4/12
  */
-class ContainerTransformation : Transformation<State> {
+class BoundsTransformation : OverlayTransformation<ContainerState> {
     private val previousBounds = Rect()
     private val currentBounds = Rect()
     private var canTransform = false
@@ -23,12 +23,12 @@ class ContainerTransformation : Transformation<State> {
     private var currentHeight = 0
     private var translationY = 0
 
-    override fun prepare(state: State) = with(state) {
+    override fun prepare(state: ContainerState) = with(state) {
         require(container.layoutParams?.height == WRAP_CONTENT)
         container.getBounds(previousBounds)
     }
 
-    override fun start(state: State) = with(state) {
+    override fun start(state: ContainerState) = with(state) {
         container.getBounds(currentBounds)
         previousHeight = previousBounds.height()
         currentHeight = currentBounds.height()
@@ -56,7 +56,7 @@ class ContainerTransformation : Transformation<State> {
         if (canTransform) container.setLeftTopRightBottomCompat(previousBounds)
     }
 
-    override fun update(state: State) = with(state) {
+    override fun update(state: ContainerState) = with(state) {
         var fraction = interpolatedFraction
         if (translationY > 0f) {
             if (startAnchorY == initialAnchorY) fraction = 1 - fraction
@@ -69,24 +69,23 @@ class ContainerTransformation : Transformation<State> {
         }
     }
 
-    override fun end(state: State) {
+    override fun end(state: ContainerState) {
         state.inputView.translationY = 0f
     }
 
-    override fun launch(state: State, scope: EnforcerScope): Unit = with(state) {
+    override fun launch(state: ContainerState, scope: EnforcerScope): Unit = with(state) {
         if (current == null) return
-        // TODO: 尝试简化
         scope.launch {
             suspendCancellableCoroutine<Unit> { cont ->
-                var old = container.top
+                var previousHeight = container.height
                 val listener = ViewTreeObserver.OnDrawListener {
-                    val new = container.top
-                    if (old != new) {
-                        val end = container.bottom
+                    val currentHeight = container.height
+                    if (previousHeight != currentHeight) {
+                        val anchorY = initialAnchorY - inputView.editorOffset
                         state.setEditor(current, current)
-                        state.setAnchorY(initialAnchorY, end, end)
+                        state.setAnchorY(initialAnchorY, anchorY, anchorY)
                         scope.requestDispatch(state)
-                        old = new
+                        previousHeight = currentHeight
                     }
                 }
                 container.viewTreeObserver.addOnDrawListener(listener)

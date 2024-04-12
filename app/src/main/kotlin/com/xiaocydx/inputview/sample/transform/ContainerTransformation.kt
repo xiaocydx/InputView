@@ -1,20 +1,20 @@
-package com.xiaocydx.inputview.sample.edit.transform
+package com.xiaocydx.inputview.sample.transform
 
 import android.view.View
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import com.xiaocydx.inputview.Editor
-import com.xiaocydx.inputview.sample.edit.transform.Transformation.EnforcerScope
-import com.xiaocydx.inputview.sample.edit.transform.Transformation.State
+import com.xiaocydx.inputview.sample.transform.OverlayTransformation.ContainerState
+import com.xiaocydx.inputview.sample.transform.OverlayTransformation.EnforcerScope
 import kotlinx.coroutines.CoroutineScope
 
 /**
  * @author xcc
  * @date 2024/4/10
  */
-abstract class GroupTransformation<S : State>(
+abstract class ContainerTransformation<S : ContainerState>(
     vararg editors: Editor
-) : Transformation<S> {
+) : OverlayTransformation<S> {
     private val editors = editors.toSet()
     protected abstract fun getView(state: S): View
     protected open fun onPrepare(state: S) = Unit
