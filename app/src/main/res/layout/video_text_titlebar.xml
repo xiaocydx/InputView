@@ -43,5 +43,5 @@
         android:layout_height="50dp"
         android:layout_gravity="bottom"
         android:padding="10dp"
-        android:src="@drawable/ic_video_confirm" />
+        android:src="@drawable/ic_confirm" />
 </LinearLayout>

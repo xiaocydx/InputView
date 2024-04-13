@@ -41,6 +41,7 @@ dependencies {
     val cxrvVersion = "1.5.4"
     implementation("com.github.xiaocydx.CXRV:cxrv:${cxrvVersion}")
     implementation("com.github.xiaocydx.CXRV:cxrv-binding:${cxrvVersion}")
+    implementation("com.github.xiaocydx.CXRV:cxrv-viewpager2:${cxrvVersion}")
 
     val insertsVersion = "1.1.4"
     implementation("com.github.xiaocydx.Insets:insets:${insertsVersion}")
@@ -54,4 +55,5 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.2.0")
     implementation("androidx.fragment:fragment:1.6.1")
     implementation("androidx.fragment:fragment-ktx:1.6.1")
+    implementation("com.github.bumptech.glide:glide:4.14.2")
 }
