@@ -61,7 +61,15 @@ abstract class EditorAdapter<T : Editor> {
     abstract fun onCreateView(parent: ViewGroup, editor: T): View?
 
     /**
-     * 获取可保存显示状态的[T]集合
+     * 在保存和恢复显示的[Editor]时，会调用该函数获取可保存显示状态的[Editor]集合，
+     * 恢复显示的[Editor]，不会运行动画，仅记录动画状态，分发动画回调，在恢复的过程中，
+     * 会调用[EditorChangedListener]、[AnimationCallback]、[AnimationInterceptor]。
+     *
+     * **注意**：
+     * 1. 重写该函数只会恢复显示的[Editor]，不会恢复[Editor]视图的状态，
+     * 若需要恢复[Editor]视图的状态，则可以使用[FragmentEditorAdapter]。
+     * 2. 即使不重写该函数，在页面重建期间通知显示[Editor]，也不会运行动画，
+     * 可以类比Fragment首次创建有过渡动画，重建的Fragment不会运行过渡动画。
      */
     open fun getStatefulEditorList(): List<T> = emptyList()
 
