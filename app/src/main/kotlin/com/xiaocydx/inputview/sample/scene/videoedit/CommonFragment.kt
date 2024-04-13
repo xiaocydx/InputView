@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.edit
+package com.xiaocydx.inputview.sample.scene.videoedit
 
 import android.annotation.SuppressLint
 import android.graphics.Color
@@ -18,7 +18,7 @@ import androidx.lifecycle.LifecycleOwner
 import com.xiaocydx.inputview.sample.dp
 import com.xiaocydx.inputview.sample.layoutParams
 import com.xiaocydx.inputview.sample.matchParent
-import com.xiaocydx.insets.handleGestureNavBarEdgeToEdgeOnApply
+import com.xiaocydx.insets.insets
 
 /**
  * 动画结束时，生命周期状态才转换为[RESUMED]
@@ -44,7 +44,7 @@ class CommonFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         // 设置通用的手势导航栏EdgeToEdge处理逻辑
-        view.handleGestureNavBarEdgeToEdgeOnApply()
+        view.insets().gestureNavBarEdgeToEdge()
         viewLifecycleOwner.lifecycle.addObserver(object : LifecycleEventObserver {
             val title = arguments?.getString(KEY_TITLE) ?: ""
             override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {

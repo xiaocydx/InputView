@@ -68,7 +68,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         return RecyclerView(this)
-            .linear().divider(height = 1.dp)
+            .linear().divider(height = 2.dp)
             .layoutParams(matchParent, matchParent)
             .adapter(Concat.header(header).content(content).concat())
     }

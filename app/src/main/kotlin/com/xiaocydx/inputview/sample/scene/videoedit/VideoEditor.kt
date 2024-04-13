@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.edit
+package com.xiaocydx.inputview.sample.scene.videoedit
 
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import com.xiaocydx.inputview.Editor

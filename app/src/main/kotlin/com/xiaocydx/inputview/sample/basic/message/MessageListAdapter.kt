@@ -1,6 +1,5 @@
-package com.xiaocydx.inputview.sample.message
+package com.xiaocydx.inputview.sample.basic.message
 
-import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -29,7 +28,6 @@ class MessageListAdapter(itemCount: Int) : RecyclerView.Adapter<MessageHolder>()
         return holder
     }
 
-    @SuppressLint("SetTextI18n")
     override fun onBindViewHolder(holder: MessageHolder, position: Int) {
         holder.binding.tvContent.text = list[position]
     }

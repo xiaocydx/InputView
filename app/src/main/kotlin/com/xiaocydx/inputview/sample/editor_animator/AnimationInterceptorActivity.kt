@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample
+package com.xiaocydx.inputview.sample.editor_animator
 
 import android.app.Dialog
 import android.content.Context
@@ -17,24 +17,27 @@ import com.xiaocydx.inputview.addAnimationCallback
 import com.xiaocydx.inputview.addEditText
 import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.notifyHideCurrent
-import com.xiaocydx.inputview.sample.databinding.ActivityOverlayInputBinding
+import com.xiaocydx.inputview.sample.databinding.ActivityAnimationInterceptorBinding
+import com.xiaocydx.inputview.sample.dp
+import com.xiaocydx.inputview.sample.layoutParams
+import com.xiaocydx.inputview.sample.onClick
 import com.xiaocydx.inputview.setWindowFocusInterceptor
 
 /**
- * 覆盖输入的示例代码
+ * [AnimationInterceptor]的示例代码
  *
  * @author xcc
  * @date 2023/10/15
  */
-class OverlayInputActivity : AppCompatActivity() {
+class AnimationInterceptorActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         InputView.init(window, gestureNavBarEdgeToEdge = true)
-        setContentView(ActivityOverlayInputBinding.inflate(layoutInflater).init().root)
+        setContentView(ActivityAnimationInterceptorBinding.inflate(layoutInflater).init().root)
     }
 
-    private fun ActivityOverlayInputBinding.init() = apply {
+    private fun ActivityAnimationInterceptorBinding.init() = apply {
         // 1. 当有多个EditText时，选其中一个EditText跟InputView关联即可，
         // 多个EditText的焦点处理逻辑，可以看InputView.editText的注释。
         inputView.editText = editText1
@@ -60,7 +63,7 @@ class OverlayInputActivity : AppCompatActivity() {
         inputView.setEditorBackgroundColor(0xFFF2F2F2.toInt())
 
         outside.onClick { inputView.editorAdapter.notifyHideCurrent() }
-        textView.onClick { InputDialog(this@OverlayInputActivity).show() }
+        textView.onClick { InputDialog(this@AnimationInterceptorActivity).show() }
     }
 }
 

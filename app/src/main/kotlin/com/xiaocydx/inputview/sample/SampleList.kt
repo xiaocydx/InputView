@@ -7,13 +7,17 @@ import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import androidx.annotation.CheckResult
-import androidx.fragment.app.FragmentActivity
 import com.xiaocydx.inputview.sample.SampleItem.Category
 import com.xiaocydx.inputview.sample.SampleItem.Element
-import com.xiaocydx.inputview.sample.dialog.MessageListBottomSheetDialog
-import com.xiaocydx.inputview.sample.dialog.MessageListDialog
-import com.xiaocydx.inputview.sample.edit.VideoEditActivity
-import com.xiaocydx.inputview.sample.fragment.FragmentEditorAdapterActivity
+import com.xiaocydx.inputview.sample.basic.InitCompatActivity
+import com.xiaocydx.inputview.sample.basic.dialog.MessageListBottomSheetDialog
+import com.xiaocydx.inputview.sample.basic.dialog.MessageListDialog
+import com.xiaocydx.inputview.sample.basic.message.MessageListActivity
+import com.xiaocydx.inputview.sample.editor_adapter.StatefulActivity
+import com.xiaocydx.inputview.sample.editor_adapter.fragment.FragmentEditorAdapterActivity
+import com.xiaocydx.inputview.sample.editor_animator.AnimationInterceptorActivity
+import com.xiaocydx.inputview.sample.editor_animator.ImeAnimatorActivity
+import com.xiaocydx.inputview.sample.scene.videoedit.VideoEditActivity
 import kotlin.reflect.KClass
 
 /**
@@ -24,9 +28,8 @@ class SampleList {
     private val selectedId = R.drawable.ic_sample_selected
     private val unselectedId = R.drawable.ic_sample_unselected
     private val source = listOf(
-        basicList(), dialogList(),
-        adapterList(), animatorList(),
-        emptyList(), sceneList()
+        basicList(), animatorList(),
+        adapterList(), sceneList()
     ).flatten().toMutableList()
 
     @CheckResult
@@ -65,48 +68,11 @@ class SampleList {
 
     private fun basicList() = listOf(
         Category(title = "Basic", selectedResId = unselectedId),
-        // StartActivity(
-        //     title = "Basic",
-        //     desc = "InputView的基础用法",
-        //     clazz = MessageListActivity::class
-        // ),
         StartActivity(
-            title = "MessageListActivity",
+            title = "Activity",
             desc = "消息列表Activity",
             clazz = MessageListActivity::class
         ),
-        StartActivity(
-            title = "InitCompat",
-            desc = "兼容已有的WindowInsets处理方案",
-            clazz = InitCompatActivity::class
-        )
-    )
-
-    private fun adapterList() = listOf(
-        Category(title = "EditorAdapter", selectedResId = unselectedId),
-        StartActivity(
-            title = "FragmentEditorAdapter",
-            desc = "Editor的Fragment适配器",
-            clazz = FragmentEditorAdapterActivity::class
-        )
-    )
-
-    private fun animatorList() = listOf(
-        Category(title = "EditorAnimator", selectedResId = unselectedId),
-        StartActivity(
-            title = "AnimationInterceptor",
-            desc = "处理多Window的交互冲突问题",
-            clazz = OverlayInputActivity::class
-        ),
-        StartActivity(
-            title = "ImeAnimator",
-            desc = "脱离InputView使用EditorAnimator",
-            clazz = ImeAnimatorActivity::class
-        )
-    )
-
-    private fun dialogList() = listOf(
-        Category(title = "Dialog", selectedResId = unselectedId),
         ShowDialog(
             title = "Dialog",
             desc = "消息列表Dialog，主题包含windowIsFloating = false",
@@ -116,19 +82,57 @@ class SampleList {
             title = "BottomSheetDialog",
             desc = "消息列表BottomSheetDialog，实现状态栏Edge-to-Edge",
             create = ::MessageListBottomSheetDialog
+        ),
+        StartActivity(
+            title = "InitCompat",
+            desc = "初始化Window，兼容已有的WindowInsets处理方案",
+            clazz = InitCompatActivity::class
         )
     )
 
-    private fun statefulList() = listOf(
-        Category(title = "Stateful", selectedResId = unselectedId),
-        StartActivity(title = "Stateful标题1", desc = "描述1", MessageListActivity::class),
-        StartActivity(title = "Stateful标题2", desc = "描述2", MessageListActivity::class),
-        StartActivity(title = "Stateful标题3", desc = "描述3", MessageListActivity::class)
+    private fun animatorList() = listOf(
+        Category(title = "EditorAnimator", selectedResId = unselectedId),
+        StartActivity(
+            title = "AnimationInterceptor",
+            desc = "处理多Window的交互冲突问题",
+            clazz = AnimationInterceptorActivity::class
+        ),
+        StartActivity(
+            title = "ImeAnimator",
+            desc = "脱离InputView使用EditorAnimator",
+            clazz = ImeAnimatorActivity::class
+        )
+    )
+
+    private fun adapterList() = listOf(
+        Category(title = "EditorAdapter", selectedResId = unselectedId),
+        StartActivity(
+            title = "EditorAdapter-Stateful",
+            desc = """
+                |页面重建时（因Activity配置更改或进程被杀掉）：
+                |1. 不运行动画（IME除外），恢复之前显示的Editor。
+                |2. 不恢复Editor视图的状态，该功能由FragmentEditorAdapter完成。
+            """.trimMargin(),
+            StatefulActivity::class
+        ),
+        StartActivity(
+            title = "FragmentEditorAdapter",
+            desc = """
+                |1. 动画结束时，Lifecycle的状态才会转换为RESUMED。
+                |2. 页面重建时，使用可恢复状态的Fragment，不会调用函数再次创建Fragment。
+                |3. 页面重建时，Stateful恢复之前显示的Editor，Fragment恢复Editor视图的状态。
+            """.trimMargin(),
+            clazz = FragmentEditorAdapterActivity::class
+        )
     )
 
     private fun sceneList() = listOf(
         Category(title = "Scene", selectedResId = unselectedId),
-        StartActivity(title = "VideoEdit", desc = "剪辑类的交互场景", VideoEditActivity::class)
+        StartActivity(
+            title = "VideoEdit",
+            desc = "剪辑类的交互场景",
+            clazz = VideoEditActivity::class
+        )
     )
 }
 

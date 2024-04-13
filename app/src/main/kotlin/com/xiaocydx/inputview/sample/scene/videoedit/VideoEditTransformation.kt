@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.edit
+package com.xiaocydx.inputview.sample.scene.videoedit
 
 import android.view.LayoutInflater
 import android.view.View

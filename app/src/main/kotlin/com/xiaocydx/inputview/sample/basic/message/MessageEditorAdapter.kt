@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.message
+package com.xiaocydx.inputview.sample.basic.message
 
 import android.content.Context
 import android.view.LayoutInflater
@@ -14,21 +14,21 @@ import androidx.recyclerview.widget.RecyclerView
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.sample.R
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor.EMOJI
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor.EXTRA
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor.IME
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor.VOICE
 import com.xiaocydx.inputview.sample.dp
 import com.xiaocydx.inputview.sample.layoutParams
 import com.xiaocydx.inputview.sample.matchParent
-import com.xiaocydx.inputview.sample.message.MessageEditor.EMOJI
-import com.xiaocydx.inputview.sample.message.MessageEditor.EXTRA
-import com.xiaocydx.inputview.sample.message.MessageEditor.IME
-import com.xiaocydx.inputview.sample.message.MessageEditor.VOICE
 import com.xiaocydx.inputview.sample.wrapContent
-import com.xiaocydx.insets.handleGestureNavBarEdgeToEdgeOnApply
+import com.xiaocydx.insets.insets
 
 /**
  * @author xcc
  * @date 2023/1/8
  */
-class MessageEditorAdapter : EditorAdapter<MessageEditor>() {
+open class MessageEditorAdapter : EditorAdapter<MessageEditor>() {
     override val ime: MessageEditor = IME
 
     override fun onCreateView(parent: ViewGroup, editor: MessageEditor): View? = when (editor) {
@@ -54,7 +54,7 @@ class EmojiRecyclerView(context: Context) : RecyclerView(context) {
         layoutManager = GridLayoutManager(context, spanCount)
         recycledViewPool.setMaxRecycledViews(0, 16)
         layoutParams(matchParent, 350.dp)
-        handleGestureNavBarEdgeToEdgeOnApply()
+        insets().gestureNavBarEdgeToEdge()
     }
 
     private class EmojiAdapter(spanCount: Int) : Adapter<ViewHolder>() {

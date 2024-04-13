@@ -29,23 +29,27 @@
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
+
         <activity
-            android:name=".OverlayInputActivity"
+            android:name=".basic.message.MessageListActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".ImeAnimatorActivity"
+            android:name=".basic.InitCompatActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".MessageListActivity"
+            android:name=".editor_adapter.StatefulActivity"
+          />
+        <activity
+            android:name=".editor_adapter.fragment.FragmentEditorAdapterActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".InitCompatActivity"
+            android:name=".editor_animator.AnimationInterceptorActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".fragment.FragmentEditorAdapterActivity"
+            android:name=".editor_animator.ImeAnimatorActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".edit.VideoEditActivity"
+            android:name=".scene.videoedit.VideoEditActivity"
             android:screenOrientation="portrait" />
     </application>
 

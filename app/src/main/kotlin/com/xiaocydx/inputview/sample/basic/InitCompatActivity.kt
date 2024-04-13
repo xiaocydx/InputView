@@ -1,12 +1,12 @@
-package com.xiaocydx.inputview.sample
+package com.xiaocydx.inputview.sample.basic
 
 import android.os.Bundle
 import android.view.WindowInsets
 import androidx.appcompat.app.AppCompatActivity
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.initCompat
+import com.xiaocydx.inputview.sample.basic.message.init
 import com.xiaocydx.inputview.sample.databinding.MessageListBinding
-import com.xiaocydx.inputview.sample.message.init
 import com.xiaocydx.insets.systembar.EdgeToEdge
 import com.xiaocydx.insets.systembar.SystemBar
 

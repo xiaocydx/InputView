@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample
+package com.xiaocydx.inputview.sample.editor_animator
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -9,6 +9,7 @@ import com.xiaocydx.inputview.addEditText
 import com.xiaocydx.inputview.animator
 import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.databinding.ActivityImeAnimatorBinding
+import com.xiaocydx.inputview.sample.onClick
 import com.xiaocydx.insets.insets
 
 /**
@@ -48,7 +49,7 @@ class ImeAnimatorActivity : AppCompatActivity() {
             root.updatePadding(bottom = bottom.coerceAtLeast(0))
         })
 
-        // 5. 碰到OverlayInputActivity的多Window交互问题，仍可以通过动画拦截器解决
+        // 5. 碰到AnimationInterceptorActivity的多Window交互问题，仍可以通过动画拦截器解决
         // animator.setWindowFocusInterceptor()
         // imageView.onClick { InputDialog(this@ImeAnimatorActivity).show() }
     }

@@ -1,23 +1,25 @@
-@file:Suppress("OPT_IN_USAGE")
-
-package com.xiaocydx.inputview.sample.edit
+package com.xiaocydx.inputview.sample.scene.videoedit
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
 import com.xiaocydx.inputview.EditorMode
 import com.xiaocydx.inputview.FadeEditorAnimator
+import com.xiaocydx.inputview.FragmentEditorAdapter
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.addAnimationCallback
 import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.databinding.ActivityVideoEditBinding
-import com.xiaocydx.inputview.sample.edit.VideoEditor.Audio
-import com.xiaocydx.inputview.sample.edit.VideoEditor.Image
-import com.xiaocydx.inputview.sample.edit.VideoEditor.Text.Emoji
-import com.xiaocydx.inputview.sample.edit.VideoEditor.Text.Input
-import com.xiaocydx.inputview.sample.edit.VideoEditor.Text.Style
-import com.xiaocydx.inputview.sample.edit.VideoEditor.Video
+import com.xiaocydx.inputview.sample.editor_adapter.fragment.EmojiFragment
 import com.xiaocydx.inputview.sample.isDispatchTouchEventEnabled
 import com.xiaocydx.inputview.sample.onClick
+import com.xiaocydx.inputview.sample.scene.videoedit.VideoEditor.Audio
+import com.xiaocydx.inputview.sample.scene.videoedit.VideoEditor.Image
+import com.xiaocydx.inputview.sample.scene.videoedit.VideoEditor.Text.Emoji
+import com.xiaocydx.inputview.sample.scene.videoedit.VideoEditor.Text.Input
+import com.xiaocydx.inputview.sample.scene.videoedit.VideoEditor.Text.Style
+import com.xiaocydx.inputview.sample.scene.videoedit.VideoEditor.Video
 import com.xiaocydx.inputview.sample.transform.BoundsTransformation
 import com.xiaocydx.inputview.sample.transform.OverlayTransformation.ContainerState
 import com.xiaocydx.inputview.sample.transform.OverlayTransformationEnforcer
@@ -72,5 +74,18 @@ class VideoEditActivity : AppCompatActivity() {
             tvInput to Input, btnText to Emoji,
             btnVideo to Video, btnAudio to Audio, btnImage to Image
         ).forEach { (view, editor) -> view.onClick { enforcer.notify(editor) } }
+    }
+
+    private class VideoEditorAdapter(
+        fragmentActivity: FragmentActivity
+    ) : FragmentEditorAdapter<VideoEditor>(fragmentActivity) {
+        override val ime = Input
+
+        override fun getEditorKey(editor: VideoEditor) = editor.title
+
+        override fun onCreateFragment(editor: VideoEditor): Fragment {
+            if (editor == Emoji) return EmojiFragment()
+            return CommonFragment.newInstance(editor.title, editor.size)
+        }
     }
 }
