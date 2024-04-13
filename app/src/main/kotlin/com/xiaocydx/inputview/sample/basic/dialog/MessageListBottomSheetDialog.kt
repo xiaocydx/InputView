@@ -1,8 +1,7 @@
 @file:Suppress("ConstPropertyName")
 
-package com.xiaocydx.inputview.sample.dialog
+package com.xiaocydx.inputview.sample.basic.dialog
 
-import android.app.Dialog
 import android.content.Context
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
@@ -20,18 +19,14 @@ import androidx.core.view.doOnLayout
 import androidx.core.view.updatePadding
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.bottomsheet.SimpleBottomSheetCallback
 import com.google.android.material.bottomsheet.disableEdgeToEdgeAndFitsSystemWindows
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.init
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor
+import com.xiaocydx.inputview.sample.basic.message.init
 import com.xiaocydx.inputview.sample.databinding.MessageListBinding
-import com.xiaocydx.inputview.sample.message.MessageEditor
-import com.xiaocydx.inputview.sample.message.init
-import com.xiaocydx.inputview.sample.suppressLayoutCompat
-
-private const val statusBarEdgeToEdge = true
-private const val gestureNavBarEdgeToEdge = true
+import com.xiaocydx.inputview.sample.common.suppressLayoutCompat
 
 /**
  * 视图初始化阶段调用[disableEdgeToEdgeAndFitsSystemWindows]，
@@ -74,6 +69,9 @@ class MessageListBottomSheetDialog(
         }
     }
 }
+
+private const val statusBarEdgeToEdge = true
+private const val gestureNavBarEdgeToEdge = true
 
 private class StatusBarEdgeToEdgeCallback(
     window: Window,

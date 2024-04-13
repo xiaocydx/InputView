@@ -4,7 +4,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.xiaocydx.inputview.sample.databinding.ItemMessageBinding
-import com.xiaocydx.inputview.sample.onClick
+import com.xiaocydx.inputview.sample.common.onClick
 
 /**
  * @author xcc

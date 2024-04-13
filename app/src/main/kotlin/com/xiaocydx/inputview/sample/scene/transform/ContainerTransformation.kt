@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.xiaocydx.inputview.sample.transform
+package com.xiaocydx.inputview.sample.scene.transform
 
 import android.view.View
 import com.xiaocydx.inputview.Editor
-import com.xiaocydx.inputview.sample.transform.OverlayTransformation.ContainerState
-import com.xiaocydx.inputview.sample.transform.OverlayTransformation.EnforcerScope
+import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.ContainerState
+import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.EnforcerScope
 import kotlinx.coroutines.CoroutineScope
 
 /**
@@ -61,7 +61,7 @@ abstract class ContainerTransformation<S : ContainerState>(
     /**
      * 调用自[launch]，当[editors]包含`state.current`时，该函数才被调用
      */
-    protected open fun onLaunch(state: S, scope: CoroutineScope) = Unit
+    protected open fun onLaunch(state: S, scope: EnforcerScope) = Unit
 
     /**
      * [editors]是否包含`state.previous`

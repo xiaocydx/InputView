@@ -16,7 +16,7 @@
 
 @file:Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
 
-package com.xiaocydx.inputview.sample.transform
+package com.xiaocydx.inputview.sample.scene.transform
 
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewTreeObserver
@@ -31,12 +31,13 @@ import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.current
 import com.xiaocydx.inputview.disableGestureNavBarOffset
 import com.xiaocydx.inputview.notifyHideCurrent
 import com.xiaocydx.inputview.notifyShow
-import com.xiaocydx.inputview.sample.transform.OverlayTransformation.EnforcerScope
-import com.xiaocydx.inputview.sample.transform.OverlayTransformation.State
-import com.xiaocydx.inputview.sample.transform.OverlayTransformation.StateProvider
+import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.EnforcerScope
+import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.State
+import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.StateProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.awaitCancellation
@@ -88,17 +89,20 @@ class OverlayTransformationEnforcer<T : Editor, S : State>(
     /**
      * 若[editor]为`null`，则通知隐藏，否则通知显示
      */
-    fun notify(editor: T?) {
+    fun notify(editor: T?): T? {
         if (editor == null) {
             editorAdapter.notifyHideCurrent()
         } else {
             editorAdapter.notifyShow(editor)
         }
+        return editorAdapter.current
     }
 
     private fun addToOnBackPressedDispatcher(dispatcher: OnBackPressedDispatcher) {
         val callback = object : OnBackPressedCallback(false) {
-            override fun handleOnBackPressed() = notify(null)
+            override fun handleOnBackPressed() {
+                notify(editor = null)
+            }
         }
         editorAdapter.addEditorChangedListener { _, current ->
             callback.isEnabled = current != null

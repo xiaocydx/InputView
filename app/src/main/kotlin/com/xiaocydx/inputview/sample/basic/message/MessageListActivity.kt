@@ -1,26 +1,44 @@
-package com.xiaocydx.inputview.sample.message
+package com.xiaocydx.inputview.sample.basic.message
 
 import android.annotation.SuppressLint
-import android.view.MotionEvent.ACTION_DOWN
+import android.os.Bundle
+import android.view.MotionEvent
 import android.view.Window
 import android.widget.ImageView
 import androidx.annotation.DrawableRes
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.doOnPreDraw
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.EditorMode
+import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.addAnimationCallback
 import com.xiaocydx.inputview.current
+import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.linearEditorOffset
 import com.xiaocydx.inputview.notifyHideCurrent
 import com.xiaocydx.inputview.notifyToggle
 import com.xiaocydx.inputview.sample.R
-import com.xiaocydx.inputview.sample.addOnItemTouchListener
+import com.xiaocydx.inputview.sample.common.addOnItemTouchListener
 import com.xiaocydx.inputview.sample.databinding.MessageListBinding
-import com.xiaocydx.inputview.sample.message.MessageEditor.*
-import com.xiaocydx.inputview.sample.onClick
+import com.xiaocydx.inputview.sample.common.onClick
+
+/**
+ * 消息列表的示例代码
+ *
+ * @author xcc
+ * @date 2023/1/8
+ */
+class MessageListActivity : AppCompatActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        InputView.init(window, gestureNavBarEdgeToEdge = true)
+        setContentView(MessageListBinding.inflate(layoutInflater).init(window).root)
+    }
+}
 
 /**
  * 内容区域包含[RecyclerView]，建议使用[EditorMode.ADJUST_PAN]，显示编辑器区域时平移内容区域，
@@ -108,7 +126,7 @@ private fun MessageListBinding.initScroll() {
 private fun MessageListBinding.initTouch(window: Window) {
     // 触摸RecyclerView隐藏当前MessageEditor
     rvMessage.addOnItemTouchListener(onInterceptTouchEvent = { _, ev ->
-        if (ev.action == ACTION_DOWN && inputView.editorAdapter.current !== VOICE) {
+        if (ev.action == MotionEvent.ACTION_DOWN && inputView.editorAdapter.current !== MessageEditor.VOICE) {
             inputView.editorAdapter.notifyHideCurrent()
         }
         false
@@ -126,18 +144,18 @@ private fun MessageListBinding.initTouch(window: Window) {
  */
 private fun MessageListBinding.initToggle(editorAdapter: EditorAdapter<MessageEditor>) {
     val actions = mutableMapOf<MessageEditor, Action>()
-    actions[VOICE] = Action(ivVoice, R.mipmap.ic_message_editor_voice)
-    actions[EMOJI] = Action(ivEmoji, R.mipmap.ic_message_editor_emoji)
-    actions[EXTRA] = Action(ivExtra, R.mipmap.ic_message_editor_extra, isKeep = true)
+    actions[MessageEditor.VOICE] = Action(ivVoice, R.mipmap.ic_message_editor_voice)
+    actions[MessageEditor.EMOJI] = Action(ivEmoji, R.mipmap.ic_message_editor_emoji)
+    actions[MessageEditor.EXTRA] = Action(ivExtra, R.mipmap.ic_message_editor_extra, isKeep = true)
     // 初始化各个按钮显示的图标
     actions.forEach { it.value.showSelfIcon() }
 
     editorAdapter.addEditorChangedListener { previous, current ->
-        if (previous === VOICE) {
+        if (previous === MessageEditor.VOICE) {
             tvVoice.isVisible = false
             etMessage.isVisible = true
-            if (current === IME) etMessage.requestFocus()
-        } else if (current === VOICE) {
+            if (current === MessageEditor.IME) etMessage.requestFocus()
+        } else if (current === MessageEditor.VOICE) {
             tvVoice.isVisible = true
             etMessage.isVisible = false
         }
@@ -145,9 +163,9 @@ private fun MessageListBinding.initToggle(editorAdapter: EditorAdapter<MessageEd
         current?.let(actions::get)?.takeIf { !it.isKeep }?.showImeIcon()
     }
 
-    ivVoice.onClick { editorAdapter.notifyToggle(VOICE) }
-    ivEmoji.onClick { editorAdapter.notifyToggle(EMOJI) }
-    ivExtra.onClick { editorAdapter.notifyToggle(EXTRA) }
+    ivVoice.onClick { editorAdapter.notifyToggle(MessageEditor.VOICE) }
+    ivEmoji.onClick { editorAdapter.notifyToggle(MessageEditor.EMOJI) }
+    ivExtra.onClick { editorAdapter.notifyToggle(MessageEditor.EXTRA) }
 }
 
 private class Action(

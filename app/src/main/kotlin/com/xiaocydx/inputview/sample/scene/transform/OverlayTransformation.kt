@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.xiaocydx.inputview.sample.transform
+package com.xiaocydx.inputview.sample.scene.transform
 
 import android.view.ViewGroup
 import androidx.annotation.FloatRange
@@ -22,7 +22,7 @@ import androidx.annotation.IntRange
 import com.xiaocydx.inputview.AnimationState
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.InputView
-import com.xiaocydx.inputview.sample.transform.OverlayTransformation.State
+import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.State
 import kotlinx.coroutines.CoroutineScope
 
 /**

@@ -1,27 +1,31 @@
-package com.xiaocydx.inputview.sample.scene.videoedit
+package com.xiaocydx.inputview.sample.scene.video
 
 import android.view.LayoutInflater
 import android.view.View
 import com.xiaocydx.inputview.sample.databinding.VideoCommonTitlebarBinding
 import com.xiaocydx.inputview.sample.databinding.VideoTextTitlebarBinding
-import com.xiaocydx.inputview.sample.onClick
-import com.xiaocydx.inputview.sample.transform.ContainerTransformation
-import com.xiaocydx.inputview.sample.transform.OverlayTransformation
-import com.xiaocydx.inputview.sample.transform.OverlayTransformation.ContainerState
-import com.xiaocydx.inputview.sample.transform.OverlayTransformation.State
+import com.xiaocydx.inputview.sample.common.onClick
+import com.xiaocydx.inputview.sample.scene.transform.ContainerTransformation
+import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation
+import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.ContainerState
+import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.State
+import java.lang.ref.WeakReference
 
 class PreviewTransformation(
-    private val preview: View
+    preview: View
 ) : OverlayTransformation<State> {
+    private val previewRef = WeakReference(preview)
     private val point = IntArray(2)
     private var bottom = 0
 
     override fun start(state: State) {
+        val preview = previewRef.get() ?: return
         preview.getLocationOnScreen(point)
         bottom = point[1] + preview.height
     }
 
     override fun update(state: State) {
+        val preview = previewRef.get() ?: return
         val dy = (bottom - state.currentAnchorY).coerceAtLeast(0)
         val scale = 1f - dy.toFloat() / preview.height
         preview.apply {

@@ -18,10 +18,10 @@ import com.xiaocydx.inputview.sample.basic.message.MessageEditor.EMOJI
 import com.xiaocydx.inputview.sample.basic.message.MessageEditor.EXTRA
 import com.xiaocydx.inputview.sample.basic.message.MessageEditor.IME
 import com.xiaocydx.inputview.sample.basic.message.MessageEditor.VOICE
-import com.xiaocydx.inputview.sample.dp
-import com.xiaocydx.inputview.sample.layoutParams
-import com.xiaocydx.inputview.sample.matchParent
-import com.xiaocydx.inputview.sample.wrapContent
+import com.xiaocydx.inputview.sample.common.dp
+import com.xiaocydx.inputview.sample.common.layoutParams
+import com.xiaocydx.inputview.sample.common.matchParent
+import com.xiaocydx.inputview.sample.common.wrapContent
 import com.xiaocydx.insets.insets
 
 /**

@@ -21,6 +21,7 @@ package androidx.transition
 
 import android.graphics.Rect
 import android.view.View
+import androidx.transition.ViewUtils
 
 inline fun View.getBounds(bounds: Rect, change: Rect.() -> Unit = {}) {
     bounds.set(left, top, right, bottom)

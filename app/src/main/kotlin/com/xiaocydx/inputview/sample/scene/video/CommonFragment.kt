@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.videoedit
+package com.xiaocydx.inputview.sample.scene.video
 
 import android.annotation.SuppressLint
 import android.graphics.Color
@@ -15,9 +15,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Lifecycle.State.RESUMED
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
-import com.xiaocydx.inputview.sample.dp
-import com.xiaocydx.inputview.sample.layoutParams
-import com.xiaocydx.inputview.sample.matchParent
+import com.xiaocydx.inputview.sample.common.dp
+import com.xiaocydx.inputview.sample.common.layoutParams
+import com.xiaocydx.inputview.sample.common.matchParent
 import com.xiaocydx.insets.insets
 
 /**

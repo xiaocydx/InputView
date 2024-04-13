@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:name=".App"
         android:allowBackup="true"
@@ -49,7 +51,10 @@
             android:name=".editor_animator.ImeAnimatorActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".scene.videoedit.VideoEditActivity"
+            android:name=".scene.video.VideoEditActivity"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".scene.figure.FigureEditActivity"
             android:screenOrientation="portrait" />
     </application>
 

@@ -5,10 +5,10 @@ import android.view.ViewGroup
 import android.view.Window
 import androidx.appcompat.widget.LinearLayoutCompat
 import com.google.android.material.textview.MaterialTextView
-import com.xiaocydx.inputview.sample.dp
-import com.xiaocydx.inputview.sample.matchParent
-import com.xiaocydx.inputview.sample.onClick
-import com.xiaocydx.inputview.sample.wrapContent
+import com.xiaocydx.inputview.sample.common.dp
+import com.xiaocydx.inputview.sample.common.matchParent
+import com.xiaocydx.inputview.sample.common.onClick
+import com.xiaocydx.inputview.sample.common.wrapContent
 import com.xiaocydx.insets.consumeInsets
 import com.xiaocydx.insets.navigationBars
 import com.xiaocydx.insets.requestApplyInsetsCompat

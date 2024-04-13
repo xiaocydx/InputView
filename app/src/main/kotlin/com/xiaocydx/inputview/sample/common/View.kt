@@ -1,16 +1,22 @@
-package com.xiaocydx.inputview.sample
+package com.xiaocydx.inputview.sample.common
 
 import android.annotation.SuppressLint
 import android.content.res.Resources
+import android.graphics.Outline
 import android.os.Build
 import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewOutlineProvider
 import android.view.Window
 import androidx.annotation.Px
+import androidx.core.view.doOnNextLayout
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.widget.ViewPager2
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 /**
  * [TypedValue.complexToDimensionPixelSize]的舍入逻辑，
@@ -106,6 +112,22 @@ inline fun RecyclerView.addOnItemTouchListener(
     }
 }.also(::addOnItemTouchListener)
 
+inline fun ViewPager2.registerOnPageChangeCallback(
+    crossinline onScrolled: (position: Int, positionOffset: Float, positionOffsetPixels: Int) -> Unit = { _, _, _ -> },
+    crossinline onSelected: (position: Int) -> Unit = {},
+    crossinline onScrollStateChanged: (state: Int) -> Unit = {}
+): ViewPager2.OnPageChangeCallback = object : ViewPager2.OnPageChangeCallback() {
+    override fun onPageScrolled(
+        position: Int,
+        positionOffset: Float,
+        positionOffsetPixels: Int
+    ) = onScrolled(position, positionOffset, positionOffsetPixels)
+
+    override fun onPageSelected(position: Int) = onSelected(position)
+
+    override fun onPageScrollStateChanged(state: Int) = onScrollStateChanged(state)
+}.also(::registerOnPageChangeCallback)
+
 var Window.isDispatchTouchEventEnabled: Boolean
     get() = callback is DisableDispatchTouchEvent
     set(value) {
@@ -129,5 +151,22 @@ private class DisableDispatchTouchEvent(
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         if (event.actionMasked == MotionEvent.ACTION_DOWN) return false
         return delegate.dispatchTouchEvent(event)
+    }
+}
+
+fun View.setRoundRectOutlineProvider(@Px corners: Int) {
+    clipToOutline = true
+    outlineProvider = RoundRectOutlineProvider(corners.toFloat())
+}
+
+private class RoundRectOutlineProvider(@Px private val corners: Float) : ViewOutlineProvider() {
+    override fun getOutline(view: View, outline: Outline) {
+        outline.setRoundRect(0, 0, view.width, view.height, corners)
+    }
+}
+
+suspend fun View.awaitNextLayout() {
+    suspendCancellableCoroutine { cont ->
+        doOnNextLayout { cont.resume(Unit) }
     }
 }

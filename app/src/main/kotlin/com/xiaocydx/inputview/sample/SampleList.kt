@@ -17,7 +17,8 @@ import com.xiaocydx.inputview.sample.editor_adapter.StatefulActivity
 import com.xiaocydx.inputview.sample.editor_adapter.fragment.FragmentEditorAdapterActivity
 import com.xiaocydx.inputview.sample.editor_animator.AnimationInterceptorActivity
 import com.xiaocydx.inputview.sample.editor_animator.ImeAnimatorActivity
-import com.xiaocydx.inputview.sample.scene.videoedit.VideoEditActivity
+import com.xiaocydx.inputview.sample.scene.figure.FigureEditActivity
+import com.xiaocydx.inputview.sample.scene.video.VideoEditActivity
 import kotlin.reflect.KClass
 
 /**
@@ -127,11 +128,16 @@ class SampleList {
     )
 
     private fun sceneList() = listOf(
-        Category(title = "Scene", selectedResId = unselectedId),
+        Category(title = "Case", selectedResId = unselectedId),
         StartActivity(
-            title = "VideoEdit",
-            desc = "剪辑类的交互场景",
+            title = "PreviewEdit",
+            desc = "预览编辑的交互案例",
             clazz = VideoEditActivity::class
+        ),
+        StartActivity(
+            title = "SelectEdit",
+            desc = "选中编辑的交互案例",
+            clazz = FigureEditActivity::class
         )
     )
 }

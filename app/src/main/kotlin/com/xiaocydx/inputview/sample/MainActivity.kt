@@ -16,6 +16,9 @@ import com.xiaocydx.cxrv.list.linear
 import com.xiaocydx.cxrv.list.submitList
 import com.xiaocydx.cxrv.multitype.listAdapter
 import com.xiaocydx.cxrv.multitype.register
+import com.xiaocydx.inputview.sample.common.dp
+import com.xiaocydx.inputview.sample.common.layoutParams
+import com.xiaocydx.inputview.sample.common.matchParent
 import com.xiaocydx.inputview.sample.databinding.ItemSampleCategoryBinding
 import com.xiaocydx.inputview.sample.databinding.ItemSampleElementBinding
 import com.xiaocydx.inputview.sample.databinding.SmapleHeaderBinding

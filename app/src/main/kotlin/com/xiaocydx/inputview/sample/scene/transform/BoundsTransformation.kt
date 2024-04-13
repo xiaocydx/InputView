@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.xiaocydx.inputview.sample.transform
+package com.xiaocydx.inputview.sample.scene.transform
 
 import android.graphics.Rect
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.view.ViewTreeObserver
 import androidx.transition.getBounds
 import androidx.transition.setLeftTopRightBottomCompat
-import com.xiaocydx.inputview.sample.transform.OverlayTransformation.ContainerState
-import com.xiaocydx.inputview.sample.transform.OverlayTransformation.EnforcerScope
+import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.ContainerState
+import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.EnforcerScope
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 
