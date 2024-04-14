@@ -108,7 +108,7 @@ class FigureEditOverlay(
         sharedViewModel.figureState
             .mapNotNull { it.pendingBegin }
             .onEach {
-                snapshotHolder.setValue(it.snapshot, it.editor)
+                snapshotHolder.setValue(it.snapshot, it.request)
                 val current = transformationEnforcer.notify(it.editor)
                 sharedViewModel.consumePendingSnapshot(current)
             }

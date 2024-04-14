@@ -33,14 +33,14 @@ class FigureView @JvmOverloads constructor(
     }
 
     val tvDubbing = AppCompatTextView(context).apply {
+        maxLines = 1
+        minWidth = 45.dp
         gravity = Gravity.CENTER
-        includeFontPadding = false
         verticalPadding = 5.dp
-        horizontalPadding = 8.dp
         setTextColor(Color.WHITE)
         setBackgroundColor(0x4D000000)
         setRoundRectOutlineProvider(4.dp)
-        setTextSize(TypedValue.COMPLEX_UNIT_PX, 12.sp.toFloat())
+        setTextSize(TypedValue.COMPLEX_UNIT_PX, 11.sp.toFloat())
         addView(this, wrapContent, wrapContent) {
             rightMargin = 4.dp
             bottomMargin = 6.dp

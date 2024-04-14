@@ -100,7 +100,9 @@ class FigureViewModel : ViewModel() {
      * 消费待处理的`editor`，提交待处理的[snapshot]，由覆盖层调用[consumePendingSnapshot]
      */
     fun consumePendingEditor(snapshot: FigureSnapshot) = _figureState.update {
-        it.copy(pendingTransform = PendingTransform.Begin(snapshot, it.pendingEditor?.value))
+        val editor = it.pendingEditor?.value
+        val request = it.pendingEditor?.request ?: false
+        it.copy(pendingTransform = PendingTransform.Begin(snapshot, editor, request))
     }
 
     /**
@@ -126,9 +128,20 @@ data class FigureState(
         get() = pendingTransform as? PendingTransform.Begin
 }
 
-data class PageInvisible(val figure: Boolean = false, val text: Boolean = false)
+data class PageInvisible(
+    val figure: Boolean = false,
+    val text: Boolean = false
+)
 
 sealed class PendingTransform {
-    data class Editor(val value: FigureEditor?, val request: Boolean) : PendingTransform()
-    data class Begin(val snapshot: FigureSnapshot, val editor: FigureEditor?) : PendingTransform()
+    data class Editor(
+        val value: FigureEditor?,
+        val request: Boolean
+    ) : PendingTransform()
+
+    data class Begin(
+        val snapshot: FigureSnapshot,
+        val editor: FigureEditor?,
+        val request: Boolean
+    ) : PendingTransform()
 }

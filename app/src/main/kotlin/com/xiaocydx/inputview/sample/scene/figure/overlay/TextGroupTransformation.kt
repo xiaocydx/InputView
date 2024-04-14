@@ -10,8 +10,8 @@ import androidx.transition.updatePaddings
 import com.xiaocydx.inputview.sample.common.dp
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.FigureTextLayoutBinding
-import com.xiaocydx.inputview.sample.scene.figure.ViewBounds
 import com.xiaocydx.inputview.sample.scene.figure.FigureState
+import com.xiaocydx.inputview.sample.scene.figure.ViewBounds
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.DUBBING
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.EMOJI
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.GRID
@@ -67,8 +67,11 @@ class TextGroupTransformation(
         when {
             !isPrevious(state) -> {
                 inputView.editText = binding.editText
-                if (current == INPUT) inputView.editText?.requestFocus()
-                if (current == INPUT) binding.editText.setText(figureState().currentText)
+                if (current == INPUT) {
+                    inputView.editText?.requestFocus()
+                    binding.editText.setText(figureState().currentText)
+                    binding.editText.setSelection(binding.editText.text.length)
+                }
             }
             !isCurrent(state) -> {
                 inputView.editText = null

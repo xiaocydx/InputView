@@ -16,7 +16,6 @@
 
 package com.xiaocydx.inputview.sample.scene.transform
 
-import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.EnforcerScope
 import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.State
 import kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST
@@ -38,9 +37,9 @@ class OverlayStateExtraHolder<T : Any>(value: T) : OverlayTransformation<State> 
     var value = value
         private set
 
-    fun setValue(value: T, current: Editor?) {
+    fun setValue(value: T, request: Boolean) {
         this.value = value
-        if (current != null) receiver.tryEmit(Unit)
+        if (request) receiver.tryEmit(Unit)
     }
 
     override fun launch(state: State, scope: EnforcerScope) {
