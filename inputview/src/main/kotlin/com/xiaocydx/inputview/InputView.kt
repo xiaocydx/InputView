@@ -267,8 +267,7 @@ class InputView @JvmOverloads constructor(
         val previous = editorOffset
         editorOffset = current
 
-        val contentView = contentView
-        if (contentView == null || isLayoutRequested) {
+        if (isLayoutRequested) {
             // isLayoutRequested = true，已经申请重新布局
             return
         }
@@ -284,10 +283,10 @@ class InputView @JvmOverloads constructor(
                     previous > threshold && current < threshold -> previous - threshold
                     else -> Int.MIN_VALUE
                 }
-                if (contentDiff != Int.MIN_VALUE) {
-                    ViewCompat.offsetTopAndBottom(contentView, contentDiff)
+                if (contentDiff != Int.MIN_VALUE && contentView != null) {
+                    ViewCompat.offsetTopAndBottom(contentView!!, contentDiff)
                 }
-                updateEditorBackground(top = contentView.bottom)
+                updateEditorBackground()
             }
             EditorMode.ADJUST_RESIZE -> requestLayout()
         }
@@ -296,7 +295,6 @@ class InputView @JvmOverloads constructor(
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         checkContentView()
-        val contentView = contentView ?: return
         enterLayout()
         enterChange()
         // 消费PendingChange，仅在measure阶段创建、添加、移除子View
@@ -318,31 +316,33 @@ class InputView @JvmOverloads constructor(
             if (offset >= 0) editorOffset = offset
         }
 
-        val horizontalMargin = contentView.let { it.marginLeft + it.marginRight }
-        val verticalMargin = contentView.let { it.marginTop + it.marginBottom }
-        val maxContentWidth = measuredWidth - horizontalMargin
-        var maxContentHeight = measuredHeight - verticalMargin - navBarOffset
-        if (editorMode === EditorMode.ADJUST_RESIZE) {
-            maxContentHeight -= getLayoutOffset()
-        }
-        contentView.measure(
-            when (val width = contentView.layoutParams.width) {
-                MATCH_PARENT -> maxContentWidth.toExactlyMeasureSpec()
-                WRAP_CONTENT -> maxContentWidth.toAtMostMeasureSpec()
-                else -> width.coerceAtMost(maxContentWidth).toExactlyMeasureSpec()
-            },
-            when (val height = contentView.layoutParams.height) {
-                MATCH_PARENT -> maxContentHeight.toExactlyMeasureSpec()
-                WRAP_CONTENT -> maxContentHeight.toAtMostMeasureSpec()
-                else -> height.coerceAtMost(maxContentHeight).toExactlyMeasureSpec()
+        val contentView = contentView
+        if (contentView != null) {
+            val horizontalMargin = contentView.let { it.marginLeft + it.marginRight }
+            val verticalMargin = contentView.let { it.marginTop + it.marginBottom }
+            val maxContentWidth = measuredWidth - horizontalMargin
+            var maxContentHeight = measuredHeight - verticalMargin - navBarOffset
+            if (editorMode === EditorMode.ADJUST_RESIZE) {
+                maxContentHeight -= getLayoutOffset()
             }
-        )
+            contentView.measure(
+                when (val width = contentView.layoutParams.width) {
+                    MATCH_PARENT -> maxContentWidth.toExactlyMeasureSpec()
+                    WRAP_CONTENT -> maxContentWidth.toAtMostMeasureSpec()
+                    else -> width.coerceAtMost(maxContentWidth).toExactlyMeasureSpec()
+                },
+                when (val height = contentView.layoutParams.height) {
+                    MATCH_PARENT -> maxContentHeight.toExactlyMeasureSpec()
+                    WRAP_CONTENT -> maxContentHeight.toAtMostMeasureSpec()
+                    else -> height.coerceAtMost(maxContentHeight).toExactlyMeasureSpec()
+                }
+            )
+        }
         exitChange()
         exitLayout()
     }
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
-        val contentView = contentView ?: return
         enterLayout()
         enterChange()
         // 基于inputView底部向下布局editorView，
@@ -356,22 +356,21 @@ class InputView @JvmOverloads constructor(
         }
 
         // 基于editorView顶部向上布局contentView
-        contentView.let {
+        contentView?.let {
             val left = (width - it.measuredWidth) / 2
             val bottom = height - it.marginBottom - navBarOffset - getLayoutOffset()
             val right = left + it.measuredWidth
             val top = bottom - it.measuredHeight
             it.layout(left, top, right, bottom)
         }
-        updateEditorBackground(top = contentView.bottom)
+        updateEditorBackground()
         exitChange()
         exitLayout()
     }
 
     override fun onDraw(canvas: Canvas) {
         if (window == null) requireViewTreeWindow()
-        val contentView = contentView ?: return
-        editorBackground?.setBounds(0, contentView.bottom, width, height)
+        editorBackground?.setBounds(0, getEditorBackgroundTop(), width, height)
         editorBackground?.takeIf { it.bounds.height() > 0 }?.draw(canvas)
     }
 
@@ -408,8 +407,13 @@ class InputView @JvmOverloads constructor(
         return (editorOffset - navBarOffset).coerceAtLeast(0)
     }
 
-    private fun updateEditorBackground(top: Int) {
+    private fun updateEditorBackground() {
+        val top = getEditorBackgroundTop()
         editorBackground?.takeIf { it.bounds.top != top }?.invalidateSelf()
+    }
+
+    private fun getEditorBackgroundTop(): Int {
+        return height - navBarOffset - getLayoutOffset()
     }
 
     override fun verifyDrawable(who: Drawable): Boolean {

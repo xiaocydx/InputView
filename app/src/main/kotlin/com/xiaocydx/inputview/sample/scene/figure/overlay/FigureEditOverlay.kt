@@ -51,8 +51,6 @@ class FigureEditOverlay(
             editorMode = EditorMode.ADJUST_PAN
             setEditorBackgroundColor(0xFF1D1D1D.toInt())
         }
-        // TODO: 修改InputView实现后再去除
-        inputView.addView(View(activity))
         root.addView(container, matchParent, matchParent)
         root.addView(inputView, matchParent, matchParent)
     }
