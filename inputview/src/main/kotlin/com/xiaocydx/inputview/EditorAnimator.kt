@@ -402,7 +402,8 @@ abstract class EditorAnimator(
         }
 
         fun isImmediately(): Boolean {
-            return !canRunAnimation || immediately || startOffset == endOffset
+            return !canRunAnimation || immediately
+                    || (previous === current && startOffset == endOffset)
         }
 
         override fun isIme(editor: Editor?): Boolean {
