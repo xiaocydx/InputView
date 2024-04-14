@@ -191,9 +191,7 @@ abstract class EditorAnimator(
     private fun dispatchAnimationEnd(record: AnimationRecord) {
         if (record.checkAnimationOffset()) {
             record.updateAnimationToEnd()
-            if (host != null && host!!.editorOffset != record.endOffset) {
-                dispatchAnimationUpdate(record)
-            }
+            dispatchAnimationUpdate(record)
             dispatchAnimationCallback { onAnimationEnd(record) }
         }
         record.removeStartViewIfNecessary()
