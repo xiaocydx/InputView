@@ -213,30 +213,20 @@ class FadeEditorAnimator(
         matchNull: Boolean = false,
         start: Boolean
     ) = with(state) {
-        var startValue = startOffset
-        var endValue = endOffset
-        var current = (startValue + (endValue - startValue) * animatedFraction).toInt()
-        if (startValue > endValue) {
-            // 反转start到end的过程，只按start < end计算alpha
-            val diff = startValue - current
-            startValue = endValue.also { endValue = startValue }
-            current = startValue + diff
-        }
-        val threshold = (endValue - startValue) * thresholdFraction
+        val current = animatedFraction
+        val threshold = thresholdFraction
         when {
             matchNull && startView == null && endView != null -> {
-                if (start) 0f else animatedFraction
+                if (start) 0f else current
             }
             matchNull && startView != null && endView == null -> {
-                if (start) 1 - animatedFraction else 0f
+                if (start) 1 - current else 0f
             }
-            current >= 0 && current <= startValue + threshold -> {
-                val fraction = (current - startValue) / threshold
-                if (start) 1 - fraction else 0f
+            current <= threshold -> {
+                if (start) 1f - (current / threshold) else 0f
             }
-            current >= endValue - threshold && current <= endValue -> {
-                val fraction = (current - (endValue - threshold)) / threshold
-                if (start) 0f else fraction
+            current >= 1f - threshold -> {
+                if (start) 0f else (current - (1f - threshold)) / threshold
             }
             else -> 0f
         }
