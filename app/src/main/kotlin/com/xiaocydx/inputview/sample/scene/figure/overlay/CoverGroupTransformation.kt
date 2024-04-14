@@ -8,8 +8,8 @@ import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import com.bumptech.glide.RequestManager
 import com.xiaocydx.inputview.sample.common.dp
-import com.xiaocydx.inputview.sample.scene.figure.FigureBounds
-import com.xiaocydx.inputview.sample.scene.figure.FigureViewModel
+import com.xiaocydx.inputview.sample.scene.figure.Figure
+import com.xiaocydx.inputview.sample.scene.figure.ViewBounds
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.DUBBING
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.GRID
 import com.xiaocydx.inputview.sample.scene.figure.pager.FigureView
@@ -17,8 +17,7 @@ import com.xiaocydx.inputview.sample.scene.transform.ContainerTransformation
 import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.EnforcerScope
 import com.xiaocydx.insets.getRootWindowInsetsCompat
 import com.xiaocydx.insets.statusBarHeight
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
@@ -28,8 +27,10 @@ import kotlinx.coroutines.flow.onEach
  */
 class CoverGroupTransformation(
     private val requestManager: RequestManager,
-    private val sharedViewModel: FigureViewModel
-) : ContainerTransformation<FigureContainerState>(GRID, DUBBING) {
+    private val updateCurrent: Flow<Figure?>,
+    private val currentFigure: () -> Figure?,
+    private val requestSnapshot: (FigureEditor?) -> Unit
+) : ContainerTransformation<FigureSnapshotState>(GRID, DUBBING) {
     private var view: FigureView? = null
     private val margins = 20.dp
     private val marginTop = 10.dp
@@ -39,14 +40,14 @@ class CoverGroupTransformation(
     private var startTransY = 0f
     private var endTransY = 0f
 
-    override fun getView(state: FigureContainerState): View {
+    override fun getView(state: FigureSnapshotState): View {
         return view ?: FigureView(state.container.context).also { view = it }
     }
 
-    override fun onPrepare(state: FigureContainerState) {
+    override fun onPrepare(state: FigureSnapshotState) = with(state) {
         val view = view ?: return
-        val figure = state.snapshot.figure
-        val bounds = state.snapshot.figureBounds
+        val figure = currentFigure()
+        val bounds = snapshot.figureBounds
         if (figure == null || bounds == null) {
             view.isInvisible = true
             return
@@ -62,7 +63,7 @@ class CoverGroupTransformation(
         view.setFigure(requestManager, figure)
     }
 
-    override fun onStart(state: FigureContainerState) {
+    override fun onStart(state: FigureSnapshotState) {
         val view = view ?: return
         val bounds = state.snapshot.figureBounds ?: return
         // 基于初始状态，计算view变换的起始值和结束值
@@ -73,37 +74,35 @@ class CoverGroupTransformation(
         endTransY = calculateTransY(state, state.endAnchorY, endScale, bounds)
     }
 
-    override fun onUpdate(state: FigureContainerState) {
+    override fun onUpdate(state: FigureSnapshotState) = with(state) {
         val view = view ?: return
-        val alpha = when {
-            state.previous != null && state.current != null -> 0f
-            state.current != null -> 1f - state.interpolatedFraction
-            else -> state.interpolatedFraction
+        val childAlpha = when {
+            previous != null && current != null -> 0f
+            current != null -> 1f - interpolatedFraction
+            else -> interpolatedFraction
         }
         for (i in 0 until view.childCount) {
             val child = view.getChildAt(i)
             if (child === view.ivCover) continue
-            child.alpha = alpha
+            child.alpha = childAlpha
         }
-        val scale = startScale + (endScale - startScale) * state.interpolatedFraction
+        val scale = startScale + (endScale - startScale) * interpolatedFraction
         view.scaleX = scale
         view.scaleY = scale
-        view.translationY = startTransY + (endTransY - startTransY) * state.interpolatedFraction
+        view.translationY = startTransY + (endTransY - startTransY) * interpolatedFraction
     }
 
-    override fun onLaunch(state: FigureContainerState, scope: EnforcerScope) {
-        // 首次变换已完成，drop(count = 1)过滤掉首次发射值
-        sharedViewModel.currentFigureFlow().drop(count = 1).onEach {
-            // 当前数字人已变更，请求新的快照
-            val editor = requireNotNull(state.current as? FigureEditor)
-            sharedViewModel.submitPendingEditor(editor, request = true)
+    override fun onLaunch(state: FigureSnapshotState, scope: EnforcerScope) {
+        updateCurrent.onEach {
+            // 当前数字人已变更，请求分发新的快照
+            requestSnapshot(requireNotNull(state.current as? FigureEditor))
         }.launchIn(scope)
     }
 
     private fun calculateScale(
-        state: FigureContainerState,
+        state: FigureSnapshotState,
         endAnchorY: Int,
-        bounds: FigureBounds?
+        bounds: ViewBounds?
     ) = state.run {
         if (bounds == null || endAnchorY == initialAnchorY) return@run 1f
         val startHeight = bounds.height
@@ -119,9 +118,9 @@ class CoverGroupTransformation(
     }
 
     private fun calculateTransY(
-        state: FigureContainerState,
+        state: FigureSnapshotState,
         endAnchorY: Int,
-        endScale: Float, bounds: FigureBounds?
+        endScale: Float, bounds: ViewBounds?
     ) = state.run {
         if (bounds == null || endAnchorY == initialAnchorY) return@run 0f
         var top = topY + marginTop

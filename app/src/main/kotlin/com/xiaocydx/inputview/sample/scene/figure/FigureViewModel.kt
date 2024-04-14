@@ -26,15 +26,15 @@ class FigureViewModel : ViewModel() {
         get() = figureList.getOrNull(_figureState.value.currentPosition)
 
     init {
-        refresh()
-    }
-
-    fun refresh() {
         figureList.submit(FigureSource.generateList(size = 50))
     }
 
     fun currentFigureFlow(): Flow<Figure?> {
         return _figureState.map { currentFigure }.distinctUntilChanged()
+    }
+
+    fun currentEditorFlow(): Flow<FigureEditor?> {
+        return _figureState.map { it.currentEditor }.distinctUntilChanged()
     }
 
     fun selectPosition(position: Int) {
@@ -47,6 +47,17 @@ class FigureViewModel : ViewModel() {
 
     fun setPageInvisible(invisible: PageInvisible) {
         _figureState.update { it.copy(pageInvisible = invisible) }
+    }
+
+    fun confirmDubbing(dubbing: Dubbing?) {
+        val position = _figureState.value.currentPosition
+        val current = figureList.getOrNull(position) ?: return
+        figureList[position] = current.copy(dubbing = dubbing ?: Dubbing())
+        submitPendingEditor(editor = null)
+    }
+
+    fun saveText(text: String?) {
+        _figureState.update { it.copy(currentText = text ?: "") }
     }
 
     /**
@@ -78,7 +89,10 @@ class FigureViewModel : ViewModel() {
      * 提交待处理的[editor]，由视图生成[FigureSnapshot]，调用[consumePendingSnapshot]
      */
     fun submitPendingEditor(editor: FigureEditor?, request: Boolean = false) {
-        if (!request && _figureState.value.currentEditor == editor) return
+        val state = _figureState.value
+        if (!request && state.currentEditor == editor) return
+        if (request && state.pendingEditor != null) return
+        if (state.pendingBegin != null) return
         _figureState.update { it.copy(pendingTransform = PendingTransform.Editor(editor, request)) }
     }
 
@@ -100,13 +114,21 @@ class FigureViewModel : ViewModel() {
 data class FigureState(
     val currentPosition: Int = NO_POSITION,
     val currentEditor: FigureEditor? = null,
+    val currentText: String = "",
     val pendingRemove: Figure? = null,
     val pendingTransform: PendingTransform? = null,
-    val pageInvisible: PageInvisible = PageInvisible()
+    val pageInvisible: PageInvisible = PageInvisible(),
 ) {
     val pendingEditor: PendingTransform.Editor?
         get() = pendingTransform as? PendingTransform.Editor
 
     val pendingBegin: PendingTransform.Begin?
         get() = pendingTransform as? PendingTransform.Begin
+}
+
+data class PageInvisible(val figure: Boolean = false, val text: Boolean = false)
+
+sealed class PendingTransform {
+    data class Editor(val value: FigureEditor?, val request: Boolean) : PendingTransform()
+    data class Begin(val snapshot: FigureSnapshot, val editor: FigureEditor?) : PendingTransform()
 }

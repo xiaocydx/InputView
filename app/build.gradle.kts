@@ -41,6 +41,7 @@ dependencies {
     val cxrvVersion = "1.5.4"
     implementation("com.github.xiaocydx.CXRV:cxrv:${cxrvVersion}")
     implementation("com.github.xiaocydx.CXRV:cxrv-binding:${cxrvVersion}")
+    implementation("com.github.xiaocydx.CXRV:cxrv-paging:${cxrvVersion}")
     implementation("com.github.xiaocydx.CXRV:cxrv-viewpager2:${cxrvVersion}")
 
     val insertsVersion = "1.1.4"

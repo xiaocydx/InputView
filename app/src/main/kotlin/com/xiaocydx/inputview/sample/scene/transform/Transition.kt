@@ -21,11 +21,16 @@ package androidx.transition
 
 import android.graphics.Rect
 import android.view.View
-import androidx.transition.ViewUtils
+import androidx.core.view.updatePadding
 
 inline fun View.getBounds(bounds: Rect, change: Rect.() -> Unit = {}) {
     bounds.set(left, top, right, bottom)
     bounds.change()
+}
+
+inline fun View.getPaddings(paddings: Rect, change: Rect.() -> Unit = {}) {
+    paddings.set(paddingLeft, paddingTop, paddingRight, paddingBottom)
+    paddings.change()
 }
 
 fun View.setLeftTopRightBottomCompat(rect: Rect) {
@@ -34,4 +39,8 @@ fun View.setLeftTopRightBottomCompat(rect: Rect) {
 
 fun View.setLeftTopRightBottomCompat(left: Int, top: Int, right: Int, bottom: Int) {
     ViewUtils.setLeftTopRightBottom(this, left, top, right, bottom)
+}
+
+fun View.updatePaddings(paddings: Rect) {
+    paddings.apply { updatePadding(left, top, right, bottom) }
 }

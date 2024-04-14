@@ -16,6 +16,7 @@
 
 package com.xiaocydx.inputview.sample.scene.transform
 
+import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.EnforcerScope
 import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.State
 import kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST
@@ -24,21 +25,23 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
 /**
- * [State]的额外状态持有类，不包含变换逻辑，负责请求分发[State]
+ * [State]的额外属性持有类，不包含变换逻辑，负责请求分发[State]
  *
  * @author xcc
  * @date 2024/4/13
  */
-class OverlayExtraStateHolder<T : Any>(value: T) : OverlayTransformation<State> {
+class OverlayStateExtraHolder<T : Any>(value: T) : OverlayTransformation<State> {
     private val receiver = MutableSharedFlow<Unit>(
         extraBufferCapacity = 1, onBufferOverflow = DROP_OLDEST
     )
 
     var value = value
-        set(value) {
-            field = value
-            receiver.tryEmit(Unit)
-        }
+        private set
+
+    fun setValue(value: T, current: Editor?) {
+        this.value = value
+        if (current != null) receiver.tryEmit(Unit)
+    }
 
     override fun launch(state: State, scope: EnforcerScope) {
         if (state.current == null) return

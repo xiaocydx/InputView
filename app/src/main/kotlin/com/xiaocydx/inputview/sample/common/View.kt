@@ -11,7 +11,7 @@ import android.view.ViewGroup
 import android.view.ViewOutlineProvider
 import android.view.Window
 import androidx.annotation.Px
-import androidx.core.view.doOnNextLayout
+import androidx.core.view.doOnPreDraw
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
@@ -62,6 +62,23 @@ inline fun View.onClick(crossinline block: () -> Unit) {
     setOnClickListener { block() }
 }
 
+suspend fun View.awaitPreDraw() {
+    suspendCancellableCoroutine { cont ->
+        doOnPreDraw { cont.resume(Unit) }
+    }
+}
+
+fun View.setRoundRectOutlineProvider(@Px corners: Int) {
+    clipToOutline = true
+    outlineProvider = RoundRectOutlineProvider(corners.toFloat())
+}
+
+private class RoundRectOutlineProvider(@Px private val corners: Float) : ViewOutlineProvider() {
+    override fun getOutline(view: View, outline: Outline) {
+        outline.setRoundRect(0, 0, view.width, view.height, corners)
+    }
+}
+
 /**
  * [ViewGroup.suppressLayout]的兼容函数
  */
@@ -93,6 +110,8 @@ private fun ViewGroup.hiddenSuppressLayout(suppress: Boolean) {
         }
     }
 }
+
+fun <T : RecyclerView> T.disableItemAnimator() = apply { itemAnimator = null }
 
 inline fun RecyclerView.addOnItemTouchListener(
     crossinline onInterceptTouchEvent: (rv: RecyclerView, ev: MotionEvent) -> Boolean = { _, _ -> false },
@@ -151,22 +170,5 @@ private class DisableDispatchTouchEvent(
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         if (event.actionMasked == MotionEvent.ACTION_DOWN) return false
         return delegate.dispatchTouchEvent(event)
-    }
-}
-
-fun View.setRoundRectOutlineProvider(@Px corners: Int) {
-    clipToOutline = true
-    outlineProvider = RoundRectOutlineProvider(corners.toFloat())
-}
-
-private class RoundRectOutlineProvider(@Px private val corners: Float) : ViewOutlineProvider() {
-    override fun getOutline(view: View, outline: Outline) {
-        outline.setRoundRect(0, 0, view.width, view.height, corners)
-    }
-}
-
-suspend fun View.awaitNextLayout() {
-    suspendCancellableCoroutine { cont ->
-        doOnNextLayout { cont.resume(Unit) }
     }
 }

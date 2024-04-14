@@ -25,16 +25,23 @@ import com.xiaocydx.cxrv.list.adapter
 import com.xiaocydx.cxrv.list.grid
 import com.xiaocydx.cxrv.list.listCollector
 import com.xiaocydx.cxrv.list.onEach
-import com.xiaocydx.inputview.sample.databinding.FragmentFigureGridBinding
-import com.xiaocydx.inputview.sample.databinding.ItemFigureGridBinding
+import com.xiaocydx.inputview.sample.common.disableItemAnimator
 import com.xiaocydx.inputview.sample.common.dp
 import com.xiaocydx.inputview.sample.common.launchRepeatOnLifecycle
 import com.xiaocydx.inputview.sample.common.onClick
-import com.xiaocydx.inputview.sample.scene.figure.Figure
-import com.xiaocydx.inputview.sample.scene.figure.FigureViewModel
 import com.xiaocydx.inputview.sample.common.setRoundRectOutlineProvider
 import com.xiaocydx.inputview.sample.common.viewLifecycle
+import com.xiaocydx.inputview.sample.common.viewLifecycleScope
+import com.xiaocydx.inputview.sample.databinding.FragmentFigureGridBinding
+import com.xiaocydx.inputview.sample.databinding.ItemFigureGridBinding
+import com.xiaocydx.inputview.sample.scene.figure.Figure
+import com.xiaocydx.inputview.sample.scene.figure.FigureViewModel
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.DUBBING
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.GRID
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.INPUT
 import com.xiaocydx.insets.insets
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
 /**
@@ -43,8 +50,8 @@ import kotlinx.coroutines.flow.onEach
  */
 class FigureGridFragment : Fragment() {
     private lateinit var binding: FragmentFigureGridBinding
-    private lateinit var selection: SingleSelection<Figure, String>
     private lateinit var figureAdapter: ListAdapter<Figure, *>
+    private lateinit var figureSelection: SingleSelection<Figure, String>
     private val sharedViewModel: FigureViewModel by activityViewModels()
 
     override fun onCreateView(
@@ -55,7 +62,8 @@ class FigureGridFragment : Fragment() {
         layoutInflater, container, false
     ).apply {
         binding = this
-        tvDubbing.onClick { sharedViewModel.submitPendingEditor(FigureEditor.DUBBING) }
+        tvInput.onClick { sharedViewModel.submitPendingEditor(INPUT) }
+        tvDubbing.onClick { sharedViewModel.submitPendingEditor(DUBBING) }
 
         val requestManager = Glide.with(this@FigureGridFragment)
         figureAdapter = bindingAdapter(
@@ -63,10 +71,9 @@ class FigureGridFragment : Fragment() {
             inflate = ItemFigureGridBinding::inflate
         ) {
             val corners = 8.dp
-            selection = singleSelection(itemKey = Figure::id)
+            figureSelection = singleSelection(itemKey = Figure::id)
             onCreateView {
                 ivCover.setRoundRectOutlineProvider(corners)
-                ivSelected.setRoundRectOutlineProvider(corners)
                 bgSelected.setRoundRectOutlineProvider(corners)
             }
             onBindView {
@@ -74,8 +81,8 @@ class FigureGridFragment : Fragment() {
                     .placeholder(ColorDrawable(0xFF212123.toInt()))
                     .transform(MultiTransformation(CenterCrop(), RoundedCorners(corners)))
                     .into(ivCover)
-                ivSelected.isVisible = selection.isSelected(holder)
-                bgSelected.isVisible = selection.isSelected(holder)
+                ivSelected.isVisible = figureSelection.isSelected(holder)
+                bgSelected.isVisible = figureSelection.isSelected(holder)
             }
             doOnSimpleLongItemClick {
                 sharedViewModel.submitPendingRemove(it)
@@ -84,27 +91,39 @@ class FigureGridFragment : Fragment() {
             doOnSimpleItemClick(sharedViewModel::selectFigure)
         }
 
-        rvFigure.grid(spanCount = 3).adapter(figureAdapter)
+        rvFigure.grid(spanCount = 3).disableItemAnimator()
             .divider { width(6.dp).height(6.dp).edge(Edge.all()) }
-            .apply { itemAnimator = null }
-            .insets().gestureNavBarEdgeToEdge()
+            .adapter(figureAdapter).insets().gestureNavBarEdgeToEdge()
     }.root
 
     override fun onViewCreated(
         view: View,
         savedInstanceState: Bundle?
     ): Unit = with(binding) {
+        // 收集数字人的列表数据流
         sharedViewModel.figureListFlow
             .onEach(figureAdapter.listCollector)
             .launchRepeatOnLifecycle(viewLifecycle)
 
-        val figureState = sharedViewModel.figureState
-        sharedViewModel.currentFigureFlow().onEach { current ->
-            if (current == null) {
-                selection.clearSelected()
-            } else if (selection.select(current)) {
-                rvFigure.scrollToPosition(figureState.value.currentPosition)
+        // 当前数字人改变，选中当前数字人
+        sharedViewModel.currentFigureFlow()
+            .onEach { current ->
+                if (current == null) {
+                    figureSelection.clearSelected()
+                } else {
+                    figureSelection.select(current)
+                }
             }
-        }.launchRepeatOnLifecycle(viewLifecycle)
+            .launchRepeatOnLifecycle(viewLifecycle)
+
+        // 当Editor更改为FigureEditor.GRID时，
+        // 选中当前数字人，并滚动到目标位置。
+        sharedViewModel.currentEditorFlow()
+            .filter { it == GRID }
+            .onEach {
+                val figureState = sharedViewModel.figureState.value
+                rvFigure.scrollToPosition(figureState.currentPosition)
+            }
+            .launchIn(viewLifecycleScope)
     }
 }

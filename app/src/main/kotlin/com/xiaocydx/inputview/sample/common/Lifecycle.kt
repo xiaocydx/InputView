@@ -16,6 +16,7 @@
 
 package com.xiaocydx.inputview.sample.common
 
+import android.os.Looper
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -32,6 +33,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 val Fragment.viewLifecycle: Lifecycle
     get() = viewLifecycleOwner.lifecycle
@@ -59,6 +62,17 @@ inline fun Lifecycle.doOnTargetState(
         action()
     }
 }.also(::addObserver)
+
+suspend fun Lifecycle.awaitTargetState(state: Lifecycle.State) {
+    if (currentState === state) return
+    suspendCancellableCoroutine { cont ->
+        val observer = doOnTargetState(state) { cont.resume(Unit) }
+        cont.invokeOnCancellation {
+            assert(Thread.currentThread() === Looper.getMainLooper().thread)
+            removeObserver(observer)
+        }
+    }
+}
 
 /**
  * 若`flow`的最后一个操作符是[Flow.flowWithLifecycle]，则可以调用该函数进行优化，

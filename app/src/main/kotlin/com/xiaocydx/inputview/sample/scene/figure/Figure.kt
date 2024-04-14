@@ -2,31 +2,26 @@ package com.xiaocydx.inputview.sample.scene.figure
 
 import android.view.View
 import androidx.annotation.CheckResult
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor
 
 data class Figure(
     val id: String,
     val coverUrl: String,
     val coverRatio: Float,
-    val dubbingName: String
+    val dubbing: Dubbing = Dubbing()
 )
 
 data class FigureSnapshot(
-    val figure: Figure? = null,
-    val figureBounds: FigureBounds? = null,
-    val text: String? = null,
-    val textBounds: FigureBounds? = null
+    val figureBounds: ViewBounds? = null,
+    val textBounds: ViewBounds? = null
 ) {
     @CheckResult
     fun merge(other: FigureSnapshot) = copy(
-        figure = figure ?: other.figure,
         figureBounds = figureBounds ?: other.figureBounds,
-        text = text ?: other.text,
         textBounds = textBounds ?: other.textBounds
     )
 }
 
-data class FigureBounds(
+data class ViewBounds(
     val left: Int = 0,
     val top: Int = 0,
     val right: Int = 0,
@@ -39,7 +34,7 @@ data class FigureBounds(
         fun from(view: View) = run {
             val out = IntArray(2)
             view.getLocationOnScreen(out)
-            FigureBounds(
+            ViewBounds(
                 left = out[0],
                 top = out[1],
                 right = out[0] + view.width,
@@ -49,9 +44,30 @@ data class FigureBounds(
     }
 }
 
-data class PageInvisible(val figure: Boolean = false, val text: Boolean = false)
+data class Dubbing(val id: String = "", val name: String = "配音")
 
-sealed class PendingTransform {
-    data class Editor(val value: FigureEditor?, val request: Boolean) : PendingTransform()
-    data class Begin(val snapshot: FigureSnapshot, val editor: FigureEditor?) : PendingTransform()
+object FigureSource {
+    private val coverUrls = listOf(
+        Url("https://cdn.pixabay.com/photo/2024/02/15/15/02/reading-8575569_1280.jpg", 1280, 1280),
+        Url("https://cdn.pixabay.com/photo/2024/04/08/22/01/ai-generated-8684629_1280.jpg", 853, 1280),
+        Url("https://cdn.pixabay.com/photo/2024/04/11/07/17/ai-generated-8689332_1280.png", 960, 1280),
+        Url("https://cdn.pixabay.com/photo/2023/12/27/07/50/ai-generated-8471595_960_720.jpg", 960, 720),
+        Url("https://cdn.pixabay.com/photo/2024/04/11/18/47/ai-generated-8690368_1280.jpg", 1024, 1280),
+        Url("https://cdn.pixabay.com/photo/2024/04/06/02/44/ai-generated-8678498_1280.png", 1280, 1280),
+        Url("https://cdn.pixabay.com/photo/2023/03/29/01/56/ai-generated-7884416_960_720.jpg", 960, 720),
+        Url("https://cdn.pixabay.com/photo/2024/02/17/16/08/ai-generated-8579697_1280.jpg", 1280, 1280),
+        Url("https://cdn.pixabay.com/photo/2024/04/04/21/13/ai-generated-8675958_960_720.jpg", 960, 720),
+    )
+
+    fun generateList(size: Int) = (1..size).map {
+        Figure(
+            id = it.toString(),
+            coverUrl = coverUrls[it % coverUrls.size].value,
+            coverRatio = coverUrls[it % coverUrls.size].ratio
+        )
+    }
+
+    private data class Url(val value: String, val width: Int, val height: Int) {
+        val ratio = width.toFloat() / height
+    }
 }

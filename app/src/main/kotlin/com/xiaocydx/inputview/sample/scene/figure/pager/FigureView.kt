@@ -16,8 +16,8 @@ import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.bumptech.glide.request.target.DrawableImageViewTarget
 import com.xiaocydx.inputview.sample.common.CustomLayout
 import com.xiaocydx.inputview.sample.common.layoutParams
-import com.xiaocydx.inputview.sample.scene.figure.Figure
 import com.xiaocydx.inputview.sample.common.setRoundRectOutlineProvider
+import com.xiaocydx.inputview.sample.scene.figure.Figure
 
 /**
  * @author xcc
@@ -33,15 +33,14 @@ class FigureView @JvmOverloads constructor(
     }
 
     val tvDubbing = AppCompatTextView(context).apply {
-        text = "配音"
         gravity = Gravity.CENTER
         includeFontPadding = false
         verticalPadding = 5.dp
         horizontalPadding = 8.dp
         setTextColor(Color.WHITE)
-        setBackgroundColor(0x33000000)
+        setBackgroundColor(0x4D000000)
         setRoundRectOutlineProvider(4.dp)
-        setTextSize(TypedValue.COMPLEX_UNIT_PX, 10.sp.toFloat())
+        setTextSize(TypedValue.COMPLEX_UNIT_PX, 12.sp.toFloat())
         addView(this, wrapContent, wrapContent) {
             rightMargin = 4.dp
             bottomMargin = 6.dp
@@ -55,11 +54,9 @@ class FigureView @JvmOverloads constructor(
     }
 
     fun setFigure(requestManager: RequestManager, figure: Figure) {
-        if (ratio != figure.coverRatio) {
-            ratio = figure.coverRatio
-            ivCover.requestLayout()
-        }
-        tvDubbing.text = figure.dubbingName
+        ratio = figure.coverRatio
+        ivCover.requestLayout()
+        tvDubbing.text = figure.dubbing.name
         requestManager.load(figure.coverUrl)
             .transform(MultiTransformation(CenterCrop(), RoundedCorners(corners)))
             .into(DrawableImageViewTarget(ivCover).waitForLayout())

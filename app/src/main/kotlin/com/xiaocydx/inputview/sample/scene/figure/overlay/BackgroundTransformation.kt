@@ -11,13 +11,13 @@ import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.Conta
  * @date 2024/4/13
  */
 class BackgroundTransformation(
-    private val submit: (FigureEditor?) -> Unit
+    private val showEditor: (FigureEditor?) -> Unit
 ) : OverlayTransformation<ContainerState> {
     private val background = ColorDrawable(0xFF111113.toInt())
 
     override fun prepare(state: ContainerState) = with(state) {
         container.isVisible = true
-        container.onClick { submit(null) }
+        container.onClick { showEditor(null) }
     }
 
     override fun start(state: ContainerState) {

@@ -11,6 +11,7 @@ import com.xiaocydx.inputview.sample.common.snackbar
 import com.xiaocydx.inputview.sample.databinding.ActivityFigureEditBinding
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditOverlay
 import com.xiaocydx.inputview.sample.scene.figure.pager.FigurePager
+import com.xiaocydx.inputview.sample.scene.figure.pager.TextPager
 import com.xiaocydx.insets.insets
 import com.xiaocydx.insets.navigationBars
 import kotlinx.coroutines.flow.filter
@@ -36,18 +37,29 @@ class FigureEditActivity : AppCompatActivity() {
         root.insets().paddings(navigationBars())
         val requestManager = Glide.with(this@FigureEditActivity)
 
+        val figurePager = FigurePager(
+            lifecycle = lifecycle,
+            viewPager2 = vpFigure,
+            requestManager = requestManager,
+            showEditor = sharedViewModel::submitPendingEditor,
+            removeFigure = sharedViewModel::submitPendingRemove,
+            selectPosition = sharedViewModel::selectPosition,
+            figureListFlow = sharedViewModel.figureListFlow,
+            figureState = sharedViewModel.figureState
+        ).init()
+
+        val textPager = TextPager(
+            lifecycle = lifecycle,
+            textView = tvFigure,
+            showEditor = sharedViewModel::submitPendingEditor,
+            figureState = sharedViewModel.figureState
+        ).init()
+
         FigureEditOverlay(
             activity = this@FigureEditActivity,
             requestManager = requestManager,
             sharedViewModel = sharedViewModel
         ).attachToWindow()
-
-        val figurePager = FigurePager(
-            lifecycle = lifecycle,
-            viewPager2 = vpFigure,
-            requestManager = requestManager,
-            sharedViewModel = sharedViewModel
-        ).init()
 
         sharedViewModel.figureState
             .filter { it.pendingRemove != null || it.pendingEditor != null }
@@ -57,7 +69,8 @@ class FigureEditActivity : AppCompatActivity() {
                     sharedViewModel.consumePendingRemove()
                 }
                 if (it.pendingEditor != null) {
-                    val snapshot = figurePager.awaitSnapshot()
+                    var snapshot = figurePager.awaitSnapshot()
+                    snapshot = snapshot.merge(textPager.snapshot())
                     sharedViewModel.consumePendingEditor(snapshot)
                 }
             }
