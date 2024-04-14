@@ -17,10 +17,10 @@ import com.xiaocydx.inputview.addAnimationCallback
 import com.xiaocydx.inputview.addEditText
 import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.notifyHideCurrent
-import com.xiaocydx.inputview.sample.databinding.ActivityAnimationInterceptorBinding
 import com.xiaocydx.inputview.sample.common.dp
 import com.xiaocydx.inputview.sample.common.layoutParams
 import com.xiaocydx.inputview.sample.common.onClick
+import com.xiaocydx.inputview.sample.databinding.ActivityAnimationInterceptorBinding
 import com.xiaocydx.inputview.setWindowFocusInterceptor
 
 /**

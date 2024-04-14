@@ -10,9 +10,9 @@ import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.FragmentEditorAdapter
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.init
-import com.xiaocydx.inputview.sample.databinding.MessageListBinding
 import com.xiaocydx.inputview.sample.basic.message.MessageEditor
 import com.xiaocydx.inputview.sample.basic.message.init
+import com.xiaocydx.inputview.sample.databinding.MessageListBinding
 
 /**
  * [FragmentEditorAdapter]的示例代码

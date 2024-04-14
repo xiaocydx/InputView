@@ -10,7 +10,6 @@ import com.xiaocydx.inputview.EditorChangedListener
 import com.xiaocydx.inputview.FragmentEditorAdapter
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.init
-import com.xiaocydx.inputview.notifyShow
 import com.xiaocydx.inputview.sample.basic.message.MessageEditor
 import com.xiaocydx.inputview.sample.basic.message.MessageEditorAdapter
 import com.xiaocydx.inputview.sample.basic.message.init

@@ -57,10 +57,10 @@ class OverlayTransformationEnforcer<T : Editor, S : State>(
     private val editorAdapter: EditorAdapter<T>,
     private val stateProvider: StateProvider<S>
 ) {
-    private var state: S? = null
     private var isAttached = false
+    private var dispatchingState: S? = null
     private val transformations = mutableListOf<OverlayTransformation<S>>()
-    private val enforceScope = EnforcerScopeImpl(owner.lifecycle)
+    private val enforcerScope = EnforcerScopeImpl(owner.lifecycle)
     private val animationCallback = AnimationCallbackImpl()
 
     /**
@@ -115,7 +115,7 @@ class OverlayTransformationEnforcer<T : Editor, S : State>(
     }
 
     private fun dispatch(state: State) {
-        if (state !== this.state) return
+        if (state !== dispatchingState) return
         dispatchTransformation { prepare(state) }
         dispatchTransformation { start(state) }
         dispatchTransformation { update(state) }
@@ -132,18 +132,18 @@ class OverlayTransformationEnforcer<T : Editor, S : State>(
         private val point = IntArray(2)
 
         override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
-            enforceScope.coroutineContext.cancelChildren()
-            state = stateProvider.createState().apply {
+            enforcerScope.coroutineContext.cancelChildren()
+            dispatchingState = stateProvider.createState().apply {
                 val params = inputView.layoutParams
                 require(params.width == MATCH_PARENT)
                 require(params.height == MATCH_PARENT)
             }
-            state!!.setEditor(previous, current)
-            dispatchTransformation { prepare(state!!) }
+            dispatchingState!!.setEditor(previous, current)
+            dispatchTransformation { prepare(dispatchingState!!) }
         }
 
         override fun onAnimationStart(animation: AnimationState) {
-            val state = state ?: return
+            val state = dispatchingState ?: return
             state.inputView.getLocationOnScreen(point)
             val initial = point[1] + state.inputView.height
             val start = initial - animation.startOffset
@@ -153,7 +153,7 @@ class OverlayTransformationEnforcer<T : Editor, S : State>(
         }
 
         override fun onAnimationUpdate(animation: AnimationState) {
-            val state = state ?: return
+            val state = dispatchingState ?: return
             if (animation.previous == null || animation.current == null) {
                 animation.startView?.alpha = 1f
                 animation.endView?.alpha = 1f
@@ -170,12 +170,12 @@ class OverlayTransformationEnforcer<T : Editor, S : State>(
         }
 
         override fun onAnimationEnd(animation: AnimationState) {
-            val state = state ?: return
+            val state = dispatchingState ?: return
             dispatchTransformation { end(state) }
             if (state.current != null) {
-                enforceScope.launch { collectAnchorYChange(state) }
+                enforcerScope.launch { collectAnchorYChange(state) }
             }
-            dispatchTransformation { launch(state, enforceScope) }
+            dispatchTransformation { launch(state, enforcerScope) }
         }
 
         private suspend fun collectAnchorYChange(state: S): Unit = with(state) {

@@ -1,6 +1,5 @@
 package com.xiaocydx.inputview.sample.scene.figure.overlay
 
-import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.fragment.app.FragmentActivity

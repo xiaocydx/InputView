@@ -2,9 +2,9 @@ package com.xiaocydx.inputview.sample.scene.video
 
 import android.view.LayoutInflater
 import android.view.View
+import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.VideoCommonTitlebarBinding
 import com.xiaocydx.inputview.sample.databinding.VideoTextTitlebarBinding
-import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.scene.transform.ContainerTransformation
 import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation
 import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.ContainerState

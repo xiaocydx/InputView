@@ -14,6 +14,7 @@ import com.xiaocydx.inputview.sample.scene.figure.pager.FigurePager
 import com.xiaocydx.inputview.sample.scene.figure.pager.TextPager
 import com.xiaocydx.insets.insets
 import com.xiaocydx.insets.navigationBars
+import com.xiaocydx.insets.statusBars
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.mapLatest
@@ -34,7 +35,7 @@ class FigureEditActivity : AppCompatActivity() {
     }
 
     private fun ActivityFigureEditBinding.init() = apply {
-        root.insets().paddings(navigationBars())
+        root.insets().paddings(statusBars() or navigationBars())
         val requestManager = Glide.with(this@FigureEditActivity)
 
         val figurePager = FigurePager(

@@ -25,8 +25,8 @@ import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.basic.message.MessageEditor
 import com.xiaocydx.inputview.sample.basic.message.init
-import com.xiaocydx.inputview.sample.databinding.MessageListBinding
 import com.xiaocydx.inputview.sample.common.suppressLayoutCompat
+import com.xiaocydx.inputview.sample.databinding.MessageListBinding
 
 /**
  * 视图初始化阶段调用[disableEdgeToEdgeAndFitsSystemWindows]，

@@ -8,8 +8,8 @@ import com.xiaocydx.inputview.addAnimationCallback
 import com.xiaocydx.inputview.addEditText
 import com.xiaocydx.inputview.animator
 import com.xiaocydx.inputview.init
-import com.xiaocydx.inputview.sample.databinding.ActivityImeAnimatorBinding
 import com.xiaocydx.inputview.sample.common.onClick
+import com.xiaocydx.inputview.sample.databinding.ActivityImeAnimatorBinding
 import com.xiaocydx.insets.insets
 
 /**

@@ -4,7 +4,6 @@ import androidx.fragment.app.FragmentActivity
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.FragmentEditorAdapter
 import com.xiaocydx.inputview.sample.editor_adapter.fragment.EmojiFragment
-import com.xiaocydx.inputview.sample.scene.video.CommonFragment
 
 /**
  * @author xcc

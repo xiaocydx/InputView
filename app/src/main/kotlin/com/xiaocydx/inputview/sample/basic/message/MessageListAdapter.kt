@@ -3,8 +3,8 @@ package com.xiaocydx.inputview.sample.basic.message
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.xiaocydx.inputview.sample.databinding.ItemMessageBinding
 import com.xiaocydx.inputview.sample.common.onClick
+import com.xiaocydx.inputview.sample.databinding.ItemMessageBinding
 
 /**
  * @author xcc

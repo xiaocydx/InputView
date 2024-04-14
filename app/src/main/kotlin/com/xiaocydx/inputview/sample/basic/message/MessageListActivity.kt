@@ -22,8 +22,8 @@ import com.xiaocydx.inputview.notifyHideCurrent
 import com.xiaocydx.inputview.notifyToggle
 import com.xiaocydx.inputview.sample.R
 import com.xiaocydx.inputview.sample.common.addOnItemTouchListener
-import com.xiaocydx.inputview.sample.databinding.MessageListBinding
 import com.xiaocydx.inputview.sample.common.onClick
+import com.xiaocydx.inputview.sample.databinding.MessageListBinding
 
 /**
  * 消息列表的示例代码

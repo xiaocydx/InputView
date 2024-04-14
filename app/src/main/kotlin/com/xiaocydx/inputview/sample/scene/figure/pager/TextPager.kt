@@ -5,10 +5,11 @@ import androidx.core.view.isInvisible
 import androidx.lifecycle.Lifecycle
 import com.xiaocydx.inputview.sample.common.launchRepeatOnLifecycle
 import com.xiaocydx.inputview.sample.common.onClick
-import com.xiaocydx.inputview.sample.scene.figure.ViewBounds
 import com.xiaocydx.inputview.sample.scene.figure.FigureSnapshot
 import com.xiaocydx.inputview.sample.scene.figure.FigureState
+import com.xiaocydx.inputview.sample.scene.figure.ViewBounds
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.INPUT
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.onEach
 
@@ -24,7 +25,7 @@ class TextPager(
 ) {
 
     fun init() = apply {
-        textView.onClick { showEditor(FigureEditor.INPUT) }
+        textView.onClick { showEditor(INPUT) }
         var text: String? = null
         var isInVisible: Boolean? = null
         figureState.onEach {

@@ -20,7 +20,6 @@ import android.view.View
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.ContainerState
 import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.EnforcerScope
-import kotlinx.coroutines.CoroutineScope
 
 /**
  * 覆盖层的容器变换动画，[editors]共用一个View和变换逻辑

@@ -35,6 +35,8 @@ import com.xiaocydx.inputview.sample.scene.figure.FigureSnapshot
 import com.xiaocydx.inputview.sample.scene.figure.FigureState
 import com.xiaocydx.inputview.sample.scene.figure.ViewBounds
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.DUBBING
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.GRID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.onEach
@@ -84,10 +86,10 @@ class FigurePager(
         ) {
             onBindView { figureView.setFigure(requestManager, it) }
             doOnItemClick(target = { binding.figureView }) { holder, _ ->
-                showOrScroll(holder, FigureEditor.GRID)
+                showOrScroll(holder, GRID)
             }
             doOnItemClick(target = { binding.figureView.tvDubbing }) { holder, _ ->
-                showOrScroll(holder, FigureEditor.DUBBING)
+                showOrScroll(holder, DUBBING)
             }
             doOnLongItemClick(target = { binding.figureView }) { holder, item ->
                 if (!isCurrent(holder)) return@doOnLongItemClick false

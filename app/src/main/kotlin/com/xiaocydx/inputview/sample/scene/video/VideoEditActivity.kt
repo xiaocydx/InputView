@@ -4,8 +4,8 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.init
-import com.xiaocydx.inputview.sample.databinding.ActivityVideoEditBinding
 import com.xiaocydx.inputview.sample.common.onClick
+import com.xiaocydx.inputview.sample.databinding.ActivityVideoEditBinding
 import com.xiaocydx.inputview.sample.scene.video.VideoEditor.Audio
 import com.xiaocydx.inputview.sample.scene.video.VideoEditor.Image
 import com.xiaocydx.inputview.sample.scene.video.VideoEditor.Text.Emoji

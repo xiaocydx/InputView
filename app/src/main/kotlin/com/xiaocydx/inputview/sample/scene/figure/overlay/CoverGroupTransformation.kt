@@ -1,6 +1,5 @@
 package com.xiaocydx.inputview.sample.scene.figure.overlay
 
-import android.graphics.Color
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.children
