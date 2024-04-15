@@ -617,7 +617,7 @@ interface AnimationCallback {
     /**
      * 动画准备
      *
-     * 该函数在测量阶段最先被调用，此时可以修改[InputView.editorMode]以及更新`contentView`。
+     * 该函数在布局之前被调用，此时可以修改[InputView.editorMode]以及更新`contentView`。
      *
      * @param previous 动画起始[Editor]
      * @param current  动画结束[Editor]

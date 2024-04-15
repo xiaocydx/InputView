@@ -67,6 +67,7 @@ class InputView @JvmOverloads constructor(
 ) : ViewGroup(context, attrs, defStyleAttr) {
     private val host = EditorHostImpl()
     private val editorView = EditorContainer(context)
+    private val consumeRunner = ConsumePendingRunner()
     private var imeFocusHandler = ImeFocusHandler(this)
     private var layoutCount = 0
     private var changeCount = 0
@@ -234,6 +235,13 @@ class InputView @JvmOverloads constructor(
         window?.let(host::onDetachedFromWindow)
     }
 
+    override fun dispatchApplyWindowInsets(insets: WindowInsets?): WindowInsets {
+        val applyInsets = super.dispatchApplyWindowInsets(insets)
+        // 尝试消费PendingChange，在处理完WindowInsets后，创建、添加、移除子View
+        consumePendingChange()
+        return applyInsets
+    }
+
     /**
      * [contentView]和[editorView]之间会有一个[navBarOffset]区域，
      * 当支持手势导航栏EdgeToEdge时，[navBarOffset]等于导航栏高度，此时显示[Editor]，
@@ -292,18 +300,25 @@ class InputView @JvmOverloads constructor(
         }
     }
 
+    private fun consumePendingChange() {
+        exitChange()
+        enterLayout()
+        consumeRunner.clear()
+        if (editorView.consumePendingChange()) {
+            val (previous, current, _, _, immediately) = editorView.changeRecord
+            editorAnimator.onPendingChanged(previous, current, immediately)
+        }
+        exitLayout()
+        enterChange()
+    }
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         checkContentView()
         enterLayout()
         enterChange()
-        // 消费PendingChange，仅在measure阶段创建、添加、移除子View
-        if (editorView.consumePendingChange()) {
-            val (previous, current, _, _, immediately) = editorView.changeRecord
-            exitChange()
-            editorAnimator.onPendingChanged(previous, current, immediately)
-            enterChange()
-        }
+        // 尝试消费PendingChange，在在measure阶段创建、添加、移除子View
+        consumePendingChange()
         editorView.measure(widthMeasureSpec, measuredHeight.toAtMostMeasureSpec())
 
         // 若消费PendingChange失败，则表示等待条件未满足，先不尝试修正editorOffset
@@ -383,11 +398,11 @@ class InputView @JvmOverloads constructor(
     private fun exitChange() = --changeCount
 
     private inline fun assertNotInLayout(reason: () -> String) {
-        check(layoutCount == 0) { "InputView布局期间，不允许${reason()}" }
+        check(layoutCount <= 0) { "InputView布局期间，不允许${reason()}" }
     }
 
     private inline fun asserNotInChange(reason: () -> String) {
-        check(changeCount == 0) { "InputView更改期间，不允许${reason()}" }
+        check(changeCount <= 0) { "InputView更改期间，不允许${reason()}" }
     }
 
     private fun Int.toExactlyMeasureSpec() = makeMeasureSpec(this, EXACTLY)
@@ -428,6 +443,25 @@ class InputView @JvmOverloads constructor(
         constructor(width: Int, height: Int) : super(width, height)
         constructor(source: MarginLayoutParams) : super(source)
         constructor(source: ViewGroup.LayoutParams) : super(source)
+    }
+
+    private inner class ConsumePendingRunner : Runnable {
+        private var isTriggered = false
+
+        fun trigger() {
+            if (isTriggered) return
+            isTriggered = true
+            ViewCompat.postOnAnimation(this@InputView, this)
+        }
+
+        fun clear() {
+            isTriggered = false
+        }
+
+        override fun run() {
+            // 尝试消费PendingChange，在animation阶段创建、添加、移除子View
+            consumePendingChange()
+        }
     }
 
     private inner class EditorHostImpl : EditorHost {
@@ -496,17 +530,26 @@ class InputView @JvmOverloads constructor(
         override fun dispatchImeShown(shown: Boolean): Boolean {
             assertNotInLayout { "调度IME显示" }
             val next = if (shown) ime else null
-            return editorAnimator.canChangeEditor(current, next) && editorView.dispatchImeShown(shown)
+            val changed = editorAnimator.canChangeEditor(current, next)
+                    && editorView.dispatchImeShown(shown)
+            if (changed) consumeRunner.trigger()
+            return changed
         }
 
         override fun showChecked(editor: Editor): Boolean {
             assertNotInLayout { "显示Editor" }
-            return editorAnimator.canChangeEditor(current, editor) && editorView.showChecked(editor)
+            val changed = editorAnimator.canChangeEditor(current, editor)
+                    && editorView.showChecked(editor)
+            if (changed) consumeRunner.trigger()
+            return changed
         }
 
         override fun hideChecked(editor: Editor): Boolean {
             assertNotInLayout { "隐藏Editor" }
-            return editorAnimator.canChangeEditor(editor, null) && editorView.hideChecked(editor)
+            val changed = editorAnimator.canChangeEditor(editor, null)
+                    && editorView.hideChecked(editor)
+            if (changed) consumeRunner.trigger()
+            return changed
         }
 
         override fun addAnimationCallback(callback: AnimationCallback) {
