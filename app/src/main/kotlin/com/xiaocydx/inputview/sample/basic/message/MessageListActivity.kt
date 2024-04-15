@@ -21,6 +21,9 @@ import com.xiaocydx.inputview.linearEditorOffset
 import com.xiaocydx.inputview.notifyHideCurrent
 import com.xiaocydx.inputview.notifyToggle
 import com.xiaocydx.inputview.sample.R
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor.EMOJI
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor.EXTRA
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor.VOICE
 import com.xiaocydx.inputview.sample.common.addOnItemTouchListener
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.MessageListBinding
@@ -126,7 +129,8 @@ private fun MessageListBinding.initScroll() {
 private fun MessageListBinding.initTouch(window: Window) {
     // 触摸RecyclerView隐藏当前MessageEditor
     rvMessage.addOnItemTouchListener(onInterceptTouchEvent = { _, ev ->
-        if (ev.action == MotionEvent.ACTION_DOWN && inputView.editorAdapter.current !== MessageEditor.VOICE) {
+        if (ev.action == MotionEvent.ACTION_DOWN
+                && inputView.editorAdapter.current !== VOICE) {
             inputView.editorAdapter.notifyHideCurrent()
         }
         false
@@ -144,18 +148,18 @@ private fun MessageListBinding.initTouch(window: Window) {
  */
 private fun MessageListBinding.initToggle(editorAdapter: EditorAdapter<MessageEditor>) {
     val actions = mutableMapOf<MessageEditor, Action>()
-    actions[MessageEditor.VOICE] = Action(ivVoice, R.mipmap.ic_message_editor_voice)
-    actions[MessageEditor.EMOJI] = Action(ivEmoji, R.mipmap.ic_message_editor_emoji)
-    actions[MessageEditor.EXTRA] = Action(ivExtra, R.mipmap.ic_message_editor_extra, isKeep = true)
+    actions[VOICE] = Action(ivVoice, R.mipmap.ic_message_editor_voice)
+    actions[EMOJI] = Action(ivEmoji, R.mipmap.ic_message_editor_emoji)
+    actions[EXTRA] = Action(ivExtra, R.mipmap.ic_message_editor_extra, isKeep = true)
     // 初始化各个按钮显示的图标
     actions.forEach { it.value.showSelfIcon() }
 
     editorAdapter.addEditorChangedListener { previous, current ->
-        if (previous === MessageEditor.VOICE) {
+        if (previous === VOICE) {
             tvVoice.isVisible = false
             etMessage.isVisible = true
             if (current === MessageEditor.IME) etMessage.requestFocus()
-        } else if (current === MessageEditor.VOICE) {
+        } else if (current === VOICE) {
             tvVoice.isVisible = true
             etMessage.isVisible = false
         }
@@ -163,9 +167,9 @@ private fun MessageListBinding.initToggle(editorAdapter: EditorAdapter<MessageEd
         current?.let(actions::get)?.takeIf { !it.isKeep }?.showImeIcon()
     }
 
-    ivVoice.onClick { editorAdapter.notifyToggle(MessageEditor.VOICE) }
-    ivEmoji.onClick { editorAdapter.notifyToggle(MessageEditor.EMOJI) }
-    ivExtra.onClick { editorAdapter.notifyToggle(MessageEditor.EXTRA) }
+    ivVoice.onClick { editorAdapter.notifyToggle(VOICE) }
+    ivEmoji.onClick { editorAdapter.notifyToggle(EMOJI) }
+    ivExtra.onClick { editorAdapter.notifyToggle(EXTRA) }
 }
 
 private class Action(
