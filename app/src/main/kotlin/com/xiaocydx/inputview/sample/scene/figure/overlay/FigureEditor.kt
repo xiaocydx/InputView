@@ -1,6 +1,7 @@
 package com.xiaocydx.inputview.sample.scene.figure.overlay
 
-import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.Lifecycle
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.FragmentEditorAdapter
 import com.xiaocydx.inputview.sample.editor_adapter.fragment.EmojiFragment
@@ -14,13 +15,14 @@ enum class FigureEditor : Editor {
 }
 
 class FigureEditAdapter(
-    fragmentActivity: FragmentActivity
-) : FragmentEditorAdapter<FigureEditor>(fragmentActivity) {
+    lifecycle: Lifecycle,
+    fragmentManager: FragmentManager
+) : FragmentEditorAdapter<FigureEditor>(lifecycle, fragmentManager) {
     override val ime = FigureEditor.INPUT
 
     override fun getEditorKey(editor: FigureEditor) = editor.name
 
-    override fun onCreateFragment(editor: FigureEditor) = when(editor) {
+    override fun onCreateFragment(editor: FigureEditor) = when (editor) {
         FigureEditor.INPUT -> null
         FigureEditor.EMOJI -> EmojiFragment()
         FigureEditor.GRID -> FigureGridFragment()

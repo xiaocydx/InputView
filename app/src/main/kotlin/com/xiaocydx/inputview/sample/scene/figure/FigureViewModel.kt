@@ -56,7 +56,7 @@ class FigureViewModel : ViewModel() {
         submitPendingEditor(editor = null)
     }
 
-    fun saveText(text: String?) {
+    fun confirmText(text: String?) {
         _figureState.update { it.copy(currentText = text ?: "") }
     }
 

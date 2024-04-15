@@ -10,7 +10,6 @@ import androidx.transition.updatePaddings
 import com.xiaocydx.inputview.sample.common.dp
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.FigureTextLayoutBinding
-import com.xiaocydx.inputview.sample.scene.figure.FigureState
 import com.xiaocydx.inputview.sample.scene.figure.ViewBounds
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.DUBBING
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.EMOJI
@@ -27,8 +26,8 @@ import kotlin.math.absoluteValue
  */
 class TextGroupTransformation(
     private val showEditor: (FigureEditor?) -> Unit,
-    private val figureState: () -> FigureState,
-    private val saveText: (text: String) -> Unit
+    private val currentText: () -> String,
+    private val confirmText: (text: String) -> Unit
 ) : ContainerTransformation<FigureSnapshotState>(INPUT, EMOJI) {
     private var binding: FigureTextLayoutBinding? = null
     private val startPaddings = Rect()
@@ -69,13 +68,13 @@ class TextGroupTransformation(
                 inputView.editText = binding.editText
                 if (current == INPUT) {
                     inputView.editText?.requestFocus()
-                    binding.editText.setText(figureState().currentText)
+                    binding.editText.setText(currentText())
                     binding.editText.setSelection(binding.editText.text.length)
                 }
             }
             !isCurrent(state) -> {
                 inputView.editText = null
-                saveText(binding.editText.text.toString())
+                confirmText(binding.editText.text.toString())
             }
         }
     }

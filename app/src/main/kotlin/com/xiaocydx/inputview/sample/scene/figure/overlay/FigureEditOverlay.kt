@@ -1,9 +1,17 @@
+@file:Suppress("CanBeParameter")
+
 package com.xiaocydx.inputview.sample.scene.figure.overlay
 
+import android.content.Context
+import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.widget.FrameLayout
-import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.Lifecycle
+import androidx.activity.OnBackPressedDispatcher
+import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.Lifecycle.State.CREATED
+import androidx.lifecycle.Lifecycle.State.DESTROYED
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.RequestManager
 import com.xiaocydx.inputview.AnimationState
@@ -11,6 +19,7 @@ import com.xiaocydx.inputview.EditorMode
 import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.addAnimationCallback
+import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.common.doOnTargetState
 import com.xiaocydx.inputview.sample.common.isDispatchTouchEventEnabled
 import com.xiaocydx.inputview.sample.common.matchParent
@@ -28,56 +37,69 @@ import kotlinx.coroutines.flow.onEach
  * @date 2024/4/13
  */
 class FigureEditOverlay(
-    private val activity: FragmentActivity,
+    private val context: Context,
+    private val lifecycleOwner: LifecycleOwner,
+    private val fragmentManager: FragmentManager,
     private val requestManager: RequestManager,
     private val sharedViewModel: FigureViewModel
 ) {
-    private val root = FrameLayout(activity)
-    private val inputView = InputView(activity)
-    private val container = FrameLayout(activity)
+    private val inputView = InputView(context)
+    private val container = FrameLayout(context)
     private val animator = FadeEditorAnimator(durationMillis = 300)
-    private val adapter = FigureEditAdapter(activity)
+    private val adapter = FigureEditAdapter(lifecycleOwner.lifecycle, fragmentManager)
     private val snapshotHolder = OverlayStateExtraHolder(FigureSnapshot())
     private val transformationEnforcer = OverlayTransformationEnforcer(
-        owner = activity, editorAnimator = animator, editorAdapter = adapter,
+        lifecycleOwner = lifecycleOwner,
+        editorAnimator = animator, editorAdapter = adapter,
         stateProvider = { FigureSnapshotState(inputView, container, snapshotHolder) }
     )
 
-    init {
+    fun attachToWindow(
+        window: Window,
+        dispatcher: OnBackPressedDispatcher? = null
+    ) = apply {
+        val first = InputView.init(
+            window = window,
+            statusBarEdgeToEdge = true,
+            gestureNavBarEdgeToEdge = true
+        )
+        if (!first) return@apply
+        lifecycleOwner.lifecycle.doOnTargetState(CREATED) {
+            val contentParent = window.findViewById<ViewGroup>(android.R.id.content)
+            contentParent.addView(initRoot(window), matchParent, matchParent)
+            initEnforcer(dispatcher)
+            initCollect()
+        }
+        lifecycleOwner.lifecycle.doOnTargetState(DESTROYED) {
+            sharedViewModel.submitPendingEditor(null)
+        }
+    }
+
+    private fun initRoot(window: Window): View {
         inputView.apply {
             editorAnimator = animator
             editorAdapter = adapter
             editorMode = EditorMode.ADJUST_PAN
             setEditorBackgroundColor(0xFF1D1D1D.toInt())
         }
-        root.addView(container, matchParent, matchParent)
-        root.addView(inputView, matchParent, matchParent)
-    }
-
-    fun attachToWindow() = apply {
-        activity.lifecycle.doOnTargetState(Lifecycle.State.CREATED) {
-            val contentParent = activity.findViewById<ViewGroup>(android.R.id.content)
-            contentParent.addView(root, matchParent, matchParent)
-            initEnforcer()
-            initCollect()
-        }
-        activity.lifecycle.doOnTargetState(Lifecycle.State.DESTROYED) {
-            sharedViewModel.submitPendingEditor(null)
-        }
-    }
-
-    private fun initEnforcer() {
         // 在动画运行时拦截触摸事件
         animator.addAnimationCallback(
             onStart = {
                 setPageInvisible(start = true, it)
-                activity.window.isDispatchTouchEventEnabled = false
+                window.isDispatchTouchEventEnabled = false
             },
             onEnd = {
                 setPageInvisible(start = false, it)
-                activity.window.isDispatchTouchEventEnabled = true
+                window.isDispatchTouchEventEnabled = true
             },
         )
+        val root = FrameLayout(context)
+        root.addView(container, matchParent, matchParent)
+        root.addView(inputView, matchParent, matchParent)
+        return root
+    }
+
+    private fun initEnforcer(dispatcher: OnBackPressedDispatcher?) {
         transformationEnforcer
             .add(snapshotHolder)
             .add(BackgroundTransformation(
@@ -91,10 +113,10 @@ class FigureEditOverlay(
             ))
             .add(TextGroupTransformation(
                 showEditor = sharedViewModel::submitPendingEditor,
-                figureState = sharedViewModel.figureState::value,
-                saveText = sharedViewModel::saveText
+                currentText = { sharedViewModel.figureState.value.currentText },
+                confirmText = sharedViewModel::confirmText
             ))
-            .attach(inputView, activity.onBackPressedDispatcher)
+            .attach(inputView, dispatcher)
     }
 
     private fun initCollect() {
@@ -109,7 +131,7 @@ class FigureEditOverlay(
                 val current = transformationEnforcer.notify(it.editor)
                 sharedViewModel.consumePendingSnapshot(current)
             }
-            .launchIn(activity.lifecycleScope)
+            .launchIn(lifecycleOwner.lifecycleScope)
     }
 
     private fun setPageInvisible(start: Boolean, state: AnimationState) = with(state) {

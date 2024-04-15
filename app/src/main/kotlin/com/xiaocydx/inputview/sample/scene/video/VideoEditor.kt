@@ -2,7 +2,8 @@ package com.xiaocydx.inputview.sample.scene.video
 
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.Lifecycle
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.FragmentEditorAdapter
 import com.xiaocydx.inputview.sample.editor_adapter.fragment.EmojiFragment
@@ -24,8 +25,9 @@ sealed class VideoEditor(val title: String, val size: Int) : Editor {
 }
 
 class VideoEditorAdapter(
-    fragmentActivity: FragmentActivity
-) : FragmentEditorAdapter<VideoEditor>(fragmentActivity) {
+    lifecycle: Lifecycle,
+    fragmentManager: FragmentManager
+) : FragmentEditorAdapter<VideoEditor>(lifecycle, fragmentManager) {
     override val ime = VideoEditor.Text.Input
 
     override fun getEditorKey(editor: VideoEditor) = editor.title

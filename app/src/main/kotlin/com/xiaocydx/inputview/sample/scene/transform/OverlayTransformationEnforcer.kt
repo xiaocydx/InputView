@@ -52,7 +52,7 @@ import kotlinx.coroutines.launch
  * @date 2024/4/11
  */
 class OverlayTransformationEnforcer<T : Editor, S : State>(
-    private val owner: LifecycleOwner,
+    private val lifecycleOwner: LifecycleOwner,
     private val editorAnimator: FadeEditorAnimator,
     private val editorAdapter: EditorAdapter<T>,
     private val stateProvider: StateProvider<S>
@@ -60,7 +60,7 @@ class OverlayTransformationEnforcer<T : Editor, S : State>(
     private var isAttached = false
     private var dispatchingState: S? = null
     private val transformations = mutableListOf<OverlayTransformation<S>>()
-    private val enforcerScope = EnforcerScopeImpl(owner.lifecycle)
+    private val enforcerScope = EnforcerScopeImpl(lifecycleOwner.lifecycle)
     private val animationCallback = AnimationCallbackImpl()
 
     /**
@@ -107,7 +107,7 @@ class OverlayTransformationEnforcer<T : Editor, S : State>(
         editorAdapter.addEditorChangedListener { _, current ->
             callback.isEnabled = current != null
         }
-        dispatcher.addCallback(owner, callback)
+        dispatcher.addCallback(lifecycleOwner, callback)
     }
 
     private inline fun dispatchTransformation(action: OverlayTransformation<S>.() -> Unit) {

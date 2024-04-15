@@ -6,7 +6,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.xiaocydx.inputview.InputView
-import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.common.snackbar
 import com.xiaocydx.inputview.sample.databinding.ActivityFigureEditBinding
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditOverlay
@@ -30,7 +29,6 @@ class FigureEditActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        InputView.init(window, statusBarEdgeToEdge = true, gestureNavBarEdgeToEdge = true)
         setContentView(ActivityFigureEditBinding.inflate(layoutInflater).init().root)
     }
 
@@ -57,10 +55,12 @@ class FigureEditActivity : AppCompatActivity() {
         ).init()
 
         FigureEditOverlay(
-            activity = this@FigureEditActivity,
+            context = this@FigureEditActivity,
+            lifecycleOwner = this@FigureEditActivity,
+            fragmentManager = supportFragmentManager,
             requestManager = requestManager,
             sharedViewModel = sharedViewModel
-        ).attachToWindow()
+        ).attachToWindow(window, onBackPressedDispatcher)
 
         sharedViewModel.figureState
             .filter { it.pendingRemove != null || it.pendingEditor != null }
