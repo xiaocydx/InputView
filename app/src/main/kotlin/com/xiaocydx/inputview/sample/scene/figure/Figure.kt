@@ -56,7 +56,7 @@ object FigureSource {
         Url("https://cdn.pixabay.com/photo/2024/04/06/02/44/ai-generated-8678498_1280.png", 1280, 1280),
         Url("https://cdn.pixabay.com/photo/2023/03/29/01/56/ai-generated-7884416_960_720.jpg", 960, 720),
         Url("https://cdn.pixabay.com/photo/2024/02/17/16/08/ai-generated-8579697_1280.jpg", 1280, 1280),
-        Url("https://cdn.pixabay.com/photo/2024/04/04/21/13/ai-generated-8675958_960_720.jpg", 960, 720),
+        Url("https://cdn.pixabay.com/photo/2024/04/04/21/13/ai-generated-8675958_960_720.jpg", 520, 720),
     )
 
     fun generateList(size: Int) = (1..size).map {
