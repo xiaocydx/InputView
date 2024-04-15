@@ -317,7 +317,7 @@ class InputView @JvmOverloads constructor(
         checkContentView()
         enterLayout()
         enterChange()
-        // 尝试消费PendingChange，在在measure阶段创建、添加、移除子View
+        // 尝试消费PendingChange，在measure阶段创建、添加、移除子View
         consumePendingChange()
         editorView.measure(widthMeasureSpec, measuredHeight.toAtMostMeasureSpec())
 

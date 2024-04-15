@@ -86,7 +86,7 @@ class FigureViewModel : ViewModel() {
     }
 
     /**
-     * 提交待处理的[editor]，由视图生成[FigureSnapshot]，调用[consumePendingSnapshot]
+     * 提交待处理的[editor]，由视图生成[FigureSnapshot]，调用[consumePendingEditor]
      */
     fun submitPendingEditor(editor: FigureEditor?, request: Boolean = false) {
         val state = _figureState.value
