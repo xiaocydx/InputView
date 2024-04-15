@@ -144,7 +144,7 @@ class FigurePager(
 
     @Suppress("UNCHECKED_CAST")
     private fun getCurrentBinding(): ItemFigureBinding? {
-        val holder = rv.findViewHolderForAdapterPosition(viewPager2.currentItem)
+        val holder = rv.findViewHolderForLayoutPosition(viewPager2.currentItem)
         return (holder as? BindingHolder<ItemFigureBinding>)?.binding
     }
 
