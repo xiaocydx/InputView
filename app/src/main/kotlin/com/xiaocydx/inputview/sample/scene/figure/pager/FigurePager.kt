@@ -54,33 +54,17 @@ class FigurePager(
     private val showEditor: (FigureEditor?) -> Unit,
     private val removeFigure: (Figure) -> Unit,
     private val selectPosition: (Int) -> Unit,
-    private val figureListFlow: Flow<ListData<Figure>>,
-    private val figureState: StateFlow<FigureState>
+    private val figureListFlow: Flow<ListData<Figure>>
 ) {
-    private lateinit var figureAdapter: ListAdapter<Figure, *>
+    private var isInVisible: Boolean? = null
+    private var currentView: WeakReference<View>? = null
     private val rv = viewPager2.getChildAt(0) as RecyclerView
     private val scrollerProvider = LinearSmoothScrollerProvider(
         durationMs = 300, interpolator = AccelerateDecelerateInterpolator()
     )
 
-    fun init() = apply {
-        initView()
-        initCollect()
-    }
-
-    suspend fun awaitSnapshot(): FigureSnapshot {
-        if (viewPager2.isLayoutRequested
-                || rv.hasPendingAdapterUpdates()) {
-            viewPager2.awaitPreDraw()
-        }
-        // 按当前位置重新计算一遍变换属性的值，确保figureBounds正确
-        viewPager2.requestTransform()
-        val figureView = getCurrentBinding()?.figureView
-        return FigureSnapshot(figureBounds = figureView?.let(ViewBounds::from))
-    }
-
-    private fun initView() {
-        figureAdapter = bindingAdapter(
+    init {
+        val figureAdapter = bindingAdapter(
             uniqueId = Figure::id,
             inflate = ItemFigureBinding::inflate
         ) {
@@ -107,6 +91,10 @@ class FigurePager(
                     viewPager2.requestTransform()
                 }
             }
+
+            // 收集列表数据流
+            figureListFlow.onEach(listCollector)
+                .launchRepeatOnLifecycle(lifecycle)
         }
 
         viewPager2.apply {
@@ -122,29 +110,32 @@ class FigurePager(
         }
     }
 
-    private fun initCollect() {
-        figureListFlow
-            .onEach(figureAdapter.listCollector)
-            .launchRepeatOnLifecycle(lifecycle)
+    suspend fun awaitSnapshot(): FigureSnapshot {
+        if (viewPager2.isLayoutRequested
+                || rv.hasPendingAdapterUpdates()) {
+            viewPager2.awaitPreDraw()
+        }
+        // 按当前位置重新计算一遍变换属性的值，确保figureBounds正确
+        viewPager2.requestTransform()
+        val figureView = getCurrentBinding()?.figureView
+        return FigureSnapshot(figureBounds = figureView?.let(ViewBounds::from))
+    }
 
-        var isInVisible: Boolean? = null
-        var currentView: WeakReference<View>? = null
-        figureState.onEach { state ->
-            if (state.pageInvisible.figure != isInVisible) {
-                isInVisible = state.pageInvisible.figure
-                val view = getCurrentBinding()?.figureView
-                val previous = currentView?.get()
-                if (view !== previous) {
-                    // 改变isInVisible的同时，可能进行滚动，需要将previous恢复为可视
-                    previous?.isInvisible = false
-                    currentView = view?.let(::WeakReference)
-                }
-                view?.isInvisible = isInVisible!!
+    fun updateCurrentPage(state: FigureState) {
+        if (state.pageInvisible.figure != isInVisible) {
+            isInVisible = state.pageInvisible.figure
+            val view = getCurrentBinding()?.figureView
+            val previous = currentView?.get()
+            if (view !== previous) {
+                // 改变isInVisible的同时，可能进行滚动，需要将previous恢复为可视
+                previous?.isInvisible = false
+                currentView = view?.let(::WeakReference)
             }
-            if (state.currentPosition != viewPager2.currentItem) {
-                viewPager2.setCurrentItem(state.currentPosition, false)
-            }
-        }.launchRepeatOnLifecycle(lifecycle)
+            view?.isInvisible = isInVisible!!
+        }
+        if (state.currentPosition != viewPager2.currentItem) {
+            viewPager2.setCurrentItem(state.currentPosition, false)
+        }
     }
 
     private fun isCurrent(holder: ViewHolder): Boolean {

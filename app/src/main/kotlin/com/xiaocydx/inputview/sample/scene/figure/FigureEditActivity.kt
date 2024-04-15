@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.sample.common.launchRepeatOnLifecycle
 import com.xiaocydx.inputview.sample.common.snackbar
 import com.xiaocydx.inputview.sample.databinding.ActivityFigureEditBinding
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditOverlay
@@ -17,6 +18,7 @@ import com.xiaocydx.insets.statusBars
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onEach
 
 /**
  * 通过选中编辑的交互案例，演示[InputView]的使用
@@ -35,7 +37,7 @@ class FigureEditActivity : AppCompatActivity() {
     private fun ActivityFigureEditBinding.init() = apply {
         root.insets().paddings(statusBars() or navigationBars())
         val requestManager = Glide.with(this@FigureEditActivity)
-
+        // 数字人列表
         val figurePager = FigurePager(
             lifecycle = lifecycle,
             viewPager2 = vpFigure,
@@ -43,17 +45,14 @@ class FigureEditActivity : AppCompatActivity() {
             showEditor = sharedViewModel::submitPendingEditor,
             removeFigure = sharedViewModel::submitPendingRemove,
             selectPosition = sharedViewModel::selectPosition,
-            figureListFlow = sharedViewModel.figureListFlow,
-            figureState = sharedViewModel.figureState
-        ).init()
-
+            figureListFlow = sharedViewModel.figureListFlow
+        )
+        // 文字输入
         val textPager = TextPager(
-            lifecycle = lifecycle,
             textView = tvFigure,
             showEditor = sharedViewModel::submitPendingEditor,
-            figureState = sharedViewModel.figureState
-        ).init()
-
+        )
+        // 覆盖层，包含变换动画、编辑器页面
         FigureEditOverlay(
             context = this@FigureEditActivity,
             lifecycleOwner = this@FigureEditActivity,
@@ -62,6 +61,15 @@ class FigureEditActivity : AppCompatActivity() {
             sharedViewModel = sharedViewModel
         ).attachToWindow(window, onBackPressedDispatcher)
 
+        // 非pending状态结合repeatOnLifecycle收集，
+        // 在各自的业务单元逻辑中，实现状态差异对比。
+        sharedViewModel.figureState.onEach {
+            figurePager.updateCurrentPage(it)
+            textPager.updateCurrentPage(it)
+        }.launchRepeatOnLifecycle(lifecycle)
+
+        // pending状态不结合repeatOnLifecycle收集，
+        // 及时对新的状态做出处理，然后消费pending。
         sharedViewModel.figureState
             .filter { it.pendingRemove != null || it.pendingEditor != null }
             .mapLatest {
