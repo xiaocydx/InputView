@@ -46,9 +46,11 @@ https://user-images.githubusercontent.com/43429149/213995177-2b7cc060-d44a-463c-
 
 &nbsp;
 #### 复杂的切换场景
-InputView可用于视频编辑这类复杂的切换场景。
+InputView可用于选中编辑这类复杂的切换场景。
 
-https://github.com/xiaocydx/InputView/assets/43429149/2d2931cb-c585-4c34-aaa2-43ed44268d5e
+https://github.com/xiaocydx/InputView/assets/43429149/bb74c0ba-b1bc-4a4d-9c3a-d6c67c7752c9
+
+
 
 
 
