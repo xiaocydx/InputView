@@ -40,9 +40,9 @@ internal class EditTextHolder(editText: EditText) : ImeFocusHandler(editText) {
     override fun requestCurrentFocus() {
         val currentFocus = window?.currentFocus
         if (currentFocus == null) {
-            get()?.requestFocus()
+            get()?.requestFocusCompat()
         } else {
-            (currentFocus as? EditText)?.requestFocus()
+            (currentFocus as? EditText)?.requestFocusCompat()
         }
     }
 

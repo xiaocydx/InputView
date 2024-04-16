@@ -58,7 +58,7 @@ internal open class ImeFocusHandler(view: View) :
 
     open fun requestCurrentFocus() {
         val currentFocus = window?.currentFocus
-        if (currentFocus == null) get()?.requestFocus()
+        if (currentFocus == null) get()?.requestFocusCompat()
     }
 
     open fun clearCurrentFocus() {
@@ -67,16 +67,15 @@ internal open class ImeFocusHandler(view: View) :
     }
 
     fun showIme() {
-        val view = get() ?: return
+        val view = (window?.currentFocus ?: get()) ?: return
+        if (view === get()) view.requestFocusCompat()
         // 确保Window具有焦点后，才能调用showIme()
         if (view.hasWindowFocus()) {
             removePending()
-            view.ensureCanShowIme()
             window?.showIme(view)
         } else if (focusAction == null) {
             focusAction = OneShotHasWindowFocusListener.add(view) {
                 focusAction = null
-                view.ensureCanShowIme()
                 window?.showIme(view)
             }
         }
@@ -92,9 +91,10 @@ internal open class ImeFocusHandler(view: View) :
         focusAction = null
     }
 
-    private fun View.ensureCanShowIme() {
+    protected fun View.requestFocusCompat() {
         if (!isFocusable) isFocusable = true
         if (!isFocusableInTouchMode) isFocusableInTouchMode = true
+        if (!hasFocus()) requestFocus()
     }
 }
 
