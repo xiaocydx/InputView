@@ -312,7 +312,14 @@ abstract class EditorAnimator(
         override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
             host?.apply {
                 lastInsets = insets
-                val imeHeight = insets.imeHeight
+                var imeHeight = insets.imeHeight
+                if (Build.VERSION.SDK_INT < 23 && imeHeight > 0
+                        && v.rootView != null && !v.rootView.isLaidOut) {
+                    // Android 6.0以下，视图初始化阶段未显示IME，当分发WindowInsets时，
+                    // insets.stableInsets不包含导航栏高度，导致insets.imeHeight大于0，
+                    // 这是AndroidX兼容代码的问题，需要修正imeHeight。
+                    imeHeight = 0
+                }
                 when {
                     lastImeHeight == 0 && imeHeight > 0 -> dispatchImeShown(shown = true)
                     lastImeHeight > 0 && imeHeight == 0 -> dispatchImeShown(shown = false)
