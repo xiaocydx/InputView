@@ -52,13 +52,13 @@ class CoverGroupTransformation(
             view.isInvisible = true
             return
         }
+        view.isVisible = true
         view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
             topMargin = bounds.top
             leftMargin = bounds.left
             width = bounds.width
             height = bounds.height
         }
-        view.isVisible = true
         view.children.forEach { it.alpha = 1f }
         view.setFigure(requestManager, figure)
     }

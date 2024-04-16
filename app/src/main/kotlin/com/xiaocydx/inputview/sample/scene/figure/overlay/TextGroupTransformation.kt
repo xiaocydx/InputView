@@ -3,6 +3,8 @@ package com.xiaocydx.inputview.sample.scene.figure.overlay
 import android.graphics.Rect
 import android.view.LayoutInflater
 import android.view.View
+import androidx.core.view.isInvisible
+import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.transition.getPaddings
@@ -51,7 +53,12 @@ class TextGroupTransformation(
 
     override fun onPrepare(state: FigureSnapshotState) = with(state) {
         val binding = binding ?: return
-        val bounds = snapshot.textBounds ?: return
+        val bounds = snapshot.textBounds
+        if (bounds == null) {
+            binding.root.isInvisible = true
+            return
+        }
+        binding.root.isVisible = true
         if (previous == null) {
             startPaddings.set(bounds)
             startPaddings.right = container.width - bounds.right

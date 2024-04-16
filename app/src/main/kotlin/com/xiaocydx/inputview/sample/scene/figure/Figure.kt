@@ -14,6 +14,9 @@ data class FigureSnapshot(
     val figureBounds: ViewBounds? = null,
     val textBounds: ViewBounds? = null
 ) {
+    val isEmpty: Boolean
+        get() = figureBounds == null && textBounds == null
+
     @CheckResult
     fun merge(other: FigureSnapshot) = copy(
         figureBounds = figureBounds ?: other.figureBounds,

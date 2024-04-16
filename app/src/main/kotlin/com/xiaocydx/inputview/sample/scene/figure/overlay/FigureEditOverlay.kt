@@ -14,7 +14,6 @@ import androidx.lifecycle.Lifecycle.State.DESTROYED
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.RequestManager
-import com.xiaocydx.inputview.AnimationState
 import com.xiaocydx.inputview.EditorMode
 import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
@@ -84,14 +83,8 @@ class FigureEditOverlay(
         }
         // 在动画运行时拦截触摸事件
         animator.addAnimationCallback(
-            onStart = {
-                setPageInvisible(start = true, it)
-                window.isDispatchTouchEventEnabled = false
-            },
-            onEnd = {
-                setPageInvisible(start = false, it)
-                window.isDispatchTouchEventEnabled = true
-            },
+            onStart = { window.isDispatchTouchEventEnabled = false },
+            onEnd = { window.isDispatchTouchEventEnabled = true },
         )
         val root = FrameLayout(context)
         root.addView(container, matchParent, matchParent)
@@ -105,6 +98,10 @@ class FigureEditOverlay(
             .add(BackgroundTransformation(
                 showEditor = sharedViewModel::submitPendingEditor
             ))
+            .add(PageInvisibleTransformation(
+                getPageInvisible = { sharedViewModel.figureState.value.pageInvisible },
+                setPageInvisible = sharedViewModel::setPageInvisible
+            ))
             .add(CoverGroupTransformation(
                 requestManager = requestManager,
                 updateCurrent = sharedViewModel.currentFigureFlow(),
@@ -114,7 +111,7 @@ class FigureEditOverlay(
             .add(TextGroupTransformation(
                 showEditor = sharedViewModel::submitPendingEditor,
                 currentText = { sharedViewModel.figureState.value.currentText },
-                confirmText = sharedViewModel::confirmText
+                confirmText = sharedViewModel::confirmText,
             ))
             .attach(inputView, dispatcher)
     }
@@ -132,16 +129,6 @@ class FigureEditOverlay(
                 sharedViewModel.consumePendingSnapshot(current)
             }
             .launchIn(lifecycleOwner.lifecycleScope)
-    }
-
-    private fun setPageInvisible(start: Boolean, state: AnimationState) = with(state) {
-        if (previous != null && current != null) return
-        val pageInvisible = sharedViewModel.figureState.value.pageInvisible
-        sharedViewModel.setPageInvisible(when (previous ?: current) {
-            FigureEditor.INPUT, FigureEditor.EMOJI -> pageInvisible.copy(text = start)
-            FigureEditor.GRID, FigureEditor.DUBBING -> pageInvisible.copy(figure = start)
-            else -> return
-        })
     }
 }
 
