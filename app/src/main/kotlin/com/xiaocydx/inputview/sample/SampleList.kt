@@ -128,7 +128,7 @@ class SampleList {
     )
 
     private fun sceneList() = listOf(
-        Category(title = "Case", selectedResId = unselectedId),
+        Category(title = "Scene", selectedResId = unselectedId),
         StartActivity(
             title = "PreviewEdit",
             desc = "预览编辑的交互案例",
