@@ -27,14 +27,13 @@ dependencyResolutionManagement {
 ```
 dependencies {
     // 修改IME动画的属性、调用FLAG_FULLSCREEN的兼容方案，需要依赖inputview-compat
-    def version = "1.2.0"
+    def version = "1.2.1"
     implementation "com.github.xiaocydx.InputView:inputview:${version}"
     implementation "com.github.xiaocydx.InputView:inputview-compat:${version}"
 }
 ```
 
 &nbsp;
-### 示例代码在Android 12上的效果
 #### 切换编辑器和调整IME高度
 https://user-images.githubusercontent.com/43429149/213995075-bfdf23a0-e758-4230-bca4-97701cb9a234.mp4
 
