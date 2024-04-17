@@ -27,6 +27,7 @@ import com.xiaocydx.inputview.sample.scene.figure.FigureViewModel
 import com.xiaocydx.inputview.sample.scene.transform.OverlayStateExtraHolder
 import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.ContainerState
 import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformationEnforcer
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
@@ -104,7 +105,7 @@ class FigureEditOverlay(
             ))
             .add(CoverGroupTransformation(
                 requestManager = requestManager,
-                updateCurrent = sharedViewModel.currentFigureFlow(),
+                updateCurrent = sharedViewModel.currentFigureFlow().drop(count = 1),
                 currentFigure = sharedViewModel::currentFigure,
                 requestSnapshot = { sharedViewModel.submitPendingEditor(it, request = true) }
             ))
