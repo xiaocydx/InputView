@@ -43,7 +43,7 @@ class CoverGroupTransformation(
         val topY = view.getRootWindowInsetsCompat()?.statusBarHeight ?: 0
         drawable.figureView = state.snapshot.figureView
         drawable.setBounds(0, 0, view.width, view.height)
-        drawable.calculateStartAndEndValue(topY, state)
+        drawable.calculateStartAndEndValues(topY, state)
         drawable.figureView?.get()?.alpha = 0f
     }
 
@@ -93,7 +93,7 @@ class CoverGroupTransformation(
                 invalidateSelf()
             }
 
-        fun calculateStartAndEndValue(topY: Int, state: FigureSnapshotState) {
+        fun calculateStartAndEndValues(topY: Int, state: FigureSnapshotState) {
             // 基于初始状态，计算view变换的起始值和结束值
             val bounds = figureBounds
             this.topY = topY
@@ -116,7 +116,7 @@ class CoverGroupTransformation(
             matrix.postScale(scale, scale)
             matrix.postTranslate(width / 2, height / 2)
             matrix.postTranslate(x, y + translationY)
-            canvas.withMatrix(matrix) { view.draw(canvas) }
+            canvas.withMatrix(matrix, view::draw)
         }
 
         private fun calculateScale(
