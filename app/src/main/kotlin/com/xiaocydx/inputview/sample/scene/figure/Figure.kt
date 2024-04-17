@@ -2,6 +2,8 @@ package com.xiaocydx.inputview.sample.scene.figure
 
 import android.view.View
 import androidx.annotation.CheckResult
+import com.xiaocydx.inputview.sample.scene.figure.pager.FigureView
+import java.lang.ref.WeakReference
 
 data class Figure(
     val id: String,
@@ -11,16 +13,16 @@ data class Figure(
 )
 
 data class FigureSnapshot(
-    val figureBounds: ViewBounds? = null,
-    val textBounds: ViewBounds? = null
+    val figureView: WeakReference<FigureView>? = null,
+    val textView: WeakReference<View>? = null
 ) {
     val isEmpty: Boolean
-        get() = figureBounds == null && textBounds == null
+        get() = figureView == null && textView == null
 
     @CheckResult
     fun merge(other: FigureSnapshot) = copy(
-        figureBounds = figureBounds ?: other.figureBounds,
-        textBounds = textBounds ?: other.textBounds
+        figureView = figureView ?: other.figureView,
+        textView = textView ?: other.textView
     )
 }
 

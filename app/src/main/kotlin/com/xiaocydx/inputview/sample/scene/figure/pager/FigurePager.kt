@@ -2,10 +2,8 @@
 
 package com.xiaocydx.inputview.sample.scene.figure.pager
 
-import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.core.view.doOnPreDraw
-import androidx.core.view.isInvisible
 import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.RecyclerView
@@ -19,7 +17,6 @@ import com.xiaocydx.cxrv.binding.BindingHolder
 import com.xiaocydx.cxrv.binding.bindingAdapter
 import com.xiaocydx.cxrv.itemclick.doOnItemClick
 import com.xiaocydx.cxrv.itemclick.doOnLongItemClick
-import com.xiaocydx.cxrv.list.ListAdapter
 import com.xiaocydx.cxrv.list.ListData
 import com.xiaocydx.cxrv.list.doOnListChanged
 import com.xiaocydx.cxrv.list.listCollector
@@ -33,13 +30,10 @@ import com.xiaocydx.inputview.sample.databinding.ItemFigureBinding
 import com.xiaocydx.inputview.sample.scene.figure.Figure
 import com.xiaocydx.inputview.sample.scene.figure.FigureSnapshot
 import com.xiaocydx.inputview.sample.scene.figure.FigureState
-import com.xiaocydx.inputview.sample.scene.figure.ViewBounds
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.DUBBING
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.GRID
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.onEach
 import java.lang.ref.WeakReference
 import kotlin.math.absoluteValue
 
@@ -56,8 +50,6 @@ class FigurePager(
     private val selectPosition: (Int) -> Unit,
     private val figureListFlow: Flow<ListData<Figure>>
 ) {
-    private var isInVisible: Boolean? = null
-    private var currentView: WeakReference<View>? = null
     private val rv = viewPager2.getChildAt(0) as RecyclerView
     private val scrollerProvider = LinearSmoothScrollerProvider(
         durationMs = 300, interpolator = AccelerateDecelerateInterpolator()
@@ -115,24 +107,13 @@ class FigurePager(
                 || rv.hasPendingAdapterUpdates()) {
             viewPager2.awaitPreDraw()
         }
-        // 按当前位置重新计算一遍变换属性的值，确保figureBounds正确
+        // 按当前位置重新计算一遍变换属性的值，确保位置正确
         viewPager2.requestTransform()
         val figureView = getCurrentBinding()?.figureView
-        return FigureSnapshot(figureBounds = figureView?.let(ViewBounds::from))
+        return FigureSnapshot(figureView = figureView?.let(::WeakReference))
     }
 
     fun updateCurrentPage(state: FigureState) {
-        if (state.pageInvisible.figure != isInVisible) {
-            isInVisible = state.pageInvisible.figure
-            val view = getCurrentBinding()?.figureView
-            val previous = currentView?.get()
-            if (view !== previous) {
-                // 改变isInVisible的同时，可能进行滚动，需要将previous恢复为可视
-                previous?.isInvisible = false
-                currentView = view?.let(::WeakReference)
-            }
-            view?.isInvisible = isInVisible!!
-        }
         if (state.currentPosition != viewPager2.currentItem) {
             viewPager2.setCurrentItem(state.currentPosition, false)
         }

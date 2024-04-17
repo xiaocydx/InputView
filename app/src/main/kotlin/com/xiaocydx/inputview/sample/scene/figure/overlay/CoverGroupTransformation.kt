@@ -1,12 +1,12 @@
 package com.xiaocydx.inputview.sample.scene.figure.overlay
 
+import android.graphics.Canvas
+import android.graphics.ColorFilter
+import android.graphics.Matrix
+import android.graphics.PixelFormat
+import android.graphics.drawable.Drawable
 import android.view.View
-import android.view.ViewGroup
-import androidx.core.view.children
-import androidx.core.view.isInvisible
-import androidx.core.view.isVisible
-import androidx.core.view.updateLayoutParams
-import com.bumptech.glide.RequestManager
+import androidx.core.graphics.withMatrix
 import com.xiaocydx.inputview.sample.common.dp
 import com.xiaocydx.inputview.sample.scene.figure.Figure
 import com.xiaocydx.inputview.sample.scene.figure.ViewBounds
@@ -20,76 +20,44 @@ import com.xiaocydx.insets.statusBarHeight
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import java.lang.ref.WeakReference
 
 /**
  * @author xcc
  * @date 2024/4/13
  */
 class CoverGroupTransformation(
-    private val requestManager: RequestManager,
     private val updateCurrent: Flow<Figure?>,
-    private val currentFigure: () -> Figure?,
     private val requestSnapshot: (FigureEditor?) -> Unit
 ) : ContainerTransformation<FigureSnapshotState>(GRID, DUBBING) {
-    private var view: FigureView? = null
-    private val margins = 20.dp
-    private val marginTop = 10.dp
-    private var topY = 0
-    private var startScale = 1f
-    private var endScale = 1f
-    private var startTransY = 0f
-    private var endTransY = 0f
+    private var view: View? = null
+    private val drawable = FigureViewDrawable()
 
     override fun getView(state: FigureSnapshotState): View {
-        return view ?: FigureView(state.container.context).also { view = it }
-    }
-
-    override fun onPrepare(state: FigureSnapshotState) = with(state) {
-        val view = view ?: return
-        val figure = currentFigure()
-        val bounds = snapshot.figureBounds
-        if (figure == null || bounds == null) {
-            view.isInvisible = true
-            return
-        }
-        view.isVisible = true
-        view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-            topMargin = bounds.top
-            leftMargin = bounds.left
-            width = bounds.width
-            height = bounds.height
-        }
-        view.children.forEach { it.alpha = 1f }
-        view.setFigure(requestManager, figure)
+        return view ?: View(state.container.context)
+            .apply { overlay.add(drawable) }.also { view = it }
     }
 
     override fun onStart(state: FigureSnapshotState) {
         val view = view ?: return
-        val bounds = state.snapshot.figureBounds ?: return
-        // 基于初始状态，计算view变换的起始值和结束值
-        topY = view.getRootWindowInsetsCompat()?.statusBarHeight ?: 0
-        startScale = calculateScale(state, state.startAnchorY, bounds)
-        startTransY = calculateTransY(state, state.startAnchorY, startScale, bounds)
-        endScale = calculateScale(state, state.endAnchorY, bounds)
-        endTransY = calculateTransY(state, state.endAnchorY, endScale, bounds)
+        val topY = view.getRootWindowInsetsCompat()?.statusBarHeight ?: 0
+        drawable.figureView = state.snapshot.figureView
+        drawable.setBounds(0, 0, view.width, view.height)
+        drawable.calculateStartAndEndValue(topY, state)
+        drawable.figureView?.get()?.alpha = 0f
     }
 
     override fun onUpdate(state: FigureSnapshotState) = with(state) {
-        val view = view ?: return
-        val childAlpha = when {
+        drawable.figureView?.get()?.setAnimationAlpha(when {
             previous != null && current != null -> 0f
             current != null -> 1f - interpolatedFraction
             else -> interpolatedFraction
-        }
-        for (i in 0 until view.childCount) {
-            val child = view.getChildAt(i)
-            if (child === view.ivCover) continue
-            child.alpha = childAlpha
-        }
-        val scale = startScale + (endScale - startScale) * interpolatedFraction
-        view.scaleX = scale
-        view.scaleY = scale
-        view.translationY = startTransY + (endTransY - startTransY) * interpolatedFraction
+        })
+        drawable.fraction = interpolatedFraction
+    }
+
+    override fun onEnd(state: FigureSnapshotState) {
+        drawable.figureView?.get()?.alpha = 1f
     }
 
     override fun onLaunch(state: FigureSnapshotState, scope: EnforcerScope) {
@@ -99,41 +67,98 @@ class CoverGroupTransformation(
         }.launchIn(scope)
     }
 
-    private fun calculateScale(
-        state: FigureSnapshotState,
-        endAnchorY: Int,
-        bounds: ViewBounds?
-    ) = state.run {
-        if (bounds == null || endAnchorY == initialAnchorY) return@run 1f
-        val startHeight = bounds.height
-        val top = topY + marginTop
-        val bottom = endAnchorY - margins
-        val endHeight = (bottom - top).coerceAtLeast(0)
-        var scale = endHeight.toFloat() / startHeight
+    private class FigureViewDrawable : Drawable() {
+        private val matrix = Matrix()
+        private val margins = 20.dp
+        private val marginTop = 10.dp
+        private var topY = 0
+        private var startScale = 1f
+        private var endScale = 1f
+        private var startTransY = 0f
+        private var endTransY = 0f
+        private var figureBounds = ViewBounds()
 
-        val startWidth = bounds.width
-        val endWidth = (container.width - margins * 2).coerceAtLeast(0)
-        if (startWidth * scale > endWidth) scale = endWidth.toFloat() / startWidth
-        scale
-    }
+        var figureView: WeakReference<FigureView>? = null
+            set(value) {
+                field = value
+                figureBounds = value?.get()
+                    ?.let(ViewBounds::from) ?: ViewBounds()
+                invalidateSelf()
+            }
 
-    private fun calculateTransY(
-        state: FigureSnapshotState,
-        endAnchorY: Int,
-        endScale: Float, bounds: ViewBounds?
-    ) = state.run {
-        if (bounds == null || endAnchorY == initialAnchorY) return@run 0f
-        var top = topY + marginTop
-        var bottom = endAnchorY - margins
-        if (bounds.height * endScale < bottom - top) {
-            // 缩放后的高度小于边界高度，去除margin，
-            // view中心点平移至最大高度边界的中心点。
-            top -= marginTop
-            bottom += margins
+        var fraction = 0f
+            set(value) {
+                if (field == value) return
+                field = value
+                invalidateSelf()
+            }
+
+        fun calculateStartAndEndValue(topY: Int, state: FigureSnapshotState) {
+            // 基于初始状态，计算view变换的起始值和结束值
+            val bounds = figureBounds
+            this.topY = topY
+            startScale = calculateScale(state, state.startAnchorY, bounds)
+            startTransY = calculateTransY(state, state.startAnchorY, startScale, bounds)
+            endScale = calculateScale(state, state.endAnchorY, bounds)
+            endTransY = calculateTransY(state, state.endAnchorY, endScale, bounds)
         }
-        val endHeight = (bottom - top).coerceAtLeast(0)
-        val startCenterY = (bounds.top + bounds.bottom) / 2
-        val endCenterY = top + endHeight / 2
-        return endCenterY.toFloat() - startCenterY
+
+        override fun draw(canvas: Canvas) {
+            val view = figureView?.get() ?: return
+            val x = figureBounds.left.toFloat()
+            val y = figureBounds.top.toFloat()
+            val width = figureBounds.width.toFloat()
+            val height = figureBounds.height.toFloat()
+            val scale = startScale + (endScale - startScale) * fraction
+            val translationY = startTransY + (endTransY - startTransY) * fraction
+            matrix.reset()
+            matrix.postTranslate(-width / 2, -height / 2)
+            matrix.postScale(scale, scale)
+            matrix.postTranslate(width / 2, height / 2)
+            matrix.postTranslate(x, y + translationY)
+            canvas.withMatrix(matrix) { view.draw(canvas) }
+        }
+
+        private fun calculateScale(
+            state: FigureSnapshotState,
+            endAnchorY: Int,
+            bounds: ViewBounds?
+        ) = state.run {
+            if (bounds == null || endAnchorY == initialAnchorY) return@run 1f
+            val startHeight = bounds.height
+            val top = topY + marginTop
+            val bottom = endAnchorY - margins
+            val endHeight = (bottom - top).coerceAtLeast(0)
+            var scale = endHeight.toFloat() / startHeight
+
+            val startWidth = bounds.width
+            val endWidth = (container.width - margins * 2).coerceAtLeast(0)
+            if (startWidth * scale > endWidth) scale = endWidth.toFloat() / startWidth
+            scale
+        }
+
+        private fun calculateTransY(
+            state: FigureSnapshotState,
+            endAnchorY: Int,
+            endScale: Float, bounds: ViewBounds?
+        ) = state.run {
+            if (bounds == null || endAnchorY == initialAnchorY) return@run 0f
+            var top = topY + marginTop
+            var bottom = endAnchorY - margins
+            if (bounds.height * endScale < bottom - top) {
+                // 缩放后的高度小于边界高度，去除margin，
+                // view中心点平移至最大高度边界的中心点。
+                top -= marginTop
+                bottom += margins
+            }
+            val endHeight = (bottom - top).coerceAtLeast(0)
+            val startCenterY = (bounds.top + bounds.bottom) / 2
+            val endCenterY = top + endHeight / 2
+            return endCenterY.toFloat() - startCenterY
+        }
+
+        override fun setAlpha(alpha: Int) = Unit
+        override fun setColorFilter(colorFilter: ColorFilter?) = Unit
+        override fun getOpacity() = PixelFormat.UNKNOWN
     }
 }

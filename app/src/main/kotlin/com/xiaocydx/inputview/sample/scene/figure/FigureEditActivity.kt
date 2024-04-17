@@ -57,7 +57,6 @@ class FigureEditActivity : AppCompatActivity() {
             context = this@FigureEditActivity,
             lifecycleOwner = this@FigureEditActivity,
             fragmentManager = supportFragmentManager,
-            requestManager = requestManager,
             sharedViewModel = sharedViewModel
         ).attachToWindow(window, onBackPressedDispatcher)
 

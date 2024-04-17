@@ -45,10 +45,6 @@ class FigureViewModel : ViewModel() {
         selectPosition(figureList.indexOfFirst { it.id == figure.id })
     }
 
-    fun setPageInvisible(invisible: PageInvisible) {
-        _figureState.update { it.copy(pageInvisible = invisible) }
-    }
-
     fun confirmDubbing(dubbing: Dubbing?) {
         val position = _figureState.value.currentPosition
         val current = figureList.getOrNull(position) ?: return
@@ -121,8 +117,7 @@ data class FigureState(
     val currentEditor: FigureEditor? = null,
     val currentText: String = "",
     val pendingRemove: Figure? = null,
-    val pendingTransform: PendingTransform? = null,
-    val pageInvisible: PageInvisible = PageInvisible(),
+    val pendingTransform: PendingTransform? = null
 ) {
     val pendingEditor: PendingTransform.Editor?
         get() = pendingTransform as? PendingTransform.Editor
@@ -130,11 +125,6 @@ data class FigureState(
     val pendingBegin: PendingTransform.Begin?
         get() = pendingTransform as? PendingTransform.Begin
 }
-
-data class PageInvisible(
-    val figure: Boolean = false,
-    val text: Boolean = false
-)
 
 sealed class PendingTransform {
     data class Editor(

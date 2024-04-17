@@ -13,7 +13,6 @@ import androidx.lifecycle.Lifecycle.State.CREATED
 import androidx.lifecycle.Lifecycle.State.DESTROYED
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
-import com.bumptech.glide.RequestManager
 import com.xiaocydx.inputview.EditorMode
 import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
@@ -40,7 +39,6 @@ class FigureEditOverlay(
     private val context: Context,
     private val lifecycleOwner: LifecycleOwner,
     private val fragmentManager: FragmentManager,
-    private val requestManager: RequestManager,
     private val sharedViewModel: FigureViewModel
 ) {
     private val inputView = InputView(context)
@@ -99,14 +97,8 @@ class FigureEditOverlay(
             .add(BackgroundTransformation(
                 showEditor = sharedViewModel::submitPendingEditor
             ))
-            .add(PageInvisibleTransformation(
-                getPageInvisible = { sharedViewModel.figureState.value.pageInvisible },
-                setPageInvisible = sharedViewModel::setPageInvisible
-            ))
             .add(CoverGroupTransformation(
-                requestManager = requestManager,
                 updateCurrent = sharedViewModel.currentFigureFlow().drop(count = 1),
-                currentFigure = sharedViewModel::currentFigure,
                 requestSnapshot = { sharedViewModel.submitPendingEditor(it, request = true) }
             ))
             .add(TextGroupTransformation(

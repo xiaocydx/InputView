@@ -32,6 +32,7 @@ class TextGroupTransformation(
     private val confirmText: (text: String) -> Unit
 ) : ContainerTransformation<FigureSnapshotState>(INPUT, EMOJI) {
     private var binding: FigureTextLayoutBinding? = null
+    private var textBounds: ViewBounds? = null
     private val startPaddings = Rect()
     private val endPaddings = Rect()
     private val initialToolsHeight = 44.dp
@@ -53,7 +54,8 @@ class TextGroupTransformation(
 
     override fun onPrepare(state: FigureSnapshotState) = with(state) {
         val binding = binding ?: return
-        val bounds = snapshot.textBounds
+        val bounds = snapshot.textView?.get()?.let(ViewBounds::from)
+        textBounds = bounds
         if (bounds == null) {
             binding.root.isInvisible = true
             return
@@ -87,7 +89,7 @@ class TextGroupTransformation(
     }
 
     override fun onStart(state: FigureSnapshotState) = with(state) {
-        val bounds = snapshot.textBounds ?: return
+        val bounds = textBounds ?: return@with
         if (current == null) {
             endPaddings.set(bounds)
             endPaddings.right = container.width - bounds.right
@@ -99,6 +101,7 @@ class TextGroupTransformation(
             endPaddings.set(0, top, 0, bottom)
             endToolsHeight = initialToolsHeight
         }
+        snapshot.textView?.get()?.alpha = 0f
     }
 
     override fun onUpdate(state: FigureSnapshotState) = with(state) {
@@ -117,6 +120,10 @@ class TextGroupTransformation(
         }
         val toolsHeight = startToolsHeight + (endToolsHeight - startToolsHeight) * fraction
         binding.llTools.updateLayoutParamsHeight(toolsHeight.toInt())
+    }
+
+    override fun onEnd(state: FigureSnapshotState) {
+        state.snapshot.textView?.get()?.alpha = 1f
     }
 
     private fun calculatePadding(start: Int, end: Int, fraction: Float): Int {

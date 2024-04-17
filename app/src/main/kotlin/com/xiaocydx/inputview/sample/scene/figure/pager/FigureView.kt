@@ -2,6 +2,7 @@ package com.xiaocydx.inputview.sample.scene.figure.pager
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.Gravity
@@ -28,15 +29,16 @@ class FigureView @JvmOverloads constructor(
 ) : CustomLayout(context, attrs) {
     private val corners = 8.dp
     private var ratio = 1f
-    val ivCover = AppCompatImageView(context).apply {
+    private val ivCover = AppCompatImageView(context).apply {
+        setRoundRectOutlineProvider(corners)
         addView(this, matchParent, matchParent)
     }
 
     val tvDubbing = AppCompatTextView(context).apply {
         maxLines = 1
-        minWidth = 45.dp
         gravity = Gravity.CENTER
         verticalPadding = 5.dp
+        horizontalPadding = 6.dp
         setTextColor(Color.WHITE)
         setBackgroundColor(0x4D000000)
         setRoundRectOutlineProvider(4.dp)
@@ -49,8 +51,6 @@ class FigureView @JvmOverloads constructor(
 
     init {
         layoutParams(matchParent, wrapContent)
-        setRoundRectOutlineProvider(corners)
-        setBackgroundColor(0xFF212123.toInt())
     }
 
     fun setFigure(requestManager: RequestManager, figure: Figure) {
@@ -58,13 +58,27 @@ class FigureView @JvmOverloads constructor(
         ivCover.requestLayout()
         tvDubbing.text = figure.dubbing.name
         requestManager.load(figure.coverUrl)
+            .placeholder(ColorDrawable(0xFF212123.toInt()))
             .transform(MultiTransformation(CenterCrop(), RoundedCorners(corners)))
             .into(DrawableImageViewTarget(ivCover).waitForLayout())
     }
 
+    fun setAnimationAlpha(value: Float) {
+        for (i in 0 until childCount) {
+            val child = getChildAt(i)
+            if (child === ivCover) continue
+            child.alpha = value
+        }
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        alpha = 1f
+        setAnimationAlpha(1f)
+    }
+
     @CallSuper
     override fun onMeasureChildren(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        // 覆盖层会指定精确的尺寸，此时不做任何计算，避免产生像素误差
         if (layoutParams.width < 0 || layoutParams.height < 0) {
             // 尺寸对齐长边
             var finalWidth = measuredWidth
