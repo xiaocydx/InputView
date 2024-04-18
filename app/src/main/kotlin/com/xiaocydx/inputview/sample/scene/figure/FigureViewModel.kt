@@ -57,7 +57,7 @@ class FigureViewModel : ViewModel() {
     }
 
     /**
-     * 提交待移除的[figure]，由视图做进一步处理，调用[consumePendingRemove]
+     * 提交待移除的[figure]，由视图做进一步处理
      */
     fun submitPendingRemove(figure: Figure) {
         _figureState.update { it.copy(pendingRemove = figure) }
@@ -71,6 +71,7 @@ class FigureViewModel : ViewModel() {
         val position = figureList.indexOfFirst { it.id == remove.id }
         if (position == _figureState.value.currentPosition) {
             val nextPosition = when {
+                position == 0 -> 0
                 figureList.getOrNull(position - 1) != null -> position - 1
                 figureList.getOrNull(position + 1) != null -> position + 1
                 else -> NO_POSITION
@@ -82,33 +83,28 @@ class FigureViewModel : ViewModel() {
     }
 
     /**
-     * 提交待处理的[editor]，由视图生成[FigureSnapshot]，调用[consumePendingEditor]
+     * 提交待处理的[editor]，由视图做进一步处理
      */
-    fun submitPendingEditor(editor: FigureEditor?, request: Boolean = false) = _figureState.update {
+    fun submitPendingEditor(
+        editor: FigureEditor?,
+        request: Boolean = false
+    ) = _figureState.update {
+        val pending = it.pendingEditor
         if (!request && it.currentEditor == editor) {
-            return@update it.copy(pendingTransform = null)
+            if (pending == null) return
+            return@update it.copy(pendingEditor = null)
         }
-        if (request && it.pendingEditor != null) return
-        if (it.pendingBegin != null) return
-        it.copy(pendingTransform = PendingTransform.Editor(editor, request))
+        if (request && pending != null) return
+        if (pending != null && pending.editor == editor) return
+        it.copy(pendingEditor = PendingEditor(editor, request))
     }
 
     /**
-     * 消费待处理的`editor`，提交待处理的[snapshot]，由覆盖层调用[consumePendingSnapshot]
+     * 消费待处理的`editor`，设置当前的[FigureEditor]
      */
-    fun consumePendingEditor(snapshot: FigureSnapshot) = _figureState.update {
-        val pendingEditor = it.pendingEditor ?: return
-        val editor = pendingEditor.value
-        val request = pendingEditor.request
-        it.copy(pendingTransform = PendingTransform.Begin(snapshot, editor, request))
-    }
-
-    /**
-     * 消费待处理的`snapshot`，转换`currentEditor`，覆盖层开始变换动画
-     */
-    fun consumePendingSnapshot(current: FigureEditor?) = _figureState.update {
-        it.pendingBegin ?: return
-        it.copy(pendingTransform = null, currentEditor = current)
+    fun consumePendingEditor(current: FigureEditor?) = _figureState.update {
+        it.pendingEditor ?: return
+        it.copy(pendingEditor = null, currentEditor = current)
     }
 }
 
@@ -117,24 +113,7 @@ data class FigureState(
     val currentEditor: FigureEditor? = null,
     val currentText: String = "",
     val pendingRemove: Figure? = null,
-    val pendingTransform: PendingTransform? = null
-) {
-    val pendingEditor: PendingTransform.Editor?
-        get() = pendingTransform as? PendingTransform.Editor
+    val pendingEditor: PendingEditor? = null
+)
 
-    val pendingBegin: PendingTransform.Begin?
-        get() = pendingTransform as? PendingTransform.Begin
-}
-
-sealed class PendingTransform {
-    data class Editor(
-        val value: FigureEditor?,
-        val request: Boolean
-    ) : PendingTransform()
-
-    data class Begin(
-        val snapshot: FigureSnapshot,
-        val editor: FigureEditor?,
-        val request: Boolean
-    ) : PendingTransform()
-}
+data class PendingEditor(val editor: FigureEditor?, val request: Boolean)

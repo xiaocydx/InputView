@@ -15,9 +15,9 @@ import com.xiaocydx.inputview.sample.scene.figure.pager.TextPager
 import com.xiaocydx.insets.insets
 import com.xiaocydx.insets.navigationBars
 import com.xiaocydx.insets.statusBars
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 
 /**
@@ -53,34 +53,30 @@ class FigureEditActivity : AppCompatActivity() {
             showEditor = sharedViewModel::submitPendingEditor,
         )
         // 覆盖层，包含变换动画、编辑器页面
-        FigureEditOverlay(
+        val overlay = FigureEditOverlay(
             context = this@FigureEditActivity,
             lifecycleOwner = this@FigureEditActivity,
             fragmentManager = supportFragmentManager,
             sharedViewModel = sharedViewModel
         ).attachToWindow(window, onBackPressedDispatcher)
 
-        // 非pending状态结合repeatOnLifecycle收集，
-        // 在各自的业务单元逻辑中，实现状态差异对比。
         sharedViewModel.figureState.onEach {
+            if (it.pendingRemove != null) {
+                window.snackbar().setText("已删除").show()
+                sharedViewModel.consumePendingRemove()
+            }
             figurePager.updateCurrentPage(it)
             textPager.updateCurrentPage(it)
         }.launchRepeatOnLifecycle(lifecycle)
 
-        // pending状态不结合repeatOnLifecycle收集，
-        // 及时对新的状态做出处理，然后消费pending。
+        // pendingEditor不结合repeatOnLifecycle收集
         sharedViewModel.figureState
-            .filter { it.pendingRemove != null || it.pendingEditor != null }
-            .mapLatest {
-                if (it.pendingRemove != null) {
-                    window.snackbar().setText("已删除").show()
-                    sharedViewModel.consumePendingRemove()
-                }
-                if (it.pendingEditor != null) {
-                    var snapshot = figurePager.awaitSnapshot()
-                    snapshot = snapshot.merge(textPager.snapshot())
-                    sharedViewModel.consumePendingEditor(snapshot)
-                }
+            .mapNotNull { it.pendingEditor }
+            .mapLatest { (editor, request) ->
+                var snapshot = figurePager.awaitSnapshot()
+                snapshot = snapshot.merge(textPager.snapshot())
+                val current = overlay.notify(snapshot, editor, request)
+                sharedViewModel.consumePendingEditor(current)
             }
             .launchIn(lifecycleScope)
     }

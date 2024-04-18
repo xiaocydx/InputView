@@ -12,7 +12,6 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle.State.CREATED
 import androidx.lifecycle.Lifecycle.State.DESTROYED
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.lifecycleScope
 import com.xiaocydx.inputview.EditorMode
 import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
@@ -27,9 +26,6 @@ import com.xiaocydx.inputview.sample.scene.transform.OverlayStateExtraHolder
 import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.ContainerState
 import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformationEnforcer
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.onEach
 
 /**
  * @author xcc
@@ -66,11 +62,19 @@ class FigureEditOverlay(
             val contentParent = window.findViewById<ViewGroup>(android.R.id.content)
             contentParent.addView(initRoot(window), matchParent, matchParent)
             initEnforcer(dispatcher)
-            initCollect()
         }
         lifecycleOwner.lifecycle.doOnTargetState(DESTROYED) {
             sharedViewModel.submitPendingEditor(null)
         }
+    }
+
+    fun notify(
+        snapshot: FigureSnapshot,
+        editor: FigureEditor?,
+        request: Boolean
+    ): FigureEditor? {
+        snapshotHolder.setValue(snapshot, request)
+        return transformationEnforcer.notify(editor)
     }
 
     private fun initRoot(window: Window): View {
@@ -85,6 +89,10 @@ class FigureEditOverlay(
             onStart = { window.isDispatchTouchEventEnabled = false },
             onEnd = { window.isDispatchTouchEventEnabled = true },
         )
+        // 同步当前Editor，例如隐藏IME
+        adapter.addEditorChangedListener { _, current ->
+            sharedViewModel.submitPendingEditor(current)
+        }
         val root = FrameLayout(context)
         root.addView(container, matchParent, matchParent)
         root.addView(inputView, matchParent, matchParent)
@@ -107,21 +115,6 @@ class FigureEditOverlay(
                 confirmText = sharedViewModel::confirmText,
             ))
             .attach(inputView, dispatcher)
-    }
-
-    private fun initCollect() {
-        adapter.addEditorChangedListener { _, current ->
-            // 同步当前Editor，例如隐藏IME
-            sharedViewModel.submitPendingEditor(current)
-        }
-        sharedViewModel.figureState
-            .mapNotNull { it.pendingBegin }
-            .onEach {
-                snapshotHolder.setValue(it.snapshot, it.request)
-                val current = transformationEnforcer.notify(it.editor)
-                sharedViewModel.consumePendingSnapshot(current)
-            }
-            .launchIn(lifecycleOwner.lifecycleScope)
     }
 }
 
