@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.doOnPreDraw
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -11,7 +12,9 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.HORIZONTAL
+import androidx.recyclerview.widget.optimizeNextFrameScroll
 import com.xiaocydx.cxrv.binding.bindingAdapter
 import com.xiaocydx.cxrv.concat.Concat
 import com.xiaocydx.cxrv.divider.Edge
@@ -139,9 +142,22 @@ class DubbingFragment : Fragment() {
                     dubbingSelection.select(current.dubbing)
                     dubbingViewModel.findTargetPosition(current.dubbing)
                 }
-                rvDubbing.scrollToPosition(targetPosition)
+                rvDubbing.scrollToCenter(targetPosition)
             }
             .launchIn(viewLifecycleScope)
+    }
+
+    private fun RecyclerView.scrollToCenter(position: Int) {
+        // 非平滑滚动到中间位置的简易实现
+        scrollToPosition(position)
+        doOnPreDraw {
+            val itemView = findViewHolderForLayoutPosition(position)?.itemView
+            itemView ?: return@doOnPreDraw
+            val rvCenterX = (right + left) / 2
+            val itemCenterX = (itemView.right + itemView.left) / 2
+            scrollBy(itemCenterX - rvCenterX, 0)
+        }
+        optimizeNextFrameScroll()
     }
 }
 
