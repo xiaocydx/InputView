@@ -38,10 +38,15 @@ class CoverGroupTransformation(
             .apply { overlay.add(drawable) }.also { view = it }
     }
 
+    override fun onPrepare(state: FigureSnapshotState) {
+        // 恢复之前的figureView.children.alpha
+        drawable.figureView?.get()?.setAnimationAlpha(1f)
+        drawable.figureView = state.snapshot.figureView
+    }
+
     override fun onStart(state: FigureSnapshotState) {
         val view = view ?: return
         val topY = view.getRootWindowInsetsCompat()?.statusBarHeight ?: 0
-        drawable.figureView = state.snapshot.figureView
         drawable.setBounds(0, 0, view.width, view.height)
         drawable.calculateStartAndEndValues(topY, state)
         drawable.figureView?.get()?.alpha = 0f
