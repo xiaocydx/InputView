@@ -90,8 +90,14 @@ class FigureEditOverlay(
             onEnd = { window.isDispatchTouchEventEnabled = true },
         )
         // 同步当前Editor，例如隐藏IME
-        adapter.addEditorChangedListener { _, current ->
-            sharedViewModel.submitPendingEditor(current)
+        adapter.addEditorChangedListener { previous, current ->
+            if (previous === FigureEditor.INPUT && current == null
+                    && sharedViewModel.figureState.value.pendingEditor == null) {
+                // 非主动隐藏IME，重定向为INPUT_IDLE，实现不退出文字输入的效果
+                transformationEnforcer.notify(FigureEditor.INPUT_IDLE)
+            } else {
+                sharedViewModel.submitPendingEditor(current)
+            }
         }
         val root = FrameLayout(context)
         root.addView(container, matchParent, matchParent)

@@ -11,7 +11,7 @@ import com.xiaocydx.inputview.sample.editor_adapter.fragment.EmojiFragment
  * @date 2024/4/13
  */
 enum class FigureEditor : Editor {
-    INPUT, EMOJI, GRID, DUBBING
+    INPUT, INPUT_IDLE, EMOJI, GRID, DUBBING
 }
 
 class FigureEditAdapter(
@@ -23,7 +23,8 @@ class FigureEditAdapter(
     override fun getEditorKey(editor: FigureEditor) = editor.name
 
     override fun onCreateFragment(editor: FigureEditor) = when (editor) {
-        FigureEditor.INPUT -> null
+        FigureEditor.INPUT,
+        FigureEditor.INPUT_IDLE -> null
         FigureEditor.EMOJI -> EmojiFragment()
         FigureEditor.GRID -> FigureGridFragment()
         FigureEditor.DUBBING -> DubbingFragment()

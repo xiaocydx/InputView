@@ -17,9 +17,13 @@ import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.DUBBING
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.EMOJI
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.GRID
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.INPUT
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.INPUT_IDLE
 import com.xiaocydx.inputview.sample.scene.transform.ContainerTransformation
 import com.xiaocydx.insets.getRootWindowInsetsCompat
+import com.xiaocydx.insets.isGestureNavigationBar
+import com.xiaocydx.insets.navigationBarHeight
 import com.xiaocydx.insets.statusBarHeight
+import com.xiaocydx.insets.updateMargins
 import kotlin.math.absoluteValue
 
 /**
@@ -30,7 +34,7 @@ class TextGroupTransformation(
     private val showEditor: (FigureEditor?) -> Unit,
     private val currentText: () -> String,
     private val confirmText: (text: String) -> Unit
-) : ContainerTransformation<FigureSnapshotState>(INPUT, EMOJI) {
+) : ContainerTransformation<FigureSnapshotState>(INPUT, INPUT_IDLE, EMOJI) {
     private var binding: FigureTextLayoutBinding? = null
     private var textBounds: ViewBounds? = null
     private val startPaddings = Rect()
@@ -38,6 +42,8 @@ class TextGroupTransformation(
     private val initialToolsHeight = 44.dp
     private var startToolsHeight = 0
     private var endToolsHeight = 0
+    private var navigationBarHeight = 0
+    private var isGestureNavigationBar = false
 
     override fun getView(state: FigureSnapshotState): View {
         return binding?.root ?: FigureTextLayoutBinding.inflate(
@@ -49,6 +55,7 @@ class TextGroupTransformation(
             tvEmoji.onClick { showEditor(EMOJI) }
             tvFigure.onClick { showEditor(GRID) }
             tvDubbing.onClick { showEditor(DUBBING) }
+            ivConfirm.onClick { showEditor(null) }
         }.root
     }
 
@@ -90,17 +97,20 @@ class TextGroupTransformation(
 
     override fun onStart(state: FigureSnapshotState) = with(state) {
         val bounds = textBounds ?: return@with
+        val insets = container.getRootWindowInsetsCompat()
         if (current == null) {
             endPaddings.set(bounds)
             endPaddings.right = container.width - bounds.right
             endPaddings.bottom = container.height - bounds.bottom
             endToolsHeight = 0
         } else {
-            val top = container.getRootWindowInsetsCompat()?.statusBarHeight ?: 0
+            val top = insets?.statusBarHeight ?: 0
             val bottom = (endAnchorY - initialAnchorY).absoluteValue
             endPaddings.set(0, top, 0, bottom)
             endToolsHeight = initialToolsHeight
         }
+        navigationBarHeight = insets?.navigationBarHeight ?: 0
+        isGestureNavigationBar = insets?.isGestureNavigationBar(container) ?: false
         snapshot.textView?.get()?.alpha = 0f
     }
 
@@ -120,6 +130,7 @@ class TextGroupTransformation(
         }
         val toolsHeight = startToolsHeight + (endToolsHeight - startToolsHeight) * fraction
         binding.llTools.updateLayoutParamsHeight(toolsHeight.toInt())
+        binding.llTools.updateMargins(bottom = calculateToolsMarginBottom(state))
     }
 
     override fun onEnd(state: FigureSnapshotState) {
@@ -128,6 +139,21 @@ class TextGroupTransformation(
 
     private fun calculatePadding(start: Int, end: Int, fraction: Float): Int {
         return (start + (end - start) * fraction).toInt()
+    }
+
+    private fun calculateToolsMarginBottom(state: FigureSnapshotState) = with(state) {
+        val fraction = when {
+            navigationBarHeight <= 0 || !isGestureNavigationBar -> 0f
+            // 退出INPUT_IDLE，按interpolatedFraction减小marginBottom
+            previous === INPUT_IDLE && current == null -> 1 - interpolatedFraction
+            // currentAnchorY处于navigationBar的范围，计算当前marginBottom
+            currentAnchorY in (initialAnchorY - navigationBarHeight)..initialAnchorY -> {
+                val current = currentAnchorY - (initialAnchorY - navigationBarHeight)
+                current.toFloat() / navigationBarHeight
+            }
+            else -> 0f
+        }
+        (navigationBarHeight * fraction).toInt()
     }
 
     private fun Rect.set(bounds: ViewBounds) {

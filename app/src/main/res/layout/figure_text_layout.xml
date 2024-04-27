@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:clickable="true">
+    android:clickable="true"
+    android:orientation="vertical">
 
     <View
         android:layout_width="match_parent"
@@ -18,10 +18,10 @@
         android:layout_height="0dp"
         android:background="@null"
         android:gravity="top|start"
-        android:padding="20dp"
         android:hint="输入文字"
-        android:textColorHint="#B4B4B4"
+        android:padding="20dp"
         android:textColor="@color/white"
+        android:textColorHint="#B4B4B4"
         android:textSize="16sp"
         app:layout_constraintBottom_toTopOf="@id/llTools"
         app:layout_constraintTop_toTopOf="parent"
@@ -62,5 +62,15 @@
             android:paddingHorizontal="10dp"
             android:text="配音"
             android:textColor="@color/white" />
+
+        <ImageView
+            android:id="@+id/ivConfirm"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:paddingHorizontal="10dp"
+            android:src="@drawable/ic_confirm"
+            app:layout_constraintBottom_toBottomOf="@id/title"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/title" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
