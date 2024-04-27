@@ -393,6 +393,7 @@ abstract class EditorAnimator(
         override var currentOffset = NO_VALUE; private set
         override val navBarOffset get() = host?.navBarOffset ?: 0
         override var animatedFraction = 0f; private set
+        override var interpolatedFraction = 0f; private set
         override var durationMillis = 0L; private set
         override var interpolator: Interpolator; private set
 
@@ -460,14 +461,13 @@ abstract class EditorAnimator(
             setAnimationOffset(NO_VALUE, NO_VALUE, NO_VALUE)
             val startOffset = host?.editorOffset ?: return
             setAnimationOffset(startOffset, endOffset, startOffset)
-            val stableImeHeight = animationDispatcher.stableImeHeight
-            realStart = if (isIme(previous) && current == null) stableImeHeight else startOffset
         }
 
         fun setAnimationEndOffset(endOffset: Int = calculateEndOffset()) {
             setAnimationOffset(endOffset = endOffset)
             val stableImeHeight = animationDispatcher.stableImeHeight
-            realEnd = if (previous == null && isIme(current)) stableImeHeight else endOffset
+            realStart = if (isIme(previous) && endOffset == 0) stableImeHeight else startOffset
+            realEnd = if (startOffset == 0 && isIme(current)) stableImeHeight else endOffset
         }
 
         fun updateAnimationCurrent() {
@@ -475,11 +475,17 @@ abstract class EditorAnimator(
                 animatedFraction = simpleAnimation?.animatedFraction
                         ?: insetsAnimation?.fraction ?: 0f
             }
-            val realCurrent = realStart + (realEnd - realStart) * interpolatedFraction
+            val fraction = interpolator.getInterpolation(animatedFraction)
+            val realCurrent = realStart + (realEnd - realStart) * fraction
             val realTotal = (realEnd - realStart).absoluteValue
             val total = (endOffset - startOffset).absoluteValue
             val diff = (realTotal - total).absoluteValue
             setAnimationOffset(currentOffset = (realCurrent - diff).toInt())
+            interpolatedFraction = when {
+                realStart == startOffset && realEnd == endOffset -> fraction
+                else -> (currentOffset - startOffset).toFloat() / (endOffset - startOffset)
+            }
+            interpolatedFraction = interpolatedFraction.absoluteValue
         }
 
         fun updateAnimationToEnd() {
@@ -600,7 +606,6 @@ interface AnimationState {
      */
     @get:FloatRange(from = 0.0, to = 1.0)
     val interpolatedFraction: Float
-        get() = interpolator.getInterpolation(animatedFraction)
 
     /**
      * [editor]是否为IME
