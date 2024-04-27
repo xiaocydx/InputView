@@ -104,12 +104,15 @@ abstract class EditorAdapter<T : Editor> {
         listeners.forEach { action(it as EditorChangedListener<Editor>) }
     }
 
-    internal fun onEditorChanged(previous: T?, current: T?) {
+    internal fun dispatchChanged(previous: T?, current: T?, invalidated: DispatchInvalidated) {
         for (index in listeners.indices.reversed()) {
+            if (invalidated()) break
             listeners[index].onEditorChanged(previous, current)
         }
     }
 }
+
+internal typealias DispatchInvalidated = () -> Boolean
 
 /**
  * [InputView]编辑区的编辑器

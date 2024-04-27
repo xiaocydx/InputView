@@ -43,6 +43,7 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
     private var removePreviousImmediately = true
     private var pendingChange: PendingChange? = null
     private var pendingSavedState: SavedState? = null
+    private var dispatchingChanged: DispatchingChanged? = null
     var ime: Editor? = null; private set
     var current: Editor? = null; private set
     var changeRecord = ChangeRecord(); private set
@@ -137,20 +138,12 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
         val previous = current
         current = editor
         setPendingChange(previous, current)
-        var requestFocus = false
-        val prevHandler = handler
         if (previous === ime) {
             handleImeShown(shown = false, controlIme)
         } else if (current === ime) {
-            requestFocus = true
             handleImeShown(shown = true, controlIme)
         }
-        checkedAdapter().onEditorChanged(previous, current)
-        if (requestFocus && prevHandler !== handler) {
-            // onEditorChanged()的分发过程重新设置了editText，
-            // 此时对ediText补偿requestFocus()，确保获得焦点。
-            handleImeShown(shown = true, controlIme = false)
-        }
+        dispatchChanged(previous)
         requestLayout()
         return true
     }
@@ -160,7 +153,7 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
         current = null
         setPendingChange(editor, current)
         if (editor === ime) handleImeShown(shown = false, controlIme)
-        checkedAdapter().onEditorChanged(editor, current)
+        dispatchChanged(editor)
         requestLayout()
         return true
     }
@@ -238,6 +231,26 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
         if (view?.parent === this) removeView(view)
     }
 
+    private fun dispatchChanged(previous: Editor?) {
+        var dispatching = dispatchingChanged
+        if (dispatching != null) {
+            // 分发过程调用showChecked()或hideChecked()，
+            // 记录下这一次的previous，无效正在分发的过程，
+            // 基于记录的previous重新分发。
+            dispatching.previous = previous
+            dispatching.invalidated = true
+            return
+        }
+        dispatching = DispatchingChanged(previous)
+        dispatchingChanged = dispatching
+        do {
+            dispatching.invalidated = false
+            if (dispatching.previous === current) break
+            checkedAdapter().dispatchChanged(dispatching.previous, current, dispatching)
+        } while (dispatching.invalidated)
+        dispatchingChanged = null
+    }
+
     fun dispatchImeShown(shown: Boolean): Boolean {
         val ime = ime
         val changed = when {
@@ -280,6 +293,13 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
         var waitDispatchImeShown: Boolean = false,
         var immediately: Boolean = false
     )
+
+    private data class DispatchingChanged(
+        var previous: Editor?,
+        var invalidated: Boolean = false,
+    ) : DispatchInvalidated {
+        override fun invoke() = invalidated
+    }
 
     data class ChangeRecord(
         val previous: Editor? = null,

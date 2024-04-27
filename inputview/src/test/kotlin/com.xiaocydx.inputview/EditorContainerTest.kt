@@ -58,23 +58,26 @@ internal class EditorContainerTest {
     fun showChecked() {
         scenario.onActivity {
             val container = EditorContainer(it)
-            val adapter = spyk(TestEditorAdapter())
+            val adapter = TestEditorAdapter()
             container.setAdapter(adapter)
+
+            val listener = spyk<EditorChangedListener<TestEditor>>()
+            adapter.addEditorChangedListener(listener)
 
             assertThat(container.showChecked(TestEditor.IME)).isTrue()
             assertThat(container.current).isEqualTo(TestEditor.IME)
             assertThat(container.childCount).isEqualTo(0)
-            verify(exactly = 1) { adapter.onEditorChanged(null, TestEditor.IME) }
+            verify(exactly = 1) { listener.onEditorChanged(null, TestEditor.IME) }
 
             assertThat(container.showChecked(TestEditor.A)).isTrue()
             assertThat(container.current).isEqualTo(TestEditor.A)
             assertThat(container.childCount).isEqualTo(0)
-            verify(exactly = 1) { adapter.onEditorChanged(TestEditor.IME, TestEditor.A) }
+            verify(exactly = 1) { listener.onEditorChanged(TestEditor.IME, TestEditor.A) }
 
             assertThat(container.showChecked(TestEditor.B)).isTrue()
             assertThat(container.current).isEqualTo(TestEditor.B)
             assertThat(container.childCount).isEqualTo(0)
-            verify(exactly = 1) { adapter.onEditorChanged(TestEditor.A, TestEditor.B) }
+            verify(exactly = 1) { listener.onEditorChanged(TestEditor.A, TestEditor.B) }
         }
     }
 
@@ -82,18 +85,21 @@ internal class EditorContainerTest {
     fun hideChecked() {
         scenario.onActivity {
             val container = EditorContainer(it)
-            val adapter = spyk(TestEditorAdapter())
+            val adapter = TestEditorAdapter()
             container.setAdapter(adapter)
+
+            val listener = spyk<EditorChangedListener<TestEditor>>()
+            adapter.addEditorChangedListener(listener)
 
             assertThat(container.showChecked(TestEditor.A)).isTrue()
             assertThat(container.current).isEqualTo(TestEditor.A)
             assertThat(container.childCount).isEqualTo(0)
-            verify(exactly = 1) { adapter.onEditorChanged(null, TestEditor.A) }
+            verify(exactly = 1) { listener.onEditorChanged(null, TestEditor.A) }
 
             assertThat(container.hideChecked(TestEditor.A)).isTrue()
             assertThat(container.current).isNull()
             assertThat(container.childCount).isEqualTo(0)
-            verify(exactly = 1) { adapter.onEditorChanged(TestEditor.A, null) }
+            verify(exactly = 1) { listener.onEditorChanged(TestEditor.A, null) }
         }
     }
 
@@ -101,11 +107,14 @@ internal class EditorContainerTest {
     fun repeatShowChecked() {
         scenario.onActivity {
             val container = EditorContainer(it)
-            val adapter = spyk(TestEditorAdapter())
+            val adapter = TestEditorAdapter()
             container.setAdapter(adapter)
+
+            val listener = spyk<EditorChangedListener<TestEditor>>()
+            adapter.addEditorChangedListener(listener)
             assertThat(container.showChecked(TestEditor.A)).isTrue()
             assertThat(container.showChecked(TestEditor.A)).isFalse()
-            verify(exactly = 1) { adapter.onEditorChanged(null, TestEditor.A) }
+            verify(exactly = 1) { listener.onEditorChanged(null, TestEditor.A) }
         }
     }
 
@@ -113,12 +122,77 @@ internal class EditorContainerTest {
     fun repeatHideChecked() {
         scenario.onActivity {
             val container = EditorContainer(it)
-            val adapter = spyk(TestEditorAdapter())
+            val adapter = TestEditorAdapter()
             container.setAdapter(adapter)
+
+            val listener = spyk<EditorChangedListener<TestEditor>>()
+            adapter.addEditorChangedListener(listener)
             assertThat(container.showChecked(TestEditor.A)).isTrue()
             assertThat(container.hideChecked(TestEditor.A)).isTrue()
             assertThat(container.hideChecked(TestEditor.A)).isFalse()
-            verify(exactly = 1) { adapter.onEditorChanged(TestEditor.A, null) }
+            verify(exactly = 1) { listener.onEditorChanged(TestEditor.A, null) }
+        }
+    }
+
+    @Test
+    fun dispatchingShowChecked() {
+        scenario.onActivity {
+            val container = EditorContainer(it)
+            val adapter = TestEditorAdapter()
+            container.setAdapter(adapter)
+
+            val firstListener = spyk<EditorChangedListener<TestEditor>>()
+            val lastListener = spyk<EditorChangedListener<TestEditor>>()
+            val midListener = spyk(object : EditorChangedListener<TestEditor> {
+                override fun onEditorChanged(previous: TestEditor?, current: TestEditor?) {
+                    if (previous == null && current == TestEditor.IME) container.showChecked(TestEditor.A)
+                }
+            })
+            adapter.addEditorChangedListener(lastListener)
+            adapter.addEditorChangedListener(midListener)
+            adapter.addEditorChangedListener(firstListener)
+
+            // null变为IME，分发过程被midListener拦截，lastListener不会触发
+            container.showChecked(TestEditor.IME)
+            verify(exactly = 1) { firstListener.onEditorChanged(null, TestEditor.IME) }
+            verify(exactly = 1) { midListener.onEditorChanged(null, TestEditor.IME) }
+            verify(exactly = 0) { lastListener.onEditorChanged(null, TestEditor.IME) }
+
+            // midListener拦截后，触发IME变为A，重新执行完整的分发过程
+            verify(exactly = 1) { firstListener.onEditorChanged(TestEditor.IME, TestEditor.A) }
+            verify(exactly = 1) { midListener.onEditorChanged(TestEditor.IME, TestEditor.A) }
+            verify(exactly = 1) { lastListener.onEditorChanged(TestEditor.IME, TestEditor.A) }
+        }
+    }
+
+    @Test
+    fun dispatchingHideChecked() {
+        scenario.onActivity {
+            val container = EditorContainer(it)
+            val adapter = TestEditorAdapter()
+            container.setAdapter(adapter)
+
+            val firstListener = spyk<EditorChangedListener<TestEditor>>()
+            val lastListener = spyk<EditorChangedListener<TestEditor>>()
+            val midListener = spyk(object : EditorChangedListener<TestEditor> {
+                override fun onEditorChanged(previous: TestEditor?, current: TestEditor?) {
+                    if (previous == null && current == TestEditor.IME) container.hideChecked(TestEditor.IME)
+                }
+            })
+            adapter.addEditorChangedListener(lastListener)
+            adapter.addEditorChangedListener(midListener)
+            adapter.addEditorChangedListener(firstListener)
+
+            // null变为IME，分发过程被midListener拦截，lastListener不会触发
+            container.showChecked(TestEditor.IME)
+            verify(exactly = 1) { firstListener.onEditorChanged(null, TestEditor.IME) }
+            verify(exactly = 1) { midListener.onEditorChanged(null, TestEditor.IME) }
+            verify(exactly = 0) { lastListener.onEditorChanged(null, TestEditor.IME) }
+
+            // midListener拦截后，触发IME变为null，重新执行完整的分发过程
+            verify(exactly = 1) { firstListener.onEditorChanged(TestEditor.IME, null) }
+            verify(exactly = 1) { midListener.onEditorChanged(TestEditor.IME, null) }
+            verify(exactly = 1) { lastListener.onEditorChanged(TestEditor.IME, null) }
         }
     }
 
