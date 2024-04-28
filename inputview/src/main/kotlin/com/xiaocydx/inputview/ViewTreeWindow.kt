@@ -28,6 +28,7 @@ import androidx.core.view.*
 import androidx.core.view.WindowInsetsCompat.Type.*
 import com.xiaocydx.inputview.compat.*
 import com.xiaocydx.insets.consumeInsets
+import com.xiaocydx.insets.decorInsets
 import com.xiaocydx.insets.getImeOffset
 import com.xiaocydx.insets.getRootWindowInsetsCompat
 import com.xiaocydx.insets.imeHeight
@@ -156,7 +157,7 @@ internal class ViewTreeWindow(
             var consumeType = 0
             if (statusBarEdgeToEdge) consumeType = consumeType or statusBars()
             if (insets.supportGestureNavBarEdgeToEdge) consumeType = consumeType or navigationBars()
-            val decorInsets = insets.consumeInsets(consumeType or ime())
+            val decorInsets = insets.decorInsets(consumeType)
             decorView.onApplyWindowInsetsCompat(decorInsets)
             // 在decorView处理完contentRoot的Margins后，再设置Margins
             contentRootRef?.get()?.updateMargins(

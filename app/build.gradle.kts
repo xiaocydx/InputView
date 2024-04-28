@@ -44,7 +44,7 @@ dependencies {
     implementation("com.github.xiaocydx.CXRV:cxrv-paging:${cxrvVersion}")
     implementation("com.github.xiaocydx.CXRV:cxrv-viewpager2:${cxrvVersion}")
 
-    val insertsVersion = "1.1.4"
+    val insertsVersion = "1.1.5"
     implementation("com.github.xiaocydx.Insets:insets:${insertsVersion}")
     implementation("com.github.xiaocydx.Insets:insets-compat:${insertsVersion}")
     implementation("com.github.xiaocydx.Insets:insets-systembar:${insertsVersion}")
