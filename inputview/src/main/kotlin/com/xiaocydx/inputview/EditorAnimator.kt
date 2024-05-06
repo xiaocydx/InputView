@@ -190,13 +190,34 @@ abstract class EditorAnimator(
 
     private fun dispatchAnimationEnd(record: AnimationRecord) {
         if (record.checkAnimationOffset()) {
-            record.updateAnimationToEnd()
+            record.setAnimationFraction(1f)
             dispatchAnimationUpdate(record)
             dispatchAnimationCallback { onAnimationEnd(record) }
         }
         record.removeStartViewIfNecessary()
         record.removePreDrawRunSimpleAnimation()
         animationRecord = null
+    }
+
+    private fun dispatchInsetsAnimationUpdate(record: AnimationRecord) {
+        if (!record.checkAnimationOffset()) return
+        // 当导航栏被隐藏时，显示IME会先分发导航栏高度为0的WindowInsets，
+        // 后分发导航栏高度不为0的WindowInsets，动画运行时修正endOffset。
+        val newEndOffset = calculateEndOffset()
+        val fraction = record.animatedFraction
+        if (newEndOffset != NO_VALUE && newEndOffset != record.endOffset && fraction < 1f) {
+            // 结束startOffset和endOffset的分发
+            record.setAnimationFraction(1f)
+            dispatchAnimationUpdate(record)
+            dispatchAnimationCallback { onAnimationEnd(record) }
+
+            // 按照startOffset和endOffset重新分发
+            record.setAnimationEndOffset(newEndOffset)
+            record.setAnimationFraction(fraction)
+            dispatchAnimationPrepare(record)
+            dispatchAnimationStart(record)
+        }
+        dispatchAnimationUpdate(record)
     }
 
     private fun dispatchAddedAnimationCallback(callback: AnimationCallback) {
@@ -227,10 +248,9 @@ abstract class EditorAnimator(
     internal fun calculateEndOffset(): Int {
         host?.apply {
             return if (current === ime) {
-                // 当前是IME，若还未进行WindowInsets分发，更新lastInsets，
-                // 则lastInsets.imeOffset为0，这种情况imeOffset不是有效值。
-                val lastInsets = animationDispatcher.lastInsets
-                val offset = lastInsets?.imeOffset ?: NO_VALUE
+                // 若还未进行WindowInsets分发，更新lastImeOffset，
+                // 则lastImeOffset为0，这种情况imeOffset不是有效值。
+                val offset = animationDispatcher.lastImeOffset
                 if (offset != 0) offset else NO_VALUE
             } else {
                 currentView?.measuredHeight ?: 0
@@ -266,8 +286,8 @@ abstract class EditorAnimator(
     private inner class AnimationDispatcher : OnApplyWindowInsetsListenerCompat,
             WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_STOP) {
         private var lastImeHeight = 0
+        var lastImeOffset = 0; private set
         var stableImeHeight = 0; private set
-        var lastInsets: WindowInsetsCompat? = null; private set
 
         /**
          * ### StartView和EndView
@@ -311,7 +331,6 @@ abstract class EditorAnimator(
 
         override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
             host?.apply {
-                lastInsets = insets
                 var imeHeight = insets.imeHeight
                 if (Build.VERSION.SDK_INT < 23 && imeHeight > 0
                         && v.rootView != null && !v.rootView.isLaidOut) {
@@ -329,6 +348,7 @@ abstract class EditorAnimator(
                     }
                 }
                 lastImeHeight = imeHeight
+                lastImeOffset = insets.imeOffset
                 if (imeHeight > 0) stableImeHeight = imeHeight
             }
             return insets
@@ -367,7 +387,7 @@ abstract class EditorAnimator(
         ): WindowInsetsCompat {
             animationRecord?.takeIf { it.handleInsetsAnimation }
                 ?.takeIf { runningAnimations.contains(it.insetsAnimation) }
-                ?.let(::dispatchAnimationUpdate)
+                ?.let(::dispatchInsetsAnimationUpdate)
             return insets
         }
 
@@ -488,8 +508,8 @@ abstract class EditorAnimator(
             interpolatedFraction = interpolatedFraction.absoluteValue
         }
 
-        fun updateAnimationToEnd() {
-            animatedFraction = 1f
+        fun setAnimationFraction(fraction: Float) {
+            animatedFraction = fraction
             updateAnimationCurrent()
         }
 
