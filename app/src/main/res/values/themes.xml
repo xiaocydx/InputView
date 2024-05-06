@@ -2,10 +2,11 @@
     <!-- Base application theme. -->
     <style name="Theme.InputView" parent="Theme.Material3.DayNight.NoActionBar" />
 
-    <style name="MessageListDialog" parent="ThemeOverlay.Material3.Dialog">
+    <style name="MessageListDialog" parent="ThemeOverlay.AppCompat.Dialog">
+        <!--DecorView全屏，且有WindowInsets分发-->
         <item name="android:windowIsFloating">false</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:windowBackground">@android:color/transparent</item>
+        <!--去除默认背景，默认背景自带间距-->
+        <item name="android:windowBackground">@null</item>
         <item name="android:windowAnimationStyle">@style/Animation.MaterialComponents.BottomSheetDialog</item>
     </style>
 </resources>
