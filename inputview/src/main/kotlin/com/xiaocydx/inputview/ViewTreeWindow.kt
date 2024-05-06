@@ -31,7 +31,7 @@ import com.xiaocydx.insets.consumeInsets
 import com.xiaocydx.insets.decorInsets
 import com.xiaocydx.insets.getImeOffset
 import com.xiaocydx.insets.getRootWindowInsetsCompat
-import com.xiaocydx.insets.imeHeight
+import com.xiaocydx.insets.getSystemBarHiddenConsumeTypeMask
 import com.xiaocydx.insets.insets
 import com.xiaocydx.insets.isGestureNavigationBar
 import com.xiaocydx.insets.navigationBarHeight
@@ -155,9 +155,10 @@ internal class ViewTreeWindow(
             // 不调用window.setStatusBarColor和window.setNavigationBarColor将背景颜色设为透明，
             // 通过消费状态栏和导航栏的Insets实现不绘制背景，这种处理方式的通用性更强，侵入性更低。
             var consumeType = 0
+            val hiddenType = insets.getSystemBarHiddenConsumeTypeMask(decorView)
             if (statusBarEdgeToEdge) consumeType = consumeType or statusBars()
             if (insets.supportGestureNavBarEdgeToEdge) consumeType = consumeType or navigationBars()
-            val decorInsets = insets.decorInsets(consumeType)
+            val decorInsets = insets.decorInsets(consumeType or hiddenType)
             decorView.onApplyWindowInsetsCompat(decorInsets)
             // 在decorView处理完contentRoot的Margins后，再设置Margins
             contentRootRef?.get()?.updateMargins(
@@ -165,29 +166,18 @@ internal class ViewTreeWindow(
                 bottom = decorInsets.navigationBarHeight
             )
             consumeType = consumeType.inv() and (statusBars() or navigationBars())
-            insets.consumeInsets(consumeType)
+            insets.consumeInsets(consumeType or hiddenType)
         }
     }
 
     private val WindowInsetsCompat.supportGestureNavBarEdgeToEdge: Boolean
-        get() {
-            if (!gestureNavBarEdgeToEdge) return false
-            var isGestureNavigationBar = isGestureNavigationBar(decorView)
-            if (isGestureNavigationBar) {
-                val rootInsets = decorView.getRootWindowInsetsCompat()
-                if (rootInsets == null || rootInsets.navigationBarHeight > navigationBarHeight) {
-                    // 父级消费了导航栏Insets，将这种情况视为不支持手势导航栏EdgeToEdge
-                    isGestureNavigationBar = false
-                }
-            }
-            return isGestureNavigationBar
-        }
+        get() = gestureNavBarEdgeToEdge && isGestureNavigationBar(decorView)
 
     val WindowInsetsCompat.navBarOffset: Int
         get() = if (supportGestureNavBarEdgeToEdge) navigationBarHeight else 0
 
     val WindowInsetsCompat.imeOffset: Int
-        get() = if (supportGestureNavBarEdgeToEdge) imeHeight else getImeOffset(decorView)
+        get() = getImeOffset(decorView)
 
     fun getRootWindowInsets() = decorView.getRootWindowInsetsCompat()
 

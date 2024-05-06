@@ -114,7 +114,7 @@ class SampleList {
                 |1. 不运行动画（IME除外），恢复之前显示的Editor。
                 |2. 不恢复Editor视图的状态，该功能由FragmentEditorAdapter完成。
             """.trimMargin(),
-            StatefulActivity::class
+            clazz = StatefulActivity::class
         ),
         StartActivity(
             title = "FragmentEditorAdapter",

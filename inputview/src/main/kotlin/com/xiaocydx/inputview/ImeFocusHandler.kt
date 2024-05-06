@@ -17,9 +17,8 @@
 package com.xiaocydx.inputview
 
 import android.view.View
-import android.view.ViewTreeObserver
 import androidx.annotation.CallSuper
-import androidx.core.view.OneShotPreDrawListener
+import com.xiaocydx.insets.OneShotHasWindowFocusListener
 import java.lang.ref.WeakReference
 
 /**
@@ -95,49 +94,5 @@ internal open class ImeFocusHandler(view: View) :
         if (!isFocusable) isFocusable = true
         if (!isFocusableInTouchMode) isFocusableInTouchMode = true
         if (!hasFocus()) requestFocus()
-    }
-}
-
-/**
- * 实现逻辑参考自[OneShotPreDrawListener]
- */
-private class OneShotHasWindowFocusListener private constructor(
-    private val view: View,
-    private val runnable: Runnable
-) : ViewTreeObserver.OnWindowFocusChangeListener, View.OnAttachStateChangeListener {
-    private var viewTreeObserver = view.viewTreeObserver
-
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        if (hasFocus) {
-            removeListener()
-            runnable.run()
-        }
-    }
-
-    fun removeListener() {
-        if (viewTreeObserver.isAlive) {
-            viewTreeObserver.removeOnWindowFocusChangeListener(this)
-        } else {
-            view.viewTreeObserver.removeOnWindowFocusChangeListener(this)
-        }
-        view.removeOnAttachStateChangeListener(this)
-    }
-
-    override fun onViewAttachedToWindow(v: View) {
-        viewTreeObserver = view.viewTreeObserver
-    }
-
-    override fun onViewDetachedFromWindow(v: View) {
-        removeListener()
-    }
-
-    companion object {
-
-        fun add(view: View, runnable: Runnable): OneShotHasWindowFocusListener {
-            val listener = OneShotHasWindowFocusListener(view, runnable)
-            view.viewTreeObserver.addOnWindowFocusChangeListener(listener)
-            view.addOnAttachStateChangeListener(listener)
-            return listener
-        }
     }
 }
