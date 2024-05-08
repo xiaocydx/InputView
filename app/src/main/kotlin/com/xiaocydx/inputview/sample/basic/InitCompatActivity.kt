@@ -9,6 +9,7 @@ import com.xiaocydx.inputview.sample.basic.message.init
 import com.xiaocydx.inputview.sample.databinding.MessageListBinding
 import com.xiaocydx.insets.systembar.EdgeToEdge
 import com.xiaocydx.insets.systembar.SystemBar
+import com.xiaocydx.insets.systembar.systemBarController
 
 /**
  * `InputView.initCompat()`的示例代码
