@@ -11,6 +11,7 @@ import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.ActivityImeAnimatorBinding
 import com.xiaocydx.insets.insets
+import com.xiaocydx.insets.navigationBars
 
 /**
  * `InputView.animator()`的示例代码
@@ -41,11 +42,11 @@ class ImeAnimatorActivity : AppCompatActivity() {
         imageView.onClick(animator::hideIme)
 
         // 4. 当支持手势导航栏EdgeToEdge时，设置etContainer.paddingBottom
-        etContainer.insets().gestureNavBarEdgeToEdge()
+        etContainer.insets().paddings(navigationBars())
 
         // 5. 显示和隐藏IME，运行动画设置root.paddingBottom
         animator.addAnimationCallback(onUpdate = { state ->
-            val bottom = state.currentOffset - state.navBarOffset
+            val bottom = state.currentOffset - etContainer.paddingBottom
             root.updatePadding(bottom = bottom.coerceAtLeast(0))
         })
 
