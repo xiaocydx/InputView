@@ -55,6 +55,10 @@ internal open class ImeFocusHandler(view: View) :
         removePending()
     }
 
+    fun requestFocus() {
+        get()?.requestFocusCompat()
+    }
+
     open fun requestCurrentFocus() {
         val currentFocus = window?.currentFocus
         if (currentFocus == null) get()?.requestFocusCompat()

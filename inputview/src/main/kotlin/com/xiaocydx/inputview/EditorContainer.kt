@@ -269,8 +269,12 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
     private fun handleImeShown(shown: Boolean, controlIme: Boolean) {
         val handler = handler ?: return
         if (shown) {
-            handler.requestCurrentFocus()
-            if (controlIme) handler.showIme()
+            if (controlIme) {
+                handler.requestFocus()
+                handler.showIme()
+            } else {
+                handler.requestCurrentFocus()
+            }
         } else {
             handler.clearCurrentFocus()
             if (controlIme) handler.hideIme()
