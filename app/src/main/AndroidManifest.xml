@@ -45,7 +45,10 @@
             android:name=".editor_adapter.fragment.FragmentEditorAdapterActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".editor_animator.AnimationInterceptorActivity"
+            android:name=".editor_animator.AnimationInterceptorActivity1"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".editor_animator.AnimationInterceptorActivity2"
             android:screenOrientation="portrait" />
         <activity
             android:name=".editor_animator.ImeAnimatorActivity"

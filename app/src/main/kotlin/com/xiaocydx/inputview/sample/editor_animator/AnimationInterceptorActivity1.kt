@@ -24,12 +24,12 @@ import com.xiaocydx.inputview.sample.databinding.ActivityAnimationInterceptorBin
 import com.xiaocydx.inputview.setWindowFocusInterceptor
 
 /**
- * [AnimationInterceptor]的示例代码
+ * [AnimationInterceptor]的示例代码，处理多Window的交互冲突问题
  *
  * @author xcc
  * @date 2023/10/15
  */
-class AnimationInterceptorActivity : AppCompatActivity() {
+class AnimationInterceptorActivity1 : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,7 +63,7 @@ class AnimationInterceptorActivity : AppCompatActivity() {
         inputView.setEditorBackgroundColor(0xFFF2F2F2.toInt())
 
         outside.onClick { inputView.editorAdapter.notifyHideCurrent() }
-        textView.onClick { InputDialog(this@AnimationInterceptorActivity).show() }
+        textView.onClick { InputDialog(this@AnimationInterceptorActivity1).show() }
     }
 }
 

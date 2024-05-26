@@ -15,7 +15,8 @@ import com.xiaocydx.inputview.sample.basic.dialog.MessageListDialog
 import com.xiaocydx.inputview.sample.basic.message.MessageListActivity
 import com.xiaocydx.inputview.sample.editor_adapter.StatefulActivity
 import com.xiaocydx.inputview.sample.editor_adapter.fragment.FragmentEditorAdapterActivity
-import com.xiaocydx.inputview.sample.editor_animator.AnimationInterceptorActivity
+import com.xiaocydx.inputview.sample.editor_animator.AnimationInterceptorActivity1
+import com.xiaocydx.inputview.sample.editor_animator.AnimationInterceptorActivity2
 import com.xiaocydx.inputview.sample.editor_animator.ImeAnimatorActivity
 import com.xiaocydx.inputview.sample.scene.figure.FigureEditActivity
 import com.xiaocydx.inputview.sample.scene.video.VideoEditActivity
@@ -96,7 +97,12 @@ class SampleList {
         StartActivity(
             title = "AnimationInterceptor",
             desc = "处理多Window的交互冲突问题",
-            clazz = AnimationInterceptorActivity::class
+            clazz = AnimationInterceptorActivity1::class
+        ),
+        StartActivity(
+            title = "AnimationInterceptor",
+            desc = "实现动画时长和插值器的差异化",
+            clazz = AnimationInterceptorActivity2::class
         ),
         StartActivity(
             title = "ImeAnimator",
