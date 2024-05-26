@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER", "CANNOT_OVERRIDE_INVISIBLE_MEMBER")
+
 package com.xiaocydx.inputview
 
 import android.app.Activity
@@ -27,8 +29,10 @@ import androidx.annotation.VisibleForTesting
 import androidx.core.view.*
 import androidx.core.view.WindowInsetsCompat.Type.*
 import com.xiaocydx.inputview.compat.*
+import com.xiaocydx.insets.DisableDecorFitsSystemWindowsReason
 import com.xiaocydx.insets.consumeInsets
 import com.xiaocydx.insets.decorInsets
+import com.xiaocydx.insets.disableDecorFitsSystemWindowsReason
 import com.xiaocydx.insets.getImeOffset
 import com.xiaocydx.insets.getRootWindowInsetsCompat
 import com.xiaocydx.insets.getSystemBarHiddenConsumeTypeMask
@@ -148,6 +152,11 @@ internal class ViewTreeWindow(
     }
 
     fun setOnApplyWindowInsetsListener(statusBarEdgeToEdge: Boolean) {
+        // 避免跟insets-systembar的初始化逻辑产生冲突
+        val existed = window.disableDecorFitsSystemWindowsReason
+        val reason = InputViewDisableDecorFitsSystemWindowsReason(existed)
+        window.disableDecorFitsSystemWindowsReason = reason.checkExisted()
+
         val contentRootRef = decorView.children
             .firstOrNull { it is ViewGroup }?.let(::WeakReference)
         decorView.setOnApplyWindowInsetsListenerCompat { _, insets ->
@@ -211,6 +220,26 @@ internal class ViewTreeWindow(
 
     @VisibleForTesting
     fun getEditTextManager() = editTextManager
+
+    private class InputViewDisableDecorFitsSystemWindowsReason(
+        existed: DisableDecorFitsSystemWindowsReason?
+    ) : DisableDecorFitsSystemWindowsReason {
+        private val existedValue = existed?.get()
+        private var currentValue = "InputView.init()已初始化Window"
+
+        override fun get(): String = currentValue
+
+        override fun run() {
+            throw UnsupportedOperationException("$currentValue，" +
+                    "请调用InputView.initCompat()兼容已有的WindowInsets处理方案")
+        }
+
+        fun checkExisted() = apply {
+            if (existedValue == null) return@apply
+            currentValue = existedValue
+            run()
+        }
+    }
 
     companion object {
         fun isAttached(window: Window): Boolean {
