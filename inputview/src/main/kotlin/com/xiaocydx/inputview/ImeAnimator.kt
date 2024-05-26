@@ -137,6 +137,7 @@ class ImeAnimator internal constructor(
 
         fun onDetachedFromWindow() {
             window.unregisterHost(this)
+            window.restoreImeAnimation()
         }
 
         override fun updateEditorOffset(offset: Int) {
@@ -170,6 +171,10 @@ class ImeAnimator internal constructor(
             return OneShotPreDrawListener.add(editText, action)
         }
 
+        override fun modifyImeAnimation(durationMillis: Long, interpolator: Interpolator) {
+            window.modifyImeAnimation(durationMillis, interpolator)
+        }
+
         override fun setOnApplyWindowInsetsListener(listener: OnApplyWindowInsetsListenerCompat?) {
             val wrapper = if (listener == null) null else OnApplyWindowInsetsListenerCompat { v, insets ->
                 navBarOffset = window.run { insets.navBarOffset }
@@ -179,16 +184,8 @@ class ImeAnimator internal constructor(
             ReflectCompat { editText.setOnApplyWindowInsetsListenerImmutable(wrapper) }
         }
 
-        override fun setWindowInsetsAnimationCallback(
-            durationMillis: Long,
-            interpolator: Interpolator,
-            callback: WindowInsetsAnimationCompat.Callback?
-        ) {
-            if (callback == null) {
-                window.restoreImeAnimation()
-            } else {
-                window.modifyImeAnimation(durationMillis, interpolator)
-            }
+        override fun setWindowInsetsAnimationCallback(callback: WindowInsetsAnimationCompat.Callback?) {
+            if (callback == null) window.restoreImeAnimation()
             ReflectCompat { editText.setWindowInsetsAnimationCallbackImmutable(callback) }
         }
 

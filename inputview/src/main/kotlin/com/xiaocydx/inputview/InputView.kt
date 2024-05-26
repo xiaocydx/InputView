@@ -465,7 +465,7 @@ class InputView @JvmOverloads constructor(
     }
 
     private inner class EditorHostImpl : EditorHost {
-        private var pending: PendingInsetsAnimationCallback? = null
+        private var pendingCallback: WindowInsetsAnimationCompat.Callback? = null
         override val WindowInsetsCompat.imeOffset: Int
             get() = window?.run { imeOffset } ?: NO_VALUE
         override var isRestored = false
@@ -488,7 +488,7 @@ class InputView @JvmOverloads constructor(
 
         fun onAttachedToWindow(window: ViewTreeWindow) {
             window.registerHost(this)
-            pending?.apply { setWindowInsetsAnimationCallback(durationMillis, interpolator, callback) }
+            pendingCallback?.let(::setWindowInsetsAnimationCallback)
             editorView.peekPendingRestoreEditor()?.let(::showChecked)
             editorView.consumePendingSavedState()
             isRestored = true
@@ -497,6 +497,7 @@ class InputView @JvmOverloads constructor(
         fun onDetachedFromWindow(window: ViewTreeWindow) {
             window.unregisterHost(this)
             editorAnimator.endAnimation()
+            window.restoreImeAnimation()
         }
 
         fun onEditorAdapterChanged(previous: EditorAdapter<*>?, current: EditorAdapter<*>) {
@@ -569,6 +570,10 @@ class InputView @JvmOverloads constructor(
             return OneShotPreDrawListener.add(editorView, action)
         }
 
+        override fun modifyImeAnimation(durationMillis: Long, interpolator: Interpolator) {
+            window?.modifyImeAnimation(durationMillis, interpolator)
+        }
+
         override fun setOnApplyWindowInsetsListener(listener: OnApplyWindowInsetsListenerCompat?) {
             val wrapper = if (listener == null) null else OnApplyWindowInsetsListenerCompat { v, insets ->
                 editorView.onApplyWindowInsetsCompat(insets)
@@ -577,32 +582,17 @@ class InputView @JvmOverloads constructor(
             ReflectCompat { editorView.setOnApplyWindowInsetsListenerImmutable(wrapper) }
         }
 
-        override fun setWindowInsetsAnimationCallback(
-            durationMillis: Long,
-            interpolator: Interpolator,
-            callback: WindowInsetsAnimationCompat.Callback?
-        ) {
+        override fun setWindowInsetsAnimationCallback(callback: WindowInsetsAnimationCompat.Callback?) {
+            pendingCallback = null
             val window = window
-            pending = when {
-                window != null || callback == null -> null
-                else -> PendingInsetsAnimationCallback(durationMillis, interpolator, callback)
-            }
-            if (pending == null && window != null) {
-                if (callback == null) {
-                    window.restoreImeAnimation()
-                } else {
-                    window.modifyImeAnimation(durationMillis, interpolator)
-                }
+            if (window == null) {
+                pendingCallback = callback
+            } else {
+                if (callback == null) window.restoreImeAnimation()
                 ReflectCompat { editorView.setWindowInsetsAnimationCallbackImmutable(callback) }
             }
         }
     }
-
-    private class PendingInsetsAnimationCallback(
-        val durationMillis: Long,
-        val interpolator: Interpolator,
-        val callback: WindowInsetsAnimationCompat.Callback
-    )
 
     companion object
 }

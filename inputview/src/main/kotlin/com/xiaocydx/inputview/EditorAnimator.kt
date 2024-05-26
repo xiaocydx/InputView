@@ -166,8 +166,6 @@ abstract class EditorAnimator(
                 }
             })
             addUpdateListener { dispatchAnimationUpdate(record) }
-            duration = durationMillis
-            interpolator = LinearInterpolator()
             record.setSimpleAnimation(this)
             start()
         }
@@ -267,15 +265,13 @@ abstract class EditorAnimator(
     internal fun onAttachedToHost(host: EditorHost) {
         this.host = host
         host.setOnApplyWindowInsetsListener(animationDispatcher)
-        host.takeIf { enableWindowInsetsAnimation() }
-            ?.setWindowInsetsAnimationCallback(durationMillis, interpolator, animationDispatcher)
+        host.takeIf { enableWindowInsetsAnimation() }?.setWindowInsetsAnimationCallback(animationDispatcher)
     }
 
     internal fun onDetachedFromHost(host: EditorHost) {
         endAnimation()
         host.setOnApplyWindowInsetsListener(null)
-        host.takeIf { enableWindowInsetsAnimation() }
-            ?.setWindowInsetsAnimationCallback(durationMillis, interpolator, callback = null)
+        host.takeIf { enableWindowInsetsAnimation() }?.setWindowInsetsAnimationCallback(callback = null)
         this.host = null
     }
 
@@ -427,6 +423,14 @@ abstract class EditorAnimator(
         init {
             durationMillis = this@EditorAnimator.durationMillis
             interpolator = this@EditorAnimator.interpolator
+            if (canRunAnimation) {
+                durationMillis = animationInterceptor.onInterceptDurationMillis(previous, current, durationMillis)
+                interpolator = animationInterceptor.onInterceptInterpolator(previous, current, interpolator)
+            }
+            if (enableWindowInsetsAnimation() && (isIme(previous) || isIme(current))) {
+                // insets-compat的实现确保能在WindowInsets分发的过程中修改属性
+                host?.modifyImeAnimation(durationMillis, interpolator)
+            }
         }
 
         fun isImmediately(): Boolean {
@@ -521,8 +525,8 @@ abstract class EditorAnimator(
 
         fun setSimpleAnimation(animation: ValueAnimator) {
             simpleAnimation = animation
-            durationMillis = animation.duration
-            interpolator = this@EditorAnimator.interpolator
+            animation.duration = durationMillis
+            animation.interpolator = LinearInterpolator()
         }
 
         fun setPreDrawRunSimpleAnimation(action: () -> Unit) {
@@ -650,9 +654,6 @@ interface AnimationCallback {
      * 动画准备
      *
      * 该函数在布局之前被调用，此时可以修改[InputView.editorMode]以及更新`contentView`。
-     *
-     * @param previous 动画起始[Editor]
-     * @param current  动画结束[Editor]
      */
     fun onAnimationPrepare(previous: Editor?, current: Editor?) = Unit
 
@@ -686,7 +687,17 @@ interface AnimationInterceptor {
     /**
      * 返回`true`拦截[Editor]的更改，[EditorAdapter.notifyShow]不生效
      */
-    fun onInterceptChange(current: Editor?, next: Editor?): Boolean
+    fun onInterceptChange(current: Editor?, next: Editor?): Boolean = false
+
+    /**
+     * 返回动画时长的拦截结果，可根据[previous]和[current]实现动画时长的差异化
+     */
+    fun onInterceptDurationMillis(previous: Editor?, current: Editor?, durationMillis: Long): Long = durationMillis
+
+    /**
+     * 返回动画插值器的拦截结果，可根据[previous]和[current]实现动画插值器的差异化
+     */
+    fun onInterceptInterpolator(previous: Editor?, current: Editor?, interpolator: Interpolator): Interpolator = interpolator
 
     /**
      * 两个[AnimationInterceptor]合并为一个，用于多个[AnimationInterceptor]一起拦截的场景
@@ -703,9 +714,6 @@ interface AnimationInterceptor {
 fun emptyAnimationInterceptor(): AnimationInterceptor = EmptyAnimationInterceptor
 
 private object EmptyAnimationInterceptor : AnimationInterceptor {
-
-    override fun onInterceptChange(current: Editor?, next: Editor?) = false
-
     override fun plus(other: AnimationInterceptor) = other
 }
 
@@ -716,5 +724,15 @@ private class CombinedAnimationInterceptor(
 
     override fun onInterceptChange(current: Editor?, next: Editor?): Boolean {
         return first.onInterceptChange(current, next) || second.onInterceptChange(current, next)
+    }
+
+    override fun onInterceptDurationMillis(previous: Editor?, current: Editor?, durationMillis: Long): Long {
+        val firstDurationMillis = first.onInterceptDurationMillis(previous, current, durationMillis)
+        return second.onInterceptDurationMillis(previous, current, firstDurationMillis)
+    }
+
+    override fun onInterceptInterpolator(previous: Editor?, current: Editor?, interpolator: Interpolator): Interpolator {
+        val firstInterpolator = first.onInterceptInterpolator(previous, current, interpolator)
+        return second.onInterceptInterpolator(previous, current, firstInterpolator)
     }
 }

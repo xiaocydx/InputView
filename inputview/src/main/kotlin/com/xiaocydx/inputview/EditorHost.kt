@@ -132,6 +132,11 @@ internal interface EditorHost {
     fun addPreDrawAction(action: () -> Unit): OneShotPreDrawListener
 
     /**
+     * 修改Android 11及以上IME动画的`durationMillis`和`interpolator`
+     */
+    fun modifyImeAnimation(durationMillis: Long, interpolator: Interpolator)
+
+    /**
      * 添加[OnApplyWindowInsetsListenerCompat]，`null`表示移除
      *
      * @param listener 必须返回传入的[WindowInsetsCompat]，不可做消费处理
@@ -140,15 +145,8 @@ internal interface EditorHost {
 
     /**
      * 添加[WindowInsetsAnimationCompat.Callback]，`null`表示移除
-     *
-     * @param durationMillis Android 11及以上IME动画的时长
-     * @param interpolator   Android 11及以上IME动画的插值器
      */
-    fun setWindowInsetsAnimationCallback(
-        durationMillis: Long,
-        interpolator: Interpolator,
-        callback: WindowInsetsAnimationCompat.Callback?
-    )
+    fun setWindowInsetsAnimationCallback(callback: WindowInsetsAnimationCompat.Callback?)
 }
 
 internal const val NO_VALUE = -1
