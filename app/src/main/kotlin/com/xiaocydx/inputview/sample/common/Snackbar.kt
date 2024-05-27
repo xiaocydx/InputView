@@ -18,6 +18,7 @@ package com.xiaocydx.inputview.sample.common
 
 import android.view.View
 import android.view.Window
+import android.widget.FrameLayout
 import androidx.annotation.CheckResult
 import com.google.android.material.snackbar.Snackbar
 
@@ -42,3 +43,8 @@ fun Snackbar.indefinite() = setDuration(Snackbar.LENGTH_INDEFINITE)
 
 @CheckResult
 fun Snackbar.dismissAction(text: CharSequence = "dismiss") = setAction(text) { dismiss() }
+
+@CheckResult
+fun Snackbar.gravity(gravity: Int) = apply {
+    (view.layoutParams as? FrameLayout.LayoutParams)?.gravity = gravity
+}
