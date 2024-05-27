@@ -489,15 +489,18 @@ class InputView @JvmOverloads constructor(
         fun onAttachedToWindow(window: ViewTreeWindow) {
             window.registerHost(this)
             pendingCallback?.let(::setWindowInsetsAnimationCallback)
-            editorView.peekPendingRestoreEditor()?.let(::showChecked)
-            editorView.consumePendingSavedState()
-            isRestored = true
+            editorView.takeIf { !isRestored }?.setPendingRestoreAction {
+                editorView.peekPendingRestoreEditor()?.let(::showChecked)
+                editorView.consumePendingSavedState()
+                isRestored = true
+            }
         }
 
         fun onDetachedFromWindow(window: ViewTreeWindow) {
             window.unregisterHost(this)
-            editorAnimator.endAnimation()
             window.restoreImeAnimation()
+            editorAnimator.endAnimation()
+            editorView.setPendingRestoreAction(null)
         }
 
         fun onEditorAdapterChanged(previous: EditorAdapter<*>?, current: EditorAdapter<*>) {
