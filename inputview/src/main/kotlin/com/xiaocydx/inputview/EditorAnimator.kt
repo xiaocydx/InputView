@@ -209,7 +209,7 @@ abstract class EditorAnimator(
             dispatchAnimationUpdate(record)
             dispatchAnimationCallback { onAnimationEnd(record) }
 
-            // 按照startOffset和endOffset重新分发
+            // 按startOffset和newEndOffset重新分发
             record.setAnimationEndOffset(newEndOffset)
             record.setAnimationFraction(fraction)
             dispatchAnimationPrepare(record)
@@ -293,7 +293,7 @@ abstract class EditorAnimator(
          *
          * ### InsetsAnimation和SimpleAnimation
          * 若[previous]和[current]其中一个是IME，则通过[AnimationDispatcher]运行InsetsAnimation。
-         * 若[previous]和[current]不是IME，则调用[runSimpleAnimationIfNecessary]运行SimpleAnimation，
+         * 若[previous]和[current]不是IME，则调用[runSimpleAnimationIfNecessary]运行SimpleAnimation。
          *
          * ### 主动更改和被动更改
          * 直接调用[EditorHost.showChecked]或[EditorHost.hideChecked]更改[Editor]属于主动更改，
@@ -305,7 +305,7 @@ abstract class EditorAnimator(
             resetAnimationRecord(record)
             record.setStartViewAndEndView()
             record.setAnimationStartOffset()
-            // Android 9.0以下的WindowInsets可变（Reflect模块已兼容），
+            // Android 9.0以下的WindowInsets可变（compat模块已兼容），
             // Android 9.0、Android 10的window包含FLAG_FULLSCREEN，
             // 可能导致insetsAnimation的回调不会执行。
             record.setPreDrawRunSimpleAnimation action@{
@@ -428,7 +428,7 @@ abstract class EditorAnimator(
                 interpolator = animationInterceptor.onInterceptInterpolator(previous, current, interpolator)
             }
             if (enableWindowInsetsAnimation() && (isIme(previous) || isIme(current))) {
-                // insets-compat的实现确保能在WindowInsets分发的过程中修改属性
+                // compat模块确保能在WindowInsets分发的过程中修改属性
                 host?.modifyImeAnimation(durationMillis, interpolator)
             }
         }
@@ -544,9 +544,9 @@ abstract class EditorAnimator(
                 // simpleAnimation.end()会置空insetsAnimation
                 simpleAnimation!!.end()
             } else {
-                // 该分支处理两种情况
-                // 1. simpleAnimation或insetsAnimation为null，需要重置准备工作.
-                // 2. 存在逻辑缺陷，insetsAnimation不可结束，需要更新为结束值.
+                // 该分支处理两种情况：
+                // 1. simpleAnimation或insetsAnimation为null，需要重置准备工作。
+                // 2. 存在逻辑缺陷，insetsAnimation不可结束，需要更新为结束值。
                 dispatchAnimationEnd(this)
             }
         }
@@ -660,14 +660,14 @@ interface AnimationCallback {
     /**
      * 动画开始
      *
-     * 该函数在`preDraw`阶段调用，此时可以获取View的尺寸以及对View做变换、边界处理。
+     * 该函数在`preDraw`阶段调用，此时可以获取View的尺寸以及对View做变换处理。
      */
     fun onAnimationStart(state: AnimationState) = Unit
 
     /**
      * 动画更新
      *
-     * 后执行的[AnimationCallback]，可以在该函数下覆盖`state.startView`和`state.endView`的变换属性。
+     * 后执行的[AnimationCallback]，可以在该函数下更改`state.startView`和`state.endView`的变换属性。
      */
     fun onAnimationUpdate(state: AnimationState) = Unit
 
@@ -690,12 +690,12 @@ interface AnimationInterceptor {
     fun onInterceptChange(current: Editor?, next: Editor?): Boolean = false
 
     /**
-     * 返回动画时长的拦截结果，可根据[previous]和[current]实现动画时长的差异化
+     * 返回动画时长的拦截结果，可判断[previous]和[current]实现动画时长的差异化
      */
     fun onInterceptDurationMillis(previous: Editor?, current: Editor?, durationMillis: Long): Long = durationMillis
 
     /**
-     * 返回动画插值器的拦截结果，可根据[previous]和[current]实现动画插值器的差异化
+     * 返回动画插值器的拦截结果，可判断[previous]和[current]实现动画插值器的差异化
      */
     fun onInterceptInterpolator(previous: Editor?, current: Editor?, interpolator: Interpolator): Interpolator = interpolator
 
