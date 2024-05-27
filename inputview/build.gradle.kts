@@ -56,8 +56,7 @@ android {
 }
 
 dependencies {
-    // api("com.github.xiaocydx.Insets:insets:1.2.2")
-    api(project(":insets"))
+    api("com.github.xiaocydx.Insets:insets:1.2.3")
     implementation("androidx.fragment:fragment:1.1.0")
     testImplementation("androidx.appcompat:appcompat:1.2.0")
     testImplementation("androidx.viewpager2:viewpager2:1.0.0")

@@ -48,7 +48,6 @@ android {
 
 dependencies {
     compileOnly(project(":inputview"))
-    // api("com.github.xiaocydx.Insets:insets-compat:1.2.2")
-    api(project(":insets-compat"))
+    api("com.github.xiaocydx.Insets:insets-compat:1.2.3")
     implementation("androidx.core:core:1.7.0")
 }

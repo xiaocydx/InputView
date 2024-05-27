@@ -44,13 +44,10 @@ dependencies {
     implementation("com.github.xiaocydx.CXRV:cxrv-paging:${cxrvVersion}")
     implementation("com.github.xiaocydx.CXRV:cxrv-viewpager2:${cxrvVersion}")
 
-    // val insertsVersion = "1.2.2"
-    // implementation("com.github.xiaocydx.Insets:insets:${insertsVersion}")
-    // implementation("com.github.xiaocydx.Insets:insets-compat:${insertsVersion}")
-    // implementation("com.github.xiaocydx.Insets:insets-systembar:${insertsVersion}")
-    implementation(project(":insets"))
-    implementation(project(":insets-compat"))
-    implementation(project(":insets-systembar"))
+    val insertsVersion = "1.2.3"
+    implementation("com.github.xiaocydx.Insets:insets:${insertsVersion}")
+    implementation("com.github.xiaocydx.Insets:insets-compat:${insertsVersion}")
+    implementation("com.github.xiaocydx.Insets:insets-systembar:${insertsVersion}")
 
     implementation("androidx.core:core-ktx:1.7.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
