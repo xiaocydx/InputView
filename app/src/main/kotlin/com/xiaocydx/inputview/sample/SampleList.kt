@@ -20,6 +20,7 @@ import com.xiaocydx.inputview.sample.editor_animator.AnimationInterceptorActivit
 import com.xiaocydx.inputview.sample.editor_animator.ImeAnimatorActivity
 import com.xiaocydx.inputview.sample.scene.figure.FigureEditActivity
 import com.xiaocydx.inputview.sample.scene.video.VideoEditActivity
+import com.xiaocydx.inputview.sample.scene.viewpager2.ViewPager2Activity
 import kotlin.reflect.KClass
 
 /**
@@ -135,6 +136,11 @@ class SampleList {
 
     private fun sceneList() = listOf(
         Category(title = "Scene", selectedResId = unselectedId),
+        StartActivity(
+            title = "ViewPager2",
+            desc = "ViewPager2的交互案例",
+            clazz = ViewPager2Activity::class
+        ),
         StartActivity(
             title = "PreviewEdit",
             desc = "预览编辑的交互案例",

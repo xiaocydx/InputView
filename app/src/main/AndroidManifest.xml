@@ -60,7 +60,7 @@
             android:name=".scene.figure.FigureEditActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".scene.vp2.ViewPager2Activity"
+            android:name=".scene.viewpager2.ViewPager2Activity"
             android:screenOrientation="portrait" />
     </application>
 
