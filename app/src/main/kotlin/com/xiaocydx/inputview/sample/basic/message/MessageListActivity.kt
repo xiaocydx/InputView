@@ -154,15 +154,8 @@ private fun MessageListBinding.initToggle(editorAdapter: EditorAdapter<MessageEd
     // 初始化各个按钮显示的图标
     actions.forEach { it.value.showSelfIcon() }
 
-    editorAdapter.addEditorChangedListener { previous, current ->
-        if (previous === VOICE) {
-            tvVoice.isVisible = false
-            etMessage.isVisible = true
-            if (current === MessageEditor.IME) etMessage.requestFocus()
-        } else if (current === VOICE) {
-            tvVoice.isVisible = true
-            etMessage.isVisible = false
-        }
+    editorAdapter.addEditorChangedListener { _, current ->
+        tvVoice.isVisible = current === VOICE
         actions.forEach { it.value.showSelfIcon() }
         current?.let(actions::get)?.takeIf { !it.isKeep }?.showImeIcon()
     }
