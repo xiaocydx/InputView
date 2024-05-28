@@ -57,41 +57,45 @@ internal class EditTextManagerTest {
     }
 
     @Test
-    fun attachedToWindowRegisterHost() {
+    fun hostAttachedToWindow() {
         inputViewScenario.onActivity {
             val manager = it.getEditTextManager()
             val host = it.inputView.getEditorHost()
             assertThat(it.inputView.isAttachedToWindow).isTrue()
             assertThat(manager.isHostRegistered(host)).isTrue()
+            assertThat(manager.isEditTextAdded(it.editText)).isTrue()
         }
         imeAnimatorScenario.onActivity {
             val manager = it.getEditTextManager()
             val host = it.animator.getEditorHost()!!
-            assertThat(it.editText.isAttachedToWindow).isTrue()
+            assertThat(it.contentView.isAttachedToWindow).isTrue()
             assertThat(manager.isHostRegistered(host)).isTrue()
+            assertThat(manager.isEditTextAdded(it.editText)).isTrue()
         }
     }
 
     @Test
-    fun detachedFromWindowUnregisterHost() {
+    fun hostDetachedFromWindow() {
         inputViewScenario.onActivity {
             val manager = it.getEditTextManager()
             val host = it.inputView.getEditorHost()
             it.inputView.removeFromParent()
             assertThat(it.inputView.isAttachedToWindow).isFalse()
             assertThat(manager.isHostRegistered(host)).isFalse()
+            assertThat(manager.isEditTextAdded(it.editText)).isFalse()
         }
         imeAnimatorScenario.onActivity {
             val manager = it.getEditTextManager()
             val host = it.animator.getEditorHost()!!
-            it.editText.removeFromParent()
-            assertThat(it.editText.isAttachedToWindow).isFalse()
+            it.contentView.removeFromParent()
+            assertThat(it.contentView.isAttachedToWindow).isFalse()
             assertThat(manager.isHostRegistered(host)).isFalse()
+            assertThat(manager.isEditTextAdded(it.editText)).isFalse()
         }
     }
 
     @Test
-    fun reattachedToWindowRegisterHost() {
+    fun hostReattachedToWindow() {
         inputViewScenario.onActivity {
             val manager = it.getEditTextManager()
             val host = it.inputView.getEditorHost()
@@ -99,19 +103,21 @@ internal class EditTextManagerTest {
             parent.addView(it.inputView)
             assertThat(it.inputView.isAttachedToWindow).isTrue()
             assertThat(manager.isHostRegistered(host)).isTrue()
+            assertThat(manager.isEditTextAdded(it.editText)).isTrue()
         }
         imeAnimatorScenario.onActivity {
             val manager = it.getEditTextManager()
             val host = it.animator.getEditorHost()!!
-            val parent = it.editText.removeFromParent()
-            parent.addView(it.editText)
-            assertThat(it.editText.isAttachedToWindow).isTrue()
+            val parent = it.contentView.removeFromParent()
+            parent.addView(it.contentView)
+            assertThat(it.contentView.isAttachedToWindow).isTrue()
             assertThat(manager.isHostRegistered(host)).isTrue()
+            assertThat(manager.isEditTextAdded(it.editText)).isTrue()
         }
     }
 
     @Test
-    fun attachedToWindowAddEditText() {
+    fun editTextAttachedToWindow() {
         inputViewScenario.onActivity {
             val manager = it.getEditTextManager()
             assertThat(it.editText.isAttachedToWindow).isTrue()
@@ -125,7 +131,7 @@ internal class EditTextManagerTest {
     }
 
     @Test
-    fun detachedFromWindowRemoveEditText() {
+    fun editTextDetachedFromWindow() {
         inputViewScenario.onActivity {
             val manager = it.getEditTextManager()
             it.editText.removeFromParent()
@@ -141,7 +147,7 @@ internal class EditTextManagerTest {
     }
 
     @Test
-    fun reattachedToWindowAddEditText() {
+    fun editTextReattachedToWindow() {
         inputViewScenario.onActivity {
             val manager = it.getEditTextManager()
             val parent = it.editText.removeFromParent()
@@ -173,6 +179,19 @@ internal class EditTextManagerTest {
             assertThat(manager.isEditTextAdded(oldEditText)).isFalse()
             assertThat(manager.isEditTextAdded(newEditText)).isTrue()
         }
+        imeAnimatorScenario.onActivity {
+            val manager = it.getEditTextManager()
+            val oldEditText = it.editText
+            val newEditText = EditText(it)
+            it.contentView.addView(newEditText)
+
+            assertThat(manager.isEditTextAdded(oldEditText)).isTrue()
+            assertThat(manager.isEditTextAdded(newEditText)).isFalse()
+
+            it.animator.editText = newEditText
+            assertThat(manager.isEditTextAdded(oldEditText)).isFalse()
+            assertThat(manager.isEditTextAdded(newEditText)).isTrue()
+        }
     }
 
     @Test
@@ -192,6 +211,8 @@ internal class EditTextManagerTest {
             assertThat(manager.peekEditTextHandleSize()).isEqualTo(1)
 
             it.clearEditText()
+            GcTrigger.runGc()
+            assertThat(it.animator.editText == null).isTrue()
             assertThat(manager.peekEditTextHandleSize()).isEqualTo(0)
         }
     }
@@ -205,7 +226,7 @@ internal class EditTextManagerTest {
             assertThat(manager.peekEditTextHandleSize()).isEqualTo(0)
 
             var target: EditText? = EditText(it)
-            InputView.addEditText(it.window, target!!)
+            manager.addEditText(target!!)
             assertThat(manager.peekEditTextHandleSize()).isEqualTo(1)
 
             target = null
@@ -219,7 +240,7 @@ internal class EditTextManagerTest {
             assertThat(manager.peekEditTextHandleSize()).isEqualTo(0)
 
             var target: EditText? = EditText(it)
-            InputView.addEditText(it.window, target!!)
+            manager.addEditText(target!!)
             assertThat(manager.peekEditTextHandleSize()).isEqualTo(1)
 
             target = null

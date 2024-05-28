@@ -99,17 +99,34 @@ fun InputView.Companion.initCompat(
  * 跟[InputView]和[ImeAnimator]关联的`editText`，会自动调用该函数，
  * 水滴状指示器的处理逻辑，可以看[EditTextManager.EditTextHandle]。
  */
-fun InputView.Companion.addEditText(window: Window, editText: EditText): Boolean {
-    return window.decorView.requireViewTreeWindow().addEditText(editText)
+fun InputView.Companion.addEditText(editText: EditText): Boolean {
+    if (editText.imeFocusHandler != null) return false
+    // 仅复用EditTextHolder的attach和detach逻辑
+    editText.imeFocusHandler = EditTextHolder(editText)
+    return true
 }
 
 /**
  * 移除[addEditText]添加的[editText]，再次移除[editText]返回`false`，
  * 调用该函数之前，需要先调用[init]或[initCompat]完成初始化。
  */
-fun InputView.Companion.removeEditText(window: Window, editText: EditText): Boolean {
-    return window.decorView.requireViewTreeWindow().removeEditText(editText)
+fun InputView.Companion.removeEditText(editText: EditText): Boolean {
+    if (editText.imeFocusHandler == null) return false
+    editText.imeFocusHandler = null
+    return true
 }
+
+@Deprecated(
+    message = "不再需要Window参数",
+    replaceWith = ReplaceWith("addEditText(editText)")
+)
+fun InputView.Companion.addEditText(window: Window, editText: EditText) = addEditText(editText)
+
+@Deprecated(
+    message = "不再需要Window参数",
+    replaceWith = ReplaceWith("removeEditText(editText)")
+)
+fun InputView.Companion.removeEditText(window: Window, editText: EditText) = removeEditText(editText)
 
 private var View.viewTreeWindow: ViewTreeWindow?
     get() = getTag(R.id.tag_view_tree_window) as? ViewTreeWindow
@@ -128,6 +145,14 @@ internal fun View.requireViewTreeWindow() = requireNotNull(findViewTreeWindow())
         else -> "需要先调用InputView.init()或InputView.initCompat()完成初始化"
     }
 }
+
+private var View.imeFocusHandler: ImeFocusHandler?
+    get() = getTag(R.id.tag_view_ime_focus_handler) as? ImeFocusHandler
+    set(value) {
+        imeFocusHandler?.detach()
+        setTag(R.id.tag_view_ime_focus_handler, value)
+        value?.attach()
+    }
 
 internal class ViewTreeWindow(
     private val window: Window,

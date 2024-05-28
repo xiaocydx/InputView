@@ -21,6 +21,7 @@ import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.widget.EditText
+import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 
 /**
@@ -30,21 +31,26 @@ import androidx.appcompat.app.AppCompatActivity
 internal class TestImeAnimatorActivity : AppCompatActivity() {
     private var _editText: EditText? = null
     lateinit var animator: ImeAnimator; private set
+    lateinit var contentView: FrameLayout; private set
     val editText: EditText
         get() = requireNotNull(_editText)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         InputView.init(window)
+        contentView = FrameLayout(this)
         _editText = EditText(this)
-        animator = InputView.animator(window, _editText!!)
-        setContentView(_editText, LayoutParams(MATCH_PARENT, MATCH_PARENT))
+        animator = InputView.animator(contentView)
+        animator.editText = _editText
+
+        contentView.addView(_editText)
+        setContentView(contentView, LayoutParams(MATCH_PARENT, MATCH_PARENT))
     }
 
     fun clearEditText() {
         val editText = _editText ?: return
         val parent = editText.parent as? ViewGroup
         parent?.removeView(editText)
-        _editText
+        _editText = null
     }
 }
