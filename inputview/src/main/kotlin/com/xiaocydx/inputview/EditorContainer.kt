@@ -43,11 +43,10 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
     private var removePreviousImmediately = true
     private var pendingChange: PendingChange? = null
     private var pendingSavedState: SavedState? = null
-    private var pendingRestoreAction: (() -> Unit)? = null
     private var dispatchingChanged: DispatchingChanged? = null
     var ime: Editor? = null; private set
     var current: Editor? = null; private set
-    var changeRecord = ChangeRecord(); private set
+    lateinit var changeRecord: ChangeRecord; private set
     lateinit var adapter: EditorAdapter<*>; private set
 
     init {
@@ -87,12 +86,6 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
             superState = state.superState
         }
         super.onRestoreInstanceState(superState)
-        pendingRestoreAction?.invoke()
-    }
-
-    fun setPendingRestoreAction(action: (() -> Unit)? = null) {
-        if (action != null && pendingSavedState != null) return action()
-        pendingRestoreAction = action
     }
 
     fun peekPendingRestoreEditor(): Editor? {
@@ -111,7 +104,6 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
             pendingChange?.immediately = current !== ime
         }
         pendingSavedState = null
-        pendingRestoreAction = null
     }
 
     fun setAdapter(adapter: EditorAdapter<*>) {
@@ -121,14 +113,10 @@ internal class EditorContainer(context: Context) : FrameLayout(context) {
             removeAllViews()
             views.clear()
         }
-        if (changeRecord.previousChild != null
-                || changeRecord.currentChild != null) {
-            changeRecord = ChangeRecord()
-        }
-
+        clearPendingChange()
+        changeRecord = ChangeRecord()
         ime = checkedAdapter().ime
         current = null
-        clearPendingChange()
     }
 
     fun setImeFocusHandler(handler: ImeFocusHandler?) {

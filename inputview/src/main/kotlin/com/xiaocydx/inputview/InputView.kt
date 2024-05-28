@@ -301,24 +301,23 @@ class InputView @JvmOverloads constructor(
     }
 
     private fun consumePendingChange() {
-        exitChange()
+        consumeRunner.reset()
+        host.consumePendingSavedState()
         enterLayout()
-        consumeRunner.clear()
         if (editorView.consumePendingChange()) {
             val (previous, current, _, _, immediately) = editorView.changeRecord
             editorAnimator.onPendingChanged(previous, current, immediately)
         }
         exitLayout()
-        enterChange()
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         checkContentView()
-        enterLayout()
-        enterChange()
         // 尝试消费PendingChange，在measure阶段创建、添加、移除子View
         consumePendingChange()
+        enterLayout()
+        enterChange()
         editorView.measure(widthMeasureSpec, measuredHeight.toAtMostMeasureSpec())
 
         // 若消费PendingChange失败，则表示等待条件未满足，先不尝试修正editorOffset
@@ -454,7 +453,7 @@ class InputView @JvmOverloads constructor(
             ViewCompat.postOnAnimation(this@InputView, this)
         }
 
-        fun clear() {
+        fun reset() {
             isTriggered = false
         }
 
@@ -489,11 +488,6 @@ class InputView @JvmOverloads constructor(
         fun onAttachedToWindow(window: ViewTreeWindow) {
             window.registerHost(this)
             pendingCallback?.let(::setWindowInsetsAnimationCallback)
-            editorView.takeIf { !isRestored }?.setPendingRestoreAction {
-                editorView.peekPendingRestoreEditor()?.let(::showChecked)
-                editorView.consumePendingSavedState()
-                isRestored = true
-            }
             imeFocusHandler.attach()
         }
 
@@ -501,7 +495,6 @@ class InputView @JvmOverloads constructor(
             window.unregisterHost(this)
             window.restoreImeAnimation()
             editorAnimator.endAnimation()
-            editorView.setPendingRestoreAction(null)
             imeFocusHandler.detach()
         }
 
@@ -523,6 +516,12 @@ class InputView @JvmOverloads constructor(
             previous?.detach()
             if (isAttachedToWindow) current.attach()
             editorView.setImeFocusHandler(current)
+        }
+
+        fun consumePendingSavedState() {
+            editorView.peekPendingRestoreEditor()?.let(::showChecked)
+            editorView.consumePendingSavedState()
+            isRestored = true
         }
 
         override fun removeEditorView(view: View) {
