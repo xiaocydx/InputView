@@ -494,7 +494,7 @@ class InputView @JvmOverloads constructor(
                 editorView.consumePendingSavedState()
                 isRestored = true
             }
-            imeFocusHandler.onAttachedToHost(this)
+            imeFocusHandler.attach()
         }
 
         fun onDetachedFromWindow(window: ViewTreeWindow) {
@@ -502,7 +502,7 @@ class InputView @JvmOverloads constructor(
             window.restoreImeAnimation()
             editorAnimator.endAnimation()
             editorView.setPendingRestoreAction(null)
-            imeFocusHandler.onDetachedFromHost(this)
+            imeFocusHandler.detach()
         }
 
         fun onEditorAdapterChanged(previous: EditorAdapter<*>?, current: EditorAdapter<*>) {
@@ -520,8 +520,8 @@ class InputView @JvmOverloads constructor(
         }
 
         fun onImeFocusHandlerChanged(previous: ImeFocusHandler?, current: ImeFocusHandler) {
-            previous?.onDetachedFromHost(this)
-            if (isAttachedToWindow) current.onAttachedToHost(this)
+            previous?.detach()
+            if (isAttachedToWindow) current.attach()
             editorView.setImeFocusHandler(current)
         }
 
