@@ -144,7 +144,7 @@ class OverlayTransformationEnforcer<T : Editor, S : State>(
 
         override fun onAnimationStart(animation: AnimationState) {
             val state = dispatchingState ?: return
-            state.inputView.getLocationOnScreen(point)
+            state.inputView.getLocationInWindow(point)
             val initial = point[1] + state.inputView.height
             val start = initial - animation.startOffset
             val end = initial - animation.endOffset

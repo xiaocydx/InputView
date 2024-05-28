@@ -31,12 +31,12 @@ class ImeAnimatorActivity : AppCompatActivity() {
 
     private fun ActivityImeAnimatorBinding.init() = apply {
         // 1. 当有多个EditText时，选其中一个EditText创建ImeAnimator即可,
-        // 多个EditText的焦点处理逻辑，可以看InputView.animator()的注释。
-        val animator = InputView.animator(window, editText1)
+        // 多个EditText的焦点处理逻辑，可以看ImeAnimator.editText的注释。
+        val animator = InputView.animator(editText1)
 
         // 2. 创建animator的EditText会自动处理水滴状指示器导致动画卡顿问题，
         // 若其它EditText也需要处理，则调用InputView.addEditText()完成添加。
-        InputView.addEditText(window, editText2)
+        InputView.addEditText(editText2)
 
         // 3. 点击imageView，隐藏IME
         imageView.onClick(animator::hideIme)

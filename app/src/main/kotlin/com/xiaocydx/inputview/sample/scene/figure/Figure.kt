@@ -38,7 +38,7 @@ data class ViewBounds(
     companion object {
         fun from(view: View) = run {
             val out = IntArray(2)
-            view.getLocationOnScreen(out)
+            view.getLocationInWindow(out)
             ViewBounds(
                 left = out[0],
                 top = out[1],

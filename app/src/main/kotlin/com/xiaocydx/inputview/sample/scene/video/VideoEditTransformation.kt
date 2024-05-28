@@ -24,7 +24,7 @@ class PreviewTransformation(
 
     override fun start(state: State) {
         val preview = previewRef.get() ?: return
-        preview.getLocationOnScreen(point)
+        preview.getLocationInWindow(point)
         bottom = point[1] + preview.height
     }
 
