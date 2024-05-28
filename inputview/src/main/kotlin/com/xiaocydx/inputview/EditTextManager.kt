@@ -129,7 +129,7 @@ internal class EditTextManager(
 
     private fun EditText.isTouched(ev: MotionEvent): Boolean {
         if (!isAttachedToWindow || !isLaidOut || !isVisible) return false
-        getLocationOnScreen(location)
+        getLocationInWindow(location)
         point[0] = ev.rawX - location[0]
         point[1] = ev.rawY - location[1]
         if (!matrix.isIdentity) {

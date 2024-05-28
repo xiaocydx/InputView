@@ -29,18 +29,20 @@ import java.lang.ref.WeakReference
  */
 internal open class ImeFocusHandler(view: View) :
         WeakReference<View>(view), View.OnAttachStateChangeListener {
-    private var host: EditorHost? = null
+    private var isAttached = false
     private var focusAction: OneShotHasWindowFocusListener? = null
     protected var window: ViewTreeWindow? = null; private set
 
     fun onAttachedToHost(host: EditorHost) {
-        this.host = host
+        if (isAttached) return
+        isAttached = true
         get()?.addOnAttachStateChangeListener(this)
         get()?.takeIf { it.isAttachedToWindow }?.let(::onViewAttachedToWindow)
     }
 
     fun onDetachedFromHost(host: EditorHost) {
-        this.host = null
+        if (!isAttached) return
+        isAttached = false
         get()?.removeOnAttachStateChangeListener(this)
         get()?.let(::onViewDetachedFromWindow)
     }
