@@ -131,7 +131,7 @@ class ImeAnimator internal constructor(
         })
         val listener = object : OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(v: View) {
-                window = window ?: view.findViewTreeWindow()
+                window = window ?: view.requireViewTreeWindow()
                 window?.let(host::onAttachedToWindow)
                 view.requestApplyInsetsCompat()
             }
