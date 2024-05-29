@@ -8,18 +8,15 @@ import android.view.Window
 import android.view.WindowInsets
 import androidx.annotation.StyleRes
 import androidx.appcompat.app.AppCompatDialog
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.core.view.doOnAttach
-import androidx.core.view.updateLayoutParams
-import androidx.core.view.updatePadding
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.R
 import com.xiaocydx.inputview.sample.basic.message.init
 import com.xiaocydx.inputview.sample.databinding.MessageListBinding
+import com.xiaocydx.insets.insets
+import com.xiaocydx.insets.statusBars
 
 private const val statusBarEdgeToEdge = true
 private const val gestureNavBarEdgeToEdge = true
@@ -45,12 +42,7 @@ class MessageListDialog(
     private fun MessageListBinding.initView(window: Window) = apply {
         tvTitle.setBackgroundColor(0xFFD5A7AE.toInt())
         if (!statusBarEdgeToEdge) return@apply
-        tvTitle.doOnAttach {
-            val rootInsets = ViewCompat.getRootWindowInsets(it) ?: return@doOnAttach
-            val statusBars = rootInsets.getInsets(WindowInsetsCompat.Type.statusBars())
-            tvTitle.updatePadding(top = statusBars.top)
-            tvTitle.updateLayoutParams { height += statusBars.top }
-        }
+        tvTitle.insets().paddings(statusBars()).dimension(statusBars())
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
     }
 }

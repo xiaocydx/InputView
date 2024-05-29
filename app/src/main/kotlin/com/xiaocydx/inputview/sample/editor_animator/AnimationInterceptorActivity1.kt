@@ -44,7 +44,7 @@ class AnimationInterceptorActivity1 : AppCompatActivity() {
 
         // 2. 关联InputView的EditText会自动处理水滴状指示器导致动画卡顿问题，
         // 若其它EditText也需要处理，则调用InputView.addEditText()完成添加。
-        InputView.addEditText(window, editText2)
+        InputView.addEditText(editText2)
 
         // 3. 运行动画时，修改outside.alpha和outside.isInvisible
         inputView.editorAnimator.addAnimationCallback(

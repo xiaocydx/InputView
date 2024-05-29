@@ -27,6 +27,7 @@ import com.xiaocydx.inputview.sample.basic.message.MessageEditor
 import com.xiaocydx.inputview.sample.basic.message.init
 import com.xiaocydx.inputview.sample.common.suppressLayoutCompat
 import com.xiaocydx.inputview.sample.databinding.MessageListBinding
+import com.xiaocydx.insets.statusBars
 
 /**
  * 视图初始化阶段调用[disableEdgeToEdgeAndFitsSystemWindows]，
@@ -98,7 +99,7 @@ private class StatusBarEdgeToEdgeCallback(
     }
 
     override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
-        lastStatusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+        lastStatusBars = insets.getInsets(statusBars())
         return insets
     }
 
