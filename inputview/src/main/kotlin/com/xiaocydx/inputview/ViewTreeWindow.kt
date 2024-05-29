@@ -27,7 +27,6 @@ import android.view.animation.Interpolator
 import android.widget.EditText
 import androidx.annotation.VisibleForTesting
 import androidx.core.view.*
-import androidx.core.view.WindowInsetsCompat.Type.*
 import com.xiaocydx.inputview.compat.*
 import com.xiaocydx.insets.DisableDecorFitsSystemWindowsReason
 import com.xiaocydx.insets.consumeInsets
@@ -36,13 +35,16 @@ import com.xiaocydx.insets.disableDecorFitsSystemWindowsReason
 import com.xiaocydx.insets.getImeOffset
 import com.xiaocydx.insets.getRootWindowInsetsCompat
 import com.xiaocydx.insets.getSystemBarHiddenConsumeTypeMask
+import com.xiaocydx.insets.ime
 import com.xiaocydx.insets.insets
 import com.xiaocydx.insets.isGestureNavigationBar
 import com.xiaocydx.insets.navigationBarHeight
+import com.xiaocydx.insets.navigationBars
 import com.xiaocydx.insets.onApplyWindowInsetsCompat
 import com.xiaocydx.insets.setDecorFitsSystemWindowsCompat
 import com.xiaocydx.insets.setOnApplyWindowInsetsListenerCompat
 import com.xiaocydx.insets.statusBarHeight
+import com.xiaocydx.insets.statusBars
 import com.xiaocydx.insets.updateMargins
 import java.lang.ref.WeakReference
 

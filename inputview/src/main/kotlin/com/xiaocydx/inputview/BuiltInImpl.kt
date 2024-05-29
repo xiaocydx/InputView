@@ -23,9 +23,9 @@ import android.view.animation.Interpolator
 import android.widget.EditText
 import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
-import androidx.core.view.WindowInsetsCompat.Type.navigationBars
 import com.xiaocydx.insets.consumeInsets
 import com.xiaocydx.insets.doOnApplyWindowInsets
+import com.xiaocydx.insets.navigationBars
 import com.xiaocydx.insets.onApplyWindowInsetsCompat
 
 /**

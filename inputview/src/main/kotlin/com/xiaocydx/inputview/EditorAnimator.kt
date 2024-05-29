@@ -30,8 +30,8 @@ import androidx.annotation.VisibleForTesting
 import androidx.core.view.OneShotPreDrawListener
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsCompat.Type.ime
 import com.xiaocydx.insets.contains
+import com.xiaocydx.insets.ime
 import com.xiaocydx.insets.imeHeight
 import java.lang.Integer.max
 import kotlin.math.absoluteValue
