@@ -96,13 +96,16 @@ abstract class EditorAnimator(
      *
      * 若有更多的拦截条件，则自行实现和组合[AnimationInterceptor]，例如：
      * ```
-     * val interceptor1 = CustomAnimationInterceptor()
-     * val interceptor2 = editorAnimator.createWindowFocusInterceptor()
+     * val interceptor1 = WindowFocusInterceptor()
+     * val interceptor2 = CustomAnimationInterceptor()
      * editorAnimator.setAnimationInterceptor(interceptor1 + interceptor2)
      * ```
      */
     fun setAnimationInterceptor(interceptor: AnimationInterceptor) {
+        if (animationInterceptor === interceptor) return
+        animationInterceptor.onDetachedFromAnimator(this)
         animationInterceptor = interceptor
+        animationInterceptor.onAttachedToAnimator(this)
     }
 
     /**
@@ -685,6 +688,16 @@ interface AnimationCallback {
 interface AnimationInterceptor {
 
     /**
+     * 附加到[animator]，当拦截函数被调用时，可访问[animator]的属性做判断
+     */
+    fun onAttachedToAnimator(animator: EditorAnimator) = Unit
+
+    /**
+     * 从[animator]分离，此时应当重置[onAttachedToAnimator]做的工作
+     */
+    fun onDetachedFromAnimator(animator: EditorAnimator) = Unit
+
+    /**
      * 返回`true`拦截[Editor]的更改，[EditorAdapter.notifyShow]不生效
      */
     fun onInterceptChange(current: Editor?, next: Editor?): Boolean = false
@@ -721,6 +734,16 @@ private class CombinedAnimationInterceptor(
     private val first: AnimationInterceptor,
     private val second: AnimationInterceptor
 ) : AnimationInterceptor {
+
+    override fun onAttachedToAnimator(animator: EditorAnimator) {
+        first.onAttachedToAnimator(animator)
+        second.onAttachedToAnimator(animator)
+    }
+
+    override fun onDetachedFromAnimator(animator: EditorAnimator) {
+        first.onDetachedFromAnimator(animator)
+        second.onDetachedFromAnimator(animator)
+    }
 
     override fun onInterceptChange(current: Editor?, next: Editor?): Boolean {
         return first.onInterceptChange(current, next) || second.onInterceptChange(current, next)

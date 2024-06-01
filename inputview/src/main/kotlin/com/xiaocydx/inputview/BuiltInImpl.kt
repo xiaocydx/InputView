@@ -23,10 +23,6 @@ import android.view.animation.Interpolator
 import android.widget.EditText
 import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
-import com.xiaocydx.insets.consumeInsets
-import com.xiaocydx.insets.doOnApplyWindowInsets
-import com.xiaocydx.insets.navigationBars
-import com.xiaocydx.insets.onApplyWindowInsetsCompat
 
 /**
  * 禁用手势导航栏偏移，在支持手势导航栏EdgeToEdge的情况下，
@@ -35,35 +31,39 @@ import com.xiaocydx.insets.onApplyWindowInsetsCompat
  *
  * 关于手势导航栏偏移的描述，可以看[InputView.onApplyWindowInsets]的注释。
  */
-fun InputView.disableGestureNavBarOffset() {
-    doOnApplyWindowInsets { _, insets, _ ->
-        onApplyWindowInsetsCompat(insets.consumeInsets(navigationBars()))
-    }
-}
+fun InputView.disableGestureNavBarOffset() = disableNavBarOffset()
 
 /**
- * 设置[createWindowFocusInterceptor]创建的动画拦截器
+ * 设置[WindowFocusInterceptor]
  *
  * 若有更多的拦截条件，则自行实现和组合[AnimationInterceptor]，
  * 详细解释可以看[EditorAnimator.setAnimationInterceptor]的注释。
  */
 fun EditorAnimator.setWindowFocusInterceptor() {
-    setAnimationInterceptor(createWindowFocusInterceptor())
+    setAnimationInterceptor(WindowFocusInterceptor())
 }
 
 /**
- * 创建`window.decorView.hasWindowFocus()`的动画拦截器
+ * `window.decorView.hasWindowFocus()`的动画拦截器
  *
  * 当更改[Editor]时，若`window.decorView.hasWindowFocus()`为`false`，则不更改[Editor]且不运行动画，
  * 该拦截器适用于存在多个Window的交互场景，例如显示了有[EditText]的[Dialog]，点击[EditText]显示IME，
  * 此时不需要将[Editor]更改为IME，也不需要运行IME动画。
  */
-fun EditorAnimator.createWindowFocusInterceptor(): AnimationInterceptor {
-    return object : AnimationInterceptor {
-        override fun onInterceptChange(current: Editor?, next: Editor?): Boolean {
-            val host = getEditorHost() ?: return false
-            return next != null && host.isRestored && !host.hasWindowFocus
-        }
+class WindowFocusInterceptor : AnimationInterceptor {
+    private var animator: EditorAnimator? = null
+
+    override fun onAttachedToAnimator(animator: EditorAnimator) {
+        this.animator = animator
+    }
+
+    override fun onDetachedFromAnimator(animator: EditorAnimator) {
+        this.animator = null
+    }
+
+    override fun onInterceptChange(current: Editor?, next: Editor?): Boolean {
+        val host = animator?.getEditorHost() ?: return false
+        return next != null && host.isRestored && !host.hasWindowFocus
     }
 }
 
