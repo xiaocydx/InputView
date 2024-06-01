@@ -74,6 +74,7 @@ class InputView @JvmOverloads constructor(
     private var contentView: View? = null
     private var window: ViewTreeWindow? = null
     private var navBarOffset = 0
+    private var disableNavBarOffset = false
 
     /**
      * 设置需要处理的[EditText]
@@ -251,14 +252,23 @@ class InputView @JvmOverloads constructor(
      * 是为了给外部提供拦截时机，外部可以消费导航栏高度，再将消费结果传给该函数。
      */
     override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
-        val lastNavBarOffset = window?.run {
-            insets.toWindowInsetsCompat(this@InputView).navBarOffset
-        } ?: 0
-        if (navBarOffset != lastNavBarOffset) {
-            navBarOffset = lastNavBarOffset
-            requestLayout()
+        if (!disableNavBarOffset) {
+            val lastNavBarOffset = window?.run {
+                insets.toWindowInsetsCompat(this@InputView).navBarOffset
+            } ?: 0
+            if (navBarOffset != lastNavBarOffset) {
+                navBarOffset = lastNavBarOffset
+                requestLayout()
+            }
         }
         return super.onApplyWindowInsets(insets)
+    }
+
+    internal fun disableNavBarOffset() {
+        if (disableNavBarOffset) return
+        disableNavBarOffset = true
+        navBarOffset = 0
+        requestLayout()
     }
 
     /**
