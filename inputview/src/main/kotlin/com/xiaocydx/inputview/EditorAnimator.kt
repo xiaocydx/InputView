@@ -266,6 +266,7 @@ abstract class EditorAnimator(
     }
 
     internal fun onAttachedToHost(host: EditorHost) {
+        check(this.host == null) { "EditorAnimator已关联EditorHost" }
         this.host = host
         host.setOnApplyWindowInsetsListener(animationDispatcher)
         host.takeIf { enableWindowInsetsAnimation() }?.setWindowInsetsAnimationCallback(animationDispatcher)

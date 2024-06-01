@@ -91,6 +91,7 @@ abstract class EditorAdapter<T : Editor> {
 
     @CallSuper
     internal open fun onAttachedToHost(host: EditorHost) {
+        check(this.host == null) { "EditorAdapter已关联EditorHost" }
         this.host = host
     }
 

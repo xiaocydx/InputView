@@ -162,6 +162,7 @@ class InputView @JvmOverloads constructor(
             if (previous === value) return
             host.onEditorAnimatorChanged(previous, value)
             field = value
+            requestLayout()
         }
 
     /**

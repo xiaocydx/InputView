@@ -54,6 +54,7 @@ class WindowFocusInterceptor : AnimationInterceptor {
     private var animator: EditorAnimator? = null
 
     override fun onAttachedToAnimator(animator: EditorAnimator) {
+        check(this.animator == null) { "WindowFocusInterceptor已关联EditorAnimator" }
         this.animator = animator
     }
 

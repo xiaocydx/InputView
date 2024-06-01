@@ -127,4 +127,49 @@ internal class InputViewTest {
             assertThat(host.editorOffset).isEqualTo(offset)
         }
     }
+
+    @Test
+    fun sharedEditorAdapterThrowException() {
+        scenario.onActivity {
+            val adapter = ImeAdapter()
+            val inputView1 = InputView(it)
+            val inputView2 = InputView(it)
+
+            var result = runCatching { inputView1.editorAdapter = adapter }
+            assertThat(result.exceptionOrNull()).isNull()
+
+            result = kotlin.runCatching { inputView2.editorAdapter = adapter }
+            assertThat(result.exceptionOrNull()).isNotNull()
+        }
+    }
+
+    @Test
+    fun sharedEditorAnimatorThrowException() {
+        scenario.onActivity {
+            val animator = NopEditorAnimator()
+            val inputView1 = InputView(it)
+            val inputView2 = InputView(it)
+
+            var result = runCatching { inputView1.editorAnimator = animator }
+            assertThat(result.exceptionOrNull()).isNull()
+
+            result = kotlin.runCatching { inputView2.editorAnimator = animator }
+            assertThat(result.exceptionOrNull()).isNotNull()
+        }
+    }
+
+    @Test
+    fun sharedAnimationInterceptorThrowException() {
+        scenario.onActivity {
+            val interceptor = WindowFocusInterceptor()
+            val animator1 = NopEditorAnimator()
+            val animator2 = NopEditorAnimator()
+
+            var result = runCatching { animator1.setAnimationInterceptor(interceptor) }
+            assertThat(result.exceptionOrNull()).isNull()
+
+            result = kotlin.runCatching { animator2.setAnimationInterceptor(interceptor) }
+            assertThat(result.exceptionOrNull()).isNotNull()
+        }
+    }
 }
