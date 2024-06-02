@@ -5,7 +5,6 @@ import android.view.LayoutInflater
 import android.view.View
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
-import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.transition.getPaddings
 import androidx.transition.updatePaddings
@@ -23,6 +22,7 @@ import com.xiaocydx.insets.getRootWindowInsetsCompat
 import com.xiaocydx.insets.isGestureNavigationBar
 import com.xiaocydx.insets.navigationBarHeight
 import com.xiaocydx.insets.statusBarHeight
+import com.xiaocydx.insets.updateLayoutSize
 import com.xiaocydx.insets.updateMargins
 import kotlin.math.absoluteValue
 
@@ -78,7 +78,7 @@ class TextGroupTransformation(
             startToolsHeight = initialToolsHeight
         }
         binding.root.updatePaddings(startPaddings)
-        binding.llTools.updateLayoutParamsHeight(startToolsHeight)
+        binding.llTools.updateLayoutSize(height = startToolsHeight)
         when {
             !isPrevious(state) -> {
                 inputView.editText = binding.editText
@@ -129,7 +129,7 @@ class TextGroupTransformation(
             else -> 1f - interpolatedFraction
         }
         val toolsHeight = startToolsHeight + (endToolsHeight - startToolsHeight) * fraction
-        binding.llTools.updateLayoutParamsHeight(toolsHeight.toInt())
+        binding.llTools.updateLayoutSize(height = toolsHeight.toInt())
         binding.llTools.updateMargins(bottom = calculateToolsMarginBottom(state))
     }
 
@@ -158,10 +158,5 @@ class TextGroupTransformation(
 
     private fun Rect.set(bounds: ViewBounds) {
         bounds.apply { set(left, top, right, bottom) }
-    }
-
-    private fun View.updateLayoutParamsHeight(height: Int) {
-        if (layoutParams.height == height) return
-        updateLayoutParams { this.height = height }
     }
 }
