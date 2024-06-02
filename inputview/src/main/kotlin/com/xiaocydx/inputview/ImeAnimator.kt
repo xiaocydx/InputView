@@ -145,16 +145,11 @@ class ImeAnimator internal constructor(
     }
 
     fun showIme() {
-        if (canChangeEditor(host.current, host.ime)) {
-            imeFocusHandler.requestFocus()
-            imeFocusHandler.showIme()
-        }
+        host.showChecked(host.ime)
     }
 
     fun hideIme() {
-        if (canChangeEditor(host.current, null)) {
-            imeFocusHandler.hideIme()
-        }
+        host.hideChecked(host.ime)
     }
 
     private inner class EditorHostImpl : EditorHost {
@@ -170,6 +165,7 @@ class ImeAnimator internal constructor(
         override val container = null
         override val previousView = null
         override val currentView = null
+        private var pendingChange: Boolean? = null
 
         fun onAttachedToWindow(window: ViewTreeWindow) {
             window.registerHost(this)
@@ -195,13 +191,38 @@ class ImeAnimator internal constructor(
         }
 
         override fun dispatchImeShown(shown: Boolean): Boolean {
+            pendingChange = null
             val next = if (shown) ime else null
-            if (!canChangeEditor(current, next)) return false
-            val previous = current
-            current = next
-            if (shown) imeFocusHandler.requestCurrentFocus() else imeFocusHandler.clearCurrentFocus()
-            this@ImeAnimator.onPendingChanged(previous, current, immediately = false)
-            return true
+            val changed = this@ImeAnimator.canChangeEditor(current, next) && current !== next
+            if (changed) {
+                val previous = current
+                current = next
+                if (shown) imeFocusHandler.requestCurrentFocus() else imeFocusHandler.clearCurrentFocus()
+                this@ImeAnimator.onPendingChanged(previous, current, immediately = false)
+            }
+            return changed
+        }
+
+        override fun showChecked(editor: Editor): Boolean {
+            val changed = this@ImeAnimator.canChangeEditor(current, editor)
+                    && current == null && pendingChange != true
+            if (changed) {
+                pendingChange = true
+                imeFocusHandler.requestFocus()
+                imeFocusHandler.showIme()
+            }
+            return changed
+        }
+
+        override fun hideChecked(editor: Editor): Boolean {
+            val changed = this@ImeAnimator.canChangeEditor(editor, null)
+                    && current != null && pendingChange != false
+            if (changed) {
+                pendingChange = false
+                imeFocusHandler.clearCurrentFocus()
+                imeFocusHandler.hideIme()
+            }
+            return changed
         }
 
         override fun addAnimationCallback(callback: AnimationCallback) {
@@ -240,7 +261,5 @@ class ImeAnimator internal constructor(
         }
 
         override fun removeEditorView(view: View) = Unit
-        override fun showChecked(editor: Editor) = false
-        override fun hideChecked(editor: Editor) = false
     }
 }
