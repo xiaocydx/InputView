@@ -10,7 +10,7 @@ InputView是一个通用的输入控件
 > IME的全称是Input Method Editors（输入法编辑器），因此将IME和底部视图统一称为Editor（编辑器）。
 <br/> 
 
-[InputView的使用说明](https://www.yuque.com/u12192380/khwdgb/pi0b7rdhvr16z7gm)
+[InputView的使用文档](https://www.yuque.com/u12192380/khwdgb/pi0b7rdhvr16z7gm)
 
 1. 在根目录的settings.gradle添加
 ```
