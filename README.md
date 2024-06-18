@@ -6,11 +6,12 @@ InputView是一个通用的输入控件
 * 实现Edge-to-Edge并提供相关的扩展函数。
 * 解决EditText水滴状指示器导致动画卡顿的问题。  
 * 修改Android 11及以上IME动画的时长和插值器。
-* 提供Android 11以下Window属性包含FLAG_FULLSCREEN的兼容方案。
 > IME的全称是Input Method Editors（输入法编辑器），因此将IME和底部视图统一称为Editor（编辑器）。
-<br/> 
 
-[InputView的使用文档](https://www.yuque.com/u12192380/khwdgb/pi0b7rdhvr16z7gm)
+[InputView（一）使用文档](https://www.yuque.com/u12192380/khwdgb/pi0b7rdhvr16z7gm)
+
+[InputView（二）常见问题](https://www.yuque.com/u12192380/zl0316/ggq72wvpocdempds)
+<br/> <br/> 
 
 1. 在根目录的settings.gradle添加
 ```
