@@ -17,3 +17,4 @@ rootProject.name = "InputView"
 include(":app")
 include(":inputview")
 include(":inputview-compat")
+apply(from = "module.gradle.kts")
