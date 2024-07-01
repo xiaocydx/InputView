@@ -11,6 +11,6 @@ android {
 
 dependencies {
     compileOnly(project(":inputview"))
-    api(Libs.`insets-compat`)
-    implementation(Libs.`androidx-core`)
+    api(CommonLibs.`insets-compat`)
+    implementation(PublishLibs.`androidx-core`)
 }

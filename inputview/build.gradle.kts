@@ -19,13 +19,13 @@ android {
 }
 
 dependencies {
-    implementation("androidx.fragment:fragment:1.1.0")
-    api(Libs.insets)
-    testImplementation(Libs.`androidx-appcompat`)
-    testImplementation(Libs.`androidx-viewpager2`)
-    testImplementation(Libs.truth)
-    testImplementation(Libs.robolectric)
-    testImplementation(Libs.mockk)
-    testImplementation(Libs.`androidx-test-core`)
-    testImplementation(Libs.junit)
+    api(CommonLibs.insets)
+    implementation(PublishLibs.`androidx-fragment-old`)
+    testImplementation(PublishLibs.`androidx-appcompat`)
+    testImplementation(PublishLibs.`androidx-viewpager2`)
+    testImplementation(PublishLibs.`androidx-test-core`)
+    testImplementation(PublishLibs.truth)
+    testImplementation(PublishLibs.mockk)
+    testImplementation(PublishLibs.junit)
+    testImplementation(PublishLibs.robolectric)
 }
