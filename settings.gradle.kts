@@ -19,4 +19,5 @@ rootProject.name = "InputView"
 include(":app")
 include(":inputview")
 include(":inputview-compat")
+include(":inputview-overlay")
 apply(from = "module.gradle.kts")

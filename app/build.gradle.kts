@@ -13,6 +13,7 @@ android {
 dependencies {
     implementation(project(":inputview"))
     implementation(project(":inputview-compat"))
+    implementation(project(":inputview-overlay"))
     implementation(CommonLibs.cxrv)
     implementation(CommonLibs.`cxrv-binding`)
     implementation(CommonLibs.`cxrv-paging`)
