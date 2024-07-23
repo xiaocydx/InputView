@@ -70,9 +70,9 @@ internal interface ContentHost {
 
     fun hideChecked(content: Content): Boolean
 
-    fun addTransformer(transformer: OverlayTransformer)
+    fun addTransformer(transformer: Transformer)
 
-    fun removeTransformer(transformer: OverlayTransformer)
+    fun removeTransformer(transformer: Transformer)
 }
 
 internal class EmptyAdapter : ContentAdapter<Content>() {

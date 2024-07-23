@@ -173,7 +173,7 @@ abstract class FragmentContentAdapter<T : Content>(
         private var isDelayUpdateNeeded = false
         private var isDelayUpdateEnabled = true
         private var delayUpdateObserver: LifecycleObserver? = null
-        private var transformer: OverlayTransformer? = null
+        private var transformer: Transformer? = null
 
         fun register(host: ContentHost) {
             delayUpdateObserver = LifecycleEventObserver { _, _ ->
@@ -183,7 +183,7 @@ abstract class FragmentContentAdapter<T : Content>(
                 if (!isNeeded || !isDelayUpdateEnabled) return@LifecycleEventObserver
                 updateFragmentMaxLifecycle(host.current)
             }
-            transformer = object : OverlayTransformer {
+            transformer = object : Transformer {
                 override fun onPrepare(state: PrepareState) {
                     isAnimationRunning = true
                 }

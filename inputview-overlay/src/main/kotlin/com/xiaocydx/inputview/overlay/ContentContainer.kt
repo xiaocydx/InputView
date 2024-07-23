@@ -41,7 +41,7 @@ internal class ContentContainer(context: Context) : FrameLayout(context) {
     lateinit var adapter: ContentAdapter<*>; private set
 
     init {
-        id = R.id.tag_content_container_id
+        id = R.id.tag_overlay_content_container_id
         setAdapter(EmptyAdapter())
     }
 
