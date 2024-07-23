@@ -39,13 +39,16 @@ import com.xiaocydx.inputview.isVisible
 import com.xiaocydx.inputview.notifyHideCurrent
 import com.xiaocydx.inputview.notifyShow
 
-/**
- * @author xcc
- * @date 2024/7/22
- */
-class OverlayEnforcer<C : Content, E : Editor>(
+fun <C : Content, E : Editor> InputView.Companion.createOverlay(
+    window: Window,
+    lifecycle: Lifecycle,
+    contentAdapter: ContentAdapter<C>,
+    editorAdapter: EditorAdapter<E>,
+): Overlay<C, E> = Overlay(window, lifecycle, contentAdapter, editorAdapter)
+
+class Overlay<C : Content, E : Editor> internal constructor(
     private val window: Window,
-    private val lifecycleOwner: LifecycleOwner,
+    private val lifecycle: Lifecycle,
     private val contentAdapter: ContentAdapter<C>,
     private val editorAdapter: EditorAdapter<E>,
 ) : TransformerOwner.Host {
@@ -69,7 +72,7 @@ class OverlayEnforcer<C : Content, E : Editor>(
         transformers.remove(transformer)
     }
 
-    fun requestTransform() {
+    override fun requestTransform() {
         // TODO: 检验state的有效性，处理重复分发
         if (transformState.isDispatching) return
         transformState.isDispatching = true
@@ -93,42 +96,52 @@ class OverlayEnforcer<C : Content, E : Editor>(
     }
 
     fun attachToWindow(
-        compat: Boolean = false,
-        parent: ViewGroup = window.findViewById(android.R.id.content),
-        inputViewInitializer: ((inputView: InputView) -> Unit)? = null
+        initCompat: Boolean,
+        rootParent: ViewGroup = window.rootParent(),
+        initializer: ((inputView: InputView) -> Unit)? = null
     ): Boolean = with(transformState) {
-        val first = if (!compat) {
-            InputView.init(window, statusBarEdgeToEdge, gestureNavBarEdgeToEdge)
-        } else {
+        val first = if (initCompat) {
             InputView.initCompat(window, gestureNavBarEdgeToEdge)
+        } else {
+            InputView.init(window, statusBarEdgeToEdge, gestureNavBarEdgeToEdge)
         }
         if (!first) return false
 
-        inputViewInitializer?.invoke(inputView)
+        initializer?.invoke(inputView)
+        val editorAnimator = inputView.editorAnimator
         inputView.disableGestureNavBarOffset()
         inputView.editorMode = EditorMode.ADJUST_PAN
         inputView.editorAdapter = editorAdapter
-        inputView.editorAnimator.addAnimationCallback(AnimationCallbackImpl())
+        editorAnimator.addAnimationCallback(AnimationCallbackImpl())
 
-        // TODO: 动画结束后移除view
-        // val immediately = !inputView.editorAnimator.canRunAnimation
-        container.setAdapter(contentAdapter)
-        // container.setRemovePreviousImmediately(immediately)
+        contentView.setAdapter(contentAdapter)
+        contentView.setRemovePreviousImmediately(!editorAnimator.canRunAnimation)
         contentAdapter.onAttachedToHost(ContentHostImpl())
 
-        if (parent.id != android.R.id.content) {
-            parent.addView(root)
+        if (rootParent.id == windowRootParentId()) {
+            lifecycle.doOnCreated { window.rootParent().addView(root) }
         } else {
-            lifecycleOwner.lifecycle.addObserver(object : LifecycleEventObserver {
-                override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-                    if (!source.lifecycle.currentState.isAtLeast(CREATED)) return
-                    source.lifecycle.removeObserver(this)
-                    val finalParent = window.findViewById<ViewGroup>(android.R.id.content)
-                    finalParent.addView(root)
-                }
-            })
+            rootParent.addView(root)
         }
         return true
+    }
+
+    private fun windowRootParentId(): Int {
+        return android.R.id.content
+    }
+
+    private fun Window.rootParent(): ViewGroup {
+        return findViewById(windowRootParentId())
+    }
+
+    private inline fun Lifecycle.doOnCreated(crossinline action: () -> Unit) {
+        addObserver(object : LifecycleEventObserver {
+            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+                if (!source.lifecycle.currentState.isAtLeast(CREATED)) return
+                source.lifecycle.removeObserver(this)
+                action()
+            }
+        })
     }
 
     private inline fun dispatchTransformer(action: OverlayTransformer.() -> Unit) {
@@ -138,24 +151,24 @@ class OverlayEnforcer<C : Content, E : Editor>(
 
     private inner class ContentHostImpl : ContentHost {
         override val current: Content?
-            get() = transformState.container.current
+            get() = transformState.contentView.current
         override val container: ViewGroup
-            get() = transformState.container
+            get() = transformState.contentView
 
         override fun showChecked(content: Content): Boolean {
-            return transformState.container.showChecked(content)
+            return transformState.contentView.showChecked(content)
         }
 
         override fun hideChecked(content: Content): Boolean {
-            return transformState.container.hideChecked(content)
+            return transformState.contentView.hideChecked(content)
         }
 
         override fun addTransformer(transformer: OverlayTransformer) {
-            this@OverlayEnforcer.addTransformer(transformer)
+            this@Overlay.addTransformer(transformer)
         }
 
         override fun removeTransformer(transformer: OverlayTransformer) {
-            this@OverlayEnforcer.removeTransformer(transformer)
+            this@Overlay.removeTransformer(transformer)
         }
     }
 
@@ -164,7 +177,7 @@ class OverlayEnforcer<C : Content, E : Editor>(
 
         override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
             transformState.checkEditor(previous, current)
-            transformState.container.consumePendingChange()
+            transformState.contentView.consumePendingChange()
             transformState.root.isVisible = true
             transformState.isDispatching = true
             dispatchTransformer { onPrepare(transformState) }
@@ -185,6 +198,7 @@ class OverlayEnforcer<C : Content, E : Editor>(
 
         override fun onAnimationEnd(animation: AnimationState) {
             dispatchTransformer { onEnd(transformState) }
+            transformState.contentView.removeChangeRecordPrevious()
             transformState.root.isVisible = transformState.current != null
             transformState.isDispatching = false
         }
@@ -192,7 +206,7 @@ class OverlayEnforcer<C : Content, E : Editor>(
 
     private inner class TransformStateImpl : TransformState {
         override val inputView = InputView(window.decorView.context)
-        override val container = ContentContainer(window.decorView.context)
+        override val contentView = ContentContainer(window.decorView.context)
         override var previous: OverlayScene<C, E>? = null; private set
         override var current: OverlayScene<C, E>? = null; private set
         override var initialAnchorY = 0; private set
@@ -208,7 +222,7 @@ class OverlayEnforcer<C : Content, E : Editor>(
 
         init {
             root.isVisible = false
-            root.addView(container, MATCH_PARENT, MATCH_PARENT)
+            root.addView(contentView, MATCH_PARENT, MATCH_PARENT)
             root.addView(inputView, MATCH_PARENT, MATCH_PARENT)
         }
 

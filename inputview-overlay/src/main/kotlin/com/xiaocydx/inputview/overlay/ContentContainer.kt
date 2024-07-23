@@ -136,6 +136,11 @@ internal class ContentContainer(context: Context) : FrameLayout(context) {
         return true
     }
 
+    fun removeChangeRecordPrevious() {
+        val view = changeRecord.previousChild
+        if (view?.parent === this) removeView(view)
+    }
+
     private fun setPendingChange(previous: Content?, current: Content?) {
         if (pendingChange == null) {
             pendingChange = PendingChange(previous)
@@ -145,11 +150,6 @@ internal class ContentContainer(context: Context) : FrameLayout(context) {
 
     private fun clearPendingChange() {
         pendingChange = null
-    }
-
-    private fun removeChangeRecordPrevious() {
-        val view = changeRecord.previousChild
-        if (view?.parent === this) removeView(view)
     }
 
     @Suppress("UNCHECKED_CAST")

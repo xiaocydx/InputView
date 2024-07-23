@@ -27,10 +27,6 @@ import com.xiaocydx.inputview.InputView
  */
 interface OverlayTransformer {
 
-    // TODO: 优先级用于修改状态值
-    // val priority: Int
-    //     get() = 0
-
     fun onPrepare(state: PrepareState) = Unit
 
     fun onStart(state: TransformState) = Unit
@@ -43,7 +39,7 @@ interface OverlayTransformer {
 interface PrepareState {
     val inputView: InputView
 
-    val container: ViewGroup
+    val contentView: ViewGroup
 
     val previous: OverlayScene<*, *>?
 
