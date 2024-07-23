@@ -18,11 +18,9 @@
 
 package com.xiaocydx.inputview.overlay
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Parcelable
 import android.util.SparseArray
-import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
 import android.widget.FrameLayout

@@ -44,11 +44,31 @@ abstract class ContentAdapter<T : Content> {
 
 interface Content
 
+@Suppress("UNCHECKED_CAST")
+internal val <T : Content> ContentAdapter<T>.current: T?
+    get() = host?.current as? T
+
+internal fun <T : Content> ContentAdapter<T>.notifyShow(content: T): Boolean {
+    return host?.showChecked(content) ?: false
+}
+
+internal fun <T : Content> ContentAdapter<T>.notifyHide(content: T): Boolean {
+    return host?.hideChecked(content) ?: false
+}
+
+internal fun <T : Content> ContentAdapter<T>.notifyHideCurrent(): Boolean {
+    return current?.let(::notifyHide) ?: false
+}
+
 internal interface ContentHost {
 
     val current: Content?
 
     val container: ViewGroup?
+
+    fun showChecked(content: Content): Boolean
+
+    fun hideChecked(content: Content): Boolean
 
     fun addTransformer(transformer: OverlayTransformer)
 

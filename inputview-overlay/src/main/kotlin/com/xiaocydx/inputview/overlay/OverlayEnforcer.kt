@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+
 package com.xiaocydx.inputview.overlay
 
 import android.view.ViewGroup
@@ -33,6 +35,7 @@ import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.disableGestureNavBarOffset
 import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.initCompat
+import com.xiaocydx.inputview.isVisible
 import com.xiaocydx.inputview.notifyHideCurrent
 import com.xiaocydx.inputview.notifyShow
 
@@ -45,44 +48,46 @@ class OverlayEnforcer<C : Content, E : Editor>(
     private val lifecycleOwner: LifecycleOwner,
     private val contentAdapter: ContentAdapter<C>,
     private val editorAdapter: EditorAdapter<E>,
-) {
-    private val inputView = InputView(window.decorView.context)
-    private val contentView = ContentContainer(window.decorView.context)
-    private val contentHost = ContentHostImpl()
-    private val transformers = mutableListOf<OverlayTransformer>()
+) : TransformerOwner.Host {
     private val transformState = TransformStateImpl()
+    private val transformers = mutableListOf<OverlayTransformer>()
+
+    init {
+        transformState.root.setTransformerOwner(this)
+    }
+
+    override fun hasTransformer(transformer: OverlayTransformer): Boolean {
+        return transformers.contains(transformer)
+    }
+
+    override fun addTransformer(transformer: OverlayTransformer) {
+        if (hasTransformer(transformer)) return
+        transformers.add(transformer)
+    }
+
+    override fun removeTransformer(transformer: OverlayTransformer) {
+        transformers.remove(transformer)
+    }
 
     fun requestTransform() {
-        if (transformState.isDispatching) return
         // TODO: 检验state的有效性，处理重复分发
+        if (transformState.isDispatching) return
+        transformState.isDispatching = true
         dispatchTransformer { onPrepare(transformState) }
         dispatchTransformer { onStart(transformState) }
         dispatchTransformer { onUpdate(transformState) }
         dispatchTransformer { onEnd(transformState) }
-    }
-
-    fun addTransformer(transformer: OverlayTransformer) {
-        if (transformers.contains(transformer)) return
-        // TODO: 增加排序处理？
-        // TODO: Fragment.view创建阶段添加，需要追上调度
-        transformers.add(transformer)
-    }
-
-    fun removeTransformer(transformer: OverlayTransformer) {
-        transformers.remove(transformer)
+        transformState.isDispatching = false
     }
 
     fun notify(scene: OverlayScene<C, E>?) {
-        val current = transformState.current
-        if (current?.content === scene?.content
-                && current?.editor === scene?.editor) {
-            return
-        }
-        transformState.previous = current
-        transformState.current = scene
+        if (transformState.isSameScene(scene)) return
+        transformState.setCurrentScene(scene)
         if (scene == null) {
+            contentAdapter.notifyHideCurrent()
             editorAdapter.notifyHideCurrent()
         } else {
+            contentAdapter.notifyShow(scene.content)
             editorAdapter.notifyShow(scene.editor)
         }
     }
@@ -91,9 +96,7 @@ class OverlayEnforcer<C : Content, E : Editor>(
         compat: Boolean = false,
         parent: ViewGroup = window.findViewById(android.R.id.content),
         inputViewInitializer: ((inputView: InputView) -> Unit)? = null
-    ): Boolean {
-        val statusBarEdgeToEdge = true
-        val gestureNavBarEdgeToEdge = true
+    ): Boolean = with(transformState) {
         val first = if (!compat) {
             InputView.init(window, statusBarEdgeToEdge, gestureNavBarEdgeToEdge)
         } else {
@@ -106,11 +109,13 @@ class OverlayEnforcer<C : Content, E : Editor>(
         inputView.editorMode = EditorMode.ADJUST_PAN
         inputView.editorAdapter = editorAdapter
         inputView.editorAnimator.addAnimationCallback(AnimationCallbackImpl())
-        contentAdapter.onAttachedToHost(contentHost)
 
-        val root = FrameLayout(window.decorView.context)
-        root.addView(contentView, MATCH_PARENT, MATCH_PARENT)
-        root.addView(inputView, MATCH_PARENT, MATCH_PARENT)
+        // TODO: 动画结束后移除view
+        // val immediately = !inputView.editorAnimator.canRunAnimation
+        container.setAdapter(contentAdapter)
+        // container.setRemovePreviousImmediately(immediately)
+        contentAdapter.onAttachedToHost(ContentHostImpl())
+
         if (parent.id != android.R.id.content) {
             parent.addView(root)
         } else {
@@ -127,13 +132,23 @@ class OverlayEnforcer<C : Content, E : Editor>(
     }
 
     private inline fun dispatchTransformer(action: OverlayTransformer.() -> Unit) {
+        // TODO: reversed待定
         for (i in transformers.indices.reversed()) transformers[i].action()
     }
 
     private inner class ContentHostImpl : ContentHost {
         override val current: Content?
-            get() = transformState.current?.content
-        override val container = contentView
+            get() = transformState.container.current
+        override val container: ViewGroup
+            get() = transformState.container
+
+        override fun showChecked(content: Content): Boolean {
+            return transformState.container.showChecked(content)
+        }
+
+        override fun hideChecked(content: Content): Boolean {
+            return transformState.container.hideChecked(content)
+        }
 
         override fun addTransformer(transformer: OverlayTransformer) {
             this@OverlayEnforcer.addTransformer(transformer)
@@ -146,53 +161,93 @@ class OverlayEnforcer<C : Content, E : Editor>(
 
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     private inner class AnimationCallbackImpl : AnimationCallback {
-        private val point = IntArray(2)
 
         override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
-            assert(transformState.previous?.editor === previous)
-            assert(transformState.current?.editor === current)
+            transformState.checkEditor(previous, current)
+            transformState.container.consumePendingChange()
+            transformState.root.isVisible = true
             transformState.isDispatching = true
             dispatchTransformer { onPrepare(transformState) }
         }
 
         override fun onAnimationStart(animation: AnimationState) {
-            transformState.inputView.getLocationInWindow(point)
-            val initial = point[1] + transformState.inputView.height
             // TODO: 支持修改anchorY
-            transformState.initialAnchorY = initial
-            transformState.startAnchorY = initial - animation.startOffset
-            transformState.endAnchorY = initial - animation.endOffset
+            transformState.setAnchorY(animation)
             dispatchTransformer { onStart(transformState) }
         }
 
         override fun onAnimationUpdate(animation: AnimationState) {
-            if (animation.previous == null || animation.current == null) {
-                animation.startView?.alpha = 1f
-                animation.endView?.alpha = 1f
-            }
             // TODO: 设置alpha
-            transformState.animatedFraction = animation.animatedFraction
-            transformState.interpolatedFraction = animation.interpolatedFraction
+            transformState.setAlpha(animation)
+            transformState.setFraction(animation)
             dispatchTransformer { onUpdate(transformState) }
         }
 
         override fun onAnimationEnd(animation: AnimationState) {
             dispatchTransformer { onEnd(transformState) }
+            transformState.root.isVisible = transformState.current != null
             transformState.isDispatching = false
         }
     }
 
     private inner class TransformStateImpl : TransformState {
-        override val inputView = this@OverlayEnforcer.inputView
-        override val container = this@OverlayEnforcer.contentView
-        override var previous: OverlayScene<C, E>? = null
-        override var current: OverlayScene<C, E>? = null
-        override var initialAnchorY = 0
-        override var startAnchorY = 0
-        override var endAnchorY = 0
-        override var currentAnchorY = 0
-        override var animatedFraction = 0f
-        override var interpolatedFraction = 0f
+        override val inputView = InputView(window.decorView.context)
+        override val container = ContentContainer(window.decorView.context)
+        override var previous: OverlayScene<C, E>? = null; private set
+        override var current: OverlayScene<C, E>? = null; private set
+        override var initialAnchorY = 0; private set
+        override var startAnchorY = 0; private set
+        override var endAnchorY = 0; private set
+        override var currentAnchorY = 0; private set
+        override var animatedFraction = 0f; private set
+        override var interpolatedFraction = 0f; private set
+
+        private val point = IntArray(2)
+        val root = FrameLayout(window.decorView.context)
         var isDispatching = false
+
+        init {
+            root.isVisible = false
+            root.addView(container, MATCH_PARENT, MATCH_PARENT)
+            root.addView(inputView, MATCH_PARENT, MATCH_PARENT)
+        }
+
+        fun isSameScene(scene: OverlayScene<C, E>?): Boolean {
+            return current?.content === scene?.content
+                    && current?.editor === scene?.editor
+        }
+
+        fun setCurrentScene(scene: OverlayScene<C, E>?) {
+            previous = current
+            current = scene
+        }
+
+        fun checkEditor(previous: Editor?, current: Editor?) {
+            check(this.previous?.editor === previous) { "previous.editor不一致" }
+            check(this.current?.editor === current) { "current.editor不一致" }
+        }
+
+        fun setAnchorY(animation: AnimationState) {
+            inputView.getLocationInWindow(point)
+            val initial = point[1] + inputView.height
+            initialAnchorY = initial
+            startAnchorY = initial - animation.startOffset
+            endAnchorY = initial - animation.endOffset
+        }
+
+        fun setAlpha(animation: AnimationState) {
+
+        }
+
+        fun setFraction(animation: AnimationState) {
+            animatedFraction = animation.animatedFraction
+            interpolatedFraction = animation.interpolatedFraction
+            currentAnchorY = startAnchorY + ((endAnchorY - startAnchorY) * interpolatedFraction).toInt()
+        }
+    }
+
+    private companion object {
+        const val statusBarEdgeToEdge = true
+        const val gestureNavBarEdgeToEdge = true
     }
 }
