@@ -23,6 +23,7 @@ import androidx.lifecycle.Lifecycle
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.overlay.Overlay.Scene
 
 fun <C : Content, E : Editor> InputView.Companion.createOverlay(
     window: Window,
@@ -36,13 +37,17 @@ fun <C : Content, E : Editor> InputView.Companion.createOverlay(
 
 interface Overlay<C : Content, E : Editor> : Transformer.Owner {
 
-    fun notify(scene: Scene<C, E>?)
-
     fun attachToWindow(
         initCompat: Boolean,
         rootParent: ViewGroup? = null,
         initializer: ((inputView: InputView) -> Unit)? = null
     ): Boolean
+
+    fun setListener(listener: SceneListener<C, E>)
+
+    fun setConverter(converter: SceneConverter<C, E>)
+
+    fun go(scene: Scene<C, E>?): Boolean
 
     interface Scene<C : Content, E : Editor> {
         val content: C
@@ -58,4 +63,12 @@ interface Overlay<C : Content, E : Editor> : Transformer.Owner {
          */
         fun View.transform() = viewTransform()
     }
+}
+
+fun interface SceneListener<C : Content, E : Editor> {
+    fun onChanged(previous: Scene<C, E>?, current: Scene<C, E>?)
+}
+
+fun interface SceneConverter<C : Content, E : Editor> {
+    fun nextScene(scene: Scene<C, E>?, editor: E?): Scene<C, E>?
 }

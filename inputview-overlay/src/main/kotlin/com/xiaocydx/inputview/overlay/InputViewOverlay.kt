@@ -29,6 +29,7 @@ import com.xiaocydx.inputview.AnimationCallback
 import com.xiaocydx.inputview.AnimationState
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.EditorAdapter
+import com.xiaocydx.inputview.EditorChangedListener
 import com.xiaocydx.inputview.EditorMode
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.disableGestureNavBarOffset
@@ -51,44 +52,8 @@ class InputViewOverlay<C : Content, E : Editor> internal constructor(
 ) : Overlay<C, E> {
     private val transformState = TransformStateImpl()
     private val transformers = mutableListOf<Transformer>()
-
-    override fun hasTransformer(transformer: Transformer): Boolean {
-        return transformers.contains(transformer)
-    }
-
-    override fun addTransformer(transformer: Transformer) {
-        if (hasTransformer(transformer)) return
-        transformers.add(transformer)
-    }
-
-    override fun removeTransformer(transformer: Transformer) {
-        transformers.remove(transformer)
-    }
-
-    override fun requestTransform() {
-        // TODO: 检验state的有效性，处理重复分发
-        if (!transformState.isInitialized) return
-        if (transformState.isDispatching) return
-        transformState.isDispatching = true
-        dispatchTransformer { onPrepare(transformState) }
-        dispatchTransformer { onStart(transformState) }
-        dispatchTransformer { onUpdate(transformState) }
-        dispatchTransformer { onEnd(transformState) }
-        transformState.isDispatching = false
-    }
-
-    override fun notify(scene: Scene<C, E>?) {
-        if (!transformState.isInitialized) return
-        if (transformState.isSameScene(scene)) return
-        transformState.setCurrentScene(scene)
-        if (scene == null) {
-            contentAdapter.notifyHideCurrent()
-            editorAdapter.notifyHideCurrent()
-        } else {
-            contentAdapter.notifyShow(scene.content)
-            editorAdapter.notifyShow(scene.editor)
-        }
-    }
+    private var listener: SceneListener<C, E>? = null
+    private var converter: SceneConverter<C, E>? = null
 
     override fun attachToWindow(
         initCompat: Boolean,
@@ -108,12 +73,70 @@ class InputViewOverlay<C : Content, E : Editor> internal constructor(
         inputView.disableGestureNavBarOffset()
         inputView.editorMode = EditorMode.ADJUST_PAN
         inputView.editorAdapter = editorAdapter
+        editorAdapter.addEditorChangedListener(ConverterListener())
         editorAnimator.addAnimationCallback(AnimationCallbackImpl())
 
         contentView.setAdapter(contentAdapter)
         contentView.setRemovePreviousImmediately(!editorAnimator.canRunAnimation)
         contentAdapter.onAttachedToHost(ContentHostImpl())
         return true
+    }
+
+    override fun setListener(listener: SceneListener<C, E>) {
+        this.listener = listener
+    }
+
+    override fun setConverter(converter: SceneConverter<C, E>) {
+        this.converter = converter
+    }
+
+    override fun go(scene: Scene<C, E>?): Boolean {
+        if (!transformState.isInitialized) return false
+        transformState.isActiveGoing = true
+        val isSameEditor = transformState.current?.editor === scene?.editor
+
+        // editor的显示和隐藏允许被拦截
+        val editorChanged = if (scene == null) {
+            editorAdapter.notifyHideCurrent()
+        } else {
+            editorAdapter.notifyShow(scene.editor)
+        }
+
+        // 1. 当editor没有改变时，忽略被拦截，允许通知content。
+        // 2. 当editor的显示和隐藏被拦截时，不允许通知content。
+        val succeed = isSameEditor || editorChanged
+        when {
+            succeed && scene == null -> contentAdapter.notifyHideCurrent()
+            succeed && scene != null -> contentAdapter.notifyShow(scene.content)
+        }
+        if (succeed) transformState.setCurrentScene(scene)
+        transformState.isActiveGoing = false
+        return succeed
+    }
+
+    override fun hasTransformer(transformer: Transformer): Boolean {
+        return transformers.contains(transformer)
+    }
+
+    override fun addTransformer(transformer: Transformer) {
+        if (hasTransformer(transformer)) return
+        transformers.add(transformer)
+    }
+
+    override fun removeTransformer(transformer: Transformer) {
+        transformers.remove(transformer)
+    }
+
+    override fun requestTransform() {
+        // TODO: 校验state的有效性，处理重复分发
+        if (!transformState.isInitialized) return
+        if (transformState.isDispatching) return
+        transformState.isDispatching = true
+        dispatchTransformer { onPrepare(transformState) }
+        dispatchTransformer { onStart(transformState) }
+        dispatchTransformer { onUpdate(transformState) }
+        dispatchTransformer { onEnd(transformState) }
+        transformState.isDispatching = false
     }
 
     private fun windowRootParentId(): Int {
@@ -159,6 +182,17 @@ class InputViewOverlay<C : Content, E : Editor> internal constructor(
 
         override fun removeTransformer(transformer: Transformer) {
             this@InputViewOverlay.removeTransformer(transformer)
+        }
+    }
+
+    private inner class ConverterListener : EditorChangedListener<E> {
+
+        override fun onEditorChanged(previous: E?, current: E?) {
+            if (transformState.isActiveGoing) return
+            val converter = requireNotNull(converter)
+            check(transformState.current?.editor === previous)
+            // FIXME: go()先执行完，才触发onEditorChanged
+            go(converter.nextScene(transformState.current, current))
         }
     }
 
@@ -209,6 +243,7 @@ class InputViewOverlay<C : Content, E : Editor> internal constructor(
 
         private val point = IntArray(2)
         var isInitialized = false; private set
+        var isActiveGoing = false
         var isDispatching = false
 
         fun attachToParent(rootParent: ViewGroup?) {
@@ -228,14 +263,11 @@ class InputViewOverlay<C : Content, E : Editor> internal constructor(
             }
         }
 
-        fun isSameScene(scene: Scene<C, E>?): Boolean {
-            return current?.content === scene?.content
-                    && current?.editor === scene?.editor
-        }
-
         fun setCurrentScene(scene: Scene<C, E>?) {
+            val changed = current !== scene
             previous = current
             current = scene
+            if (changed) listener?.onChanged(previous, current)
         }
 
         fun checkEditor(previous: Editor?, current: Editor?) {
