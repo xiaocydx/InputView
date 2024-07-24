@@ -18,11 +18,15 @@ package com.xiaocydx.inputview.overlay
 
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.overlay.Overlay.Scene
 
 interface Transformer {
+
+    fun match(state: PrepareState): Boolean
 
     fun onPrepare(state: PrepareState) = Unit
 
@@ -31,6 +35,13 @@ interface Transformer {
     fun onUpdate(state: TransformState) = Unit
 
     fun onEnd(state: TransformState) = Unit
+
+    fun View.updateLayoutGravity(gravity: Int) {
+        val lp = layoutParams as? FrameLayout.LayoutParams
+        if (lp == null || lp.gravity == gravity) return
+        lp.gravity = gravity
+        layoutParams = lp
+    }
 
     interface Owner {
 
@@ -61,9 +72,9 @@ interface PrepareState {
 
     val contentView: ViewGroup
 
-    val previous: Overlay.Scene<*, *>?
+    val previous: Scene<*, *>?
 
-    val current: Overlay.Scene<*, *>?
+    val current: Scene<*, *>?
 }
 
 interface TransformState : PrepareState {

@@ -20,13 +20,12 @@ import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.overlay.Overlay.Scene
 
 @Suppress("UNCHECKED_CAST")
-internal fun <C : Content, E : Editor> defaultConverter(): SceneConverter<C, E> {
-    return DefaultConverter as SceneConverter<C, E>
+fun <C : Content, E : Editor> defaultEditorConverter(): SceneEditorConverter<C, E> {
+    return DefaultEditorConverter as SceneEditorConverter<C, E>
 }
 
-private object DefaultConverter : SceneConverter<Content, Editor> {
-    override fun nextScene(
-        currentScene: Scene<Content, Editor>?,
-        nextEditor: Editor?
-    ) = if (nextEditor == null) null else currentScene
+private object DefaultEditorConverter : SceneEditorConverter<Content, Editor> {
+    override fun nextScene(currentScene: Scene<Content, Editor>?, nextEditor: Editor?) = run {
+        if (nextEditor == null) null else currentScene
+    }
 }

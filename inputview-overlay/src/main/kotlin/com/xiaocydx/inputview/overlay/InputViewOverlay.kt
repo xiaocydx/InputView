@@ -22,6 +22,8 @@ import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.Window
 import android.widget.FrameLayout
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.OnBackPressedDispatcher
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -47,14 +49,36 @@ import com.xiaocydx.inputview.overlay.Overlay.Scene
  */
 internal class InputViewOverlay<C : Content, E : Editor>(
     private val window: Window,
-    private val lifecycle: Lifecycle,
+    private val lifecycleOwner: LifecycleOwner,
     private val contentAdapter: ContentAdapter<C>,
     private val editorAdapter: EditorAdapter<E>,
 ) : Overlay<C, E> {
     private val transformState = TransformStateImpl()
-    private val transformers = mutableListOf<Transformer>()
-    private var listener: SceneListener<C, E>? = null
-    private var converter: SceneConverter<C, E> = defaultConverter()
+    private val transformerEnforcer = TransformerEnforcer()
+    private var sceneChangedListener: SceneChangedListener<C, E>? = null
+    private var sceneEditorConverter: SceneEditorConverter<C, E> = defaultEditorConverter()
+    private var backPressedCallback: OnBackPressedCallback? = null
+
+    override val currentScene: Scene<C, E>?
+        get() = transformState.current
+
+    override fun setSceneChangedListener(listener: SceneChangedListener<C, E>) {
+        sceneChangedListener = listener
+    }
+
+    override fun setSceneEditorConverter(converter: SceneEditorConverter<C, E>) {
+        sceneEditorConverter = converter
+    }
+
+    override fun addToOnBackPressedDispatcher(dispatcher: OnBackPressedDispatcher) {
+        require(backPressedCallback == null) { "已添加到OnBackPressedDispatcher" }
+        backPressedCallback = object : OnBackPressedCallback(false) {
+            override fun handleOnBackPressed() {
+                go(scene = null)
+            }
+        }
+        dispatcher.addCallback(lifecycleOwner, backPressedCallback!!)
+    }
 
     override fun attachToWindow(
         initCompat: Boolean,
@@ -74,21 +98,13 @@ internal class InputViewOverlay<C : Content, E : Editor>(
         inputView.disableGestureNavBarOffset()
         inputView.editorMode = EditorMode.ADJUST_PAN
         inputView.editorAdapter = editorAdapter
-        editorAdapter.addEditorChangedListener(ConverterListener())
-        editorAnimator.addAnimationCallback(AnimationCallbackImpl())
+        editorAnimator.addAnimationCallback(transformerEnforcer)
+        editorAdapter.addEditorChangedListener(SceneEditorConverterCaller())
 
         contentView.setAdapter(contentAdapter)
         contentView.setRemovePreviousImmediately(!editorAnimator.canRunAnimation)
         contentAdapter.onAttachedToHost(ContentHostImpl())
         return true
-    }
-
-    override fun setListener(listener: SceneListener<C, E>) {
-        this.listener = listener
-    }
-
-    override fun setConverter(converter: SceneConverter<C, E>) {
-        this.converter = converter
     }
 
     override fun go(scene: Scene<C, E>?): Boolean {
@@ -116,51 +132,19 @@ internal class InputViewOverlay<C : Content, E : Editor>(
     }
 
     override fun hasTransformer(transformer: Transformer): Boolean {
-        return transformers.contains(transformer)
+        return transformerEnforcer.has(transformer)
     }
 
     override fun addTransformer(transformer: Transformer) {
-        if (hasTransformer(transformer)) return
-        transformers.add(transformer)
+        transformerEnforcer.add(transformer)
     }
 
     override fun removeTransformer(transformer: Transformer) {
-        transformers.remove(transformer)
+        transformerEnforcer.remove(transformer)
     }
 
     override fun requestTransform() {
-        // TODO: 校验state的有效性，处理重复分发
-        if (!transformState.isInitialized) return
-        if (transformState.isDispatching) return
-        transformState.isDispatching = true
-        dispatchTransformer { onPrepare(transformState) }
-        dispatchTransformer { onStart(transformState) }
-        dispatchTransformer { onUpdate(transformState) }
-        dispatchTransformer { onEnd(transformState) }
-        transformState.isDispatching = false
-    }
-
-    private fun windowRootParentId(): Int {
-        return android.R.id.content
-    }
-
-    private fun Window.rootParent(): ViewGroup {
-        return findViewById(windowRootParentId())
-    }
-
-    private inline fun Lifecycle.doOnCreated(crossinline action: () -> Unit) {
-        addObserver(object : LifecycleEventObserver {
-            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-                if (!source.lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED)) return
-                source.lifecycle.removeObserver(this)
-                action()
-            }
-        })
-    }
-
-    private inline fun dispatchTransformer(action: Transformer.() -> Unit) {
-        // TODO: reversed待定
-        for (i in transformers.indices.reversed()) transformers[i].action()
+        transformerEnforcer.request()
     }
 
     private inner class ContentHostImpl : ContentHost {
@@ -186,7 +170,7 @@ internal class InputViewOverlay<C : Content, E : Editor>(
         }
     }
 
-    private inner class ConverterListener : EditorChangedListener<E> {
+    private inner class SceneEditorConverterCaller : EditorChangedListener<E> {
         private var isSkipChanged = false
         private var skipPrevious: E? = null
         private var skipCurrent: E? = null
@@ -195,7 +179,7 @@ internal class InputViewOverlay<C : Content, E : Editor>(
             if (transformState.isActiveGoing) return
             if (consumeSkipChanged(previous, current)) return
             assert(transformState.current?.editor === previous)
-            val nextScene = converter.nextScene(transformState.current, current)
+            val nextScene = sceneEditorConverter.nextScene(transformState.current, current)
             checkNextScene(previous, current, transformState.current, nextScene)
             prepareSkipChanged(current, nextScene?.editor)
             go(nextScene)
@@ -208,7 +192,7 @@ internal class InputViewOverlay<C : Content, E : Editor>(
         ) = check(currentScene !== nextScene) {
             """没有通过Overlay.go()更改Editor
                |    (previousEditor = ${previous}, currentEditor = $current)
-               |    请调用Overlay.setConverter()设置${SceneConverter::class.java.simpleName}，
+               |    请调用Overlay.setConverter()设置${SceneEditorConverter::class.java.simpleName}，
                |    完成currentEditor = ${current}映射为Scene的逻辑
             """.trimMargin()
         }
@@ -228,7 +212,22 @@ internal class InputViewOverlay<C : Content, E : Editor>(
         }
     }
 
-    private inner class AnimationCallbackImpl : AnimationCallback {
+    private inner class TransformerEnforcer : AnimationCallback {
+        private val transformers = mutableListOf<Transformer>()
+        private val dispatchingTransformers = mutableListOf<Transformer>()
+
+        fun has(transformer: Transformer): Boolean {
+            return transformers.contains(transformer)
+        }
+
+        fun add(transformer: Transformer) {
+            if (hasTransformer(transformer)) return
+            transformers.add(transformer)
+        }
+
+        fun remove(transformer: Transformer) {
+            transformers.remove(transformer)
+        }
 
         override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
             assert(transformState.previous?.editor === previous)
@@ -236,17 +235,16 @@ internal class InputViewOverlay<C : Content, E : Editor>(
             transformState.contentView.consumePendingChange()
             transformState.root.isVisible = true
             transformState.isDispatching = true
+            matchDispatchingTransformers()
             dispatchTransformer { onPrepare(transformState) }
         }
 
         override fun onAnimationStart(animation: AnimationState) {
-            // TODO: 支持修改anchorY
             transformState.setAnchorY(animation)
             dispatchTransformer { onStart(transformState) }
         }
 
         override fun onAnimationUpdate(animation: AnimationState) {
-            // TODO: 设置alpha
             transformState.setAlpha(animation)
             transformState.setFraction(animation)
             dispatchTransformer { onUpdate(transformState) }
@@ -257,6 +255,33 @@ internal class InputViewOverlay<C : Content, E : Editor>(
             transformState.contentView.removeChangeRecordPrevious()
             transformState.root.isVisible = transformState.current != null
             transformState.isDispatching = false
+        }
+
+        fun request() {
+            // TODO: 校验state的有效性，处理重复分发
+            // TODO: 全量copy遍历的必要性不大
+            if (!transformState.isInitialized) return
+            if (transformState.isDispatching) return
+            transformState.isDispatching = true
+            matchDispatchingTransformers()
+            dispatchTransformer { onPrepare(transformState) }
+            dispatchTransformer { onStart(transformState) }
+            dispatchTransformer { onUpdate(transformState) }
+            dispatchTransformer { onEnd(transformState) }
+            transformState.isDispatching = false
+        }
+
+        private fun matchDispatchingTransformers() {
+            dispatchingTransformers.takeIf { it.isNotEmpty() }?.clear()
+            val tempTransformers = ArrayList<Transformer>(transformers)
+            for (i in tempTransformers.indices) {
+                if (!tempTransformers[i].match(transformState)) continue
+                dispatchingTransformers.add(tempTransformers[i])
+            }
+        }
+
+        private inline fun dispatchTransformer(action: Transformer.() -> Unit) {
+            for (i in dispatchingTransformers.indices) dispatchingTransformers[i].action()
         }
     }
 
@@ -289,7 +314,7 @@ internal class InputViewOverlay<C : Content, E : Editor>(
             root.addView(inputView, MATCH_PARENT, MATCH_PARENT)
             root.setTransformerHost(this@InputViewOverlay)
             if (rootParent == null || rootParent.id == windowRootParentId()) {
-                lifecycle.doOnCreated { window.rootParent().addView(root) }
+                lifecycleOwner.lifecycle.doOnCreated { window.rootParent().addView(root) }
             } else {
                 rootParent.addView(root)
             }
@@ -299,7 +324,8 @@ internal class InputViewOverlay<C : Content, E : Editor>(
             val changed = current !== scene
             previous = current
             current = scene
-            if (changed) listener?.onChanged(previous, current)
+            if (changed) sceneChangedListener?.onChanged(previous, current)
+            if (changed) backPressedCallback?.isEnabled = current != null
         }
 
         fun setAnchorY(animation: AnimationState) {
@@ -318,6 +344,24 @@ internal class InputViewOverlay<C : Content, E : Editor>(
             animatedFraction = animation.animatedFraction
             interpolatedFraction = animation.interpolatedFraction
             currentAnchorY = startAnchorY + ((endAnchorY - startAnchorY) * interpolatedFraction).toInt()
+        }
+
+        private fun windowRootParentId(): Int {
+            return android.R.id.content
+        }
+
+        private fun Window.rootParent(): ViewGroup {
+            return findViewById(windowRootParentId())
+        }
+
+        private inline fun Lifecycle.doOnCreated(crossinline action: () -> Unit) {
+            addObserver(object : LifecycleEventObserver {
+                override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+                    if (!source.lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED)) return
+                    source.lifecycle.removeObserver(this)
+                    action()
+                }
+            })
         }
     }
 
