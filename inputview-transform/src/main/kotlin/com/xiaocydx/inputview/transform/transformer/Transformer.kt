@@ -32,9 +32,9 @@ import com.xiaocydx.inputview.InputView
  */
 interface Transformer {
 
-    fun match(state: PrepareState): Boolean
+    fun match(state: ImperfectState): Boolean
 
-    fun onPrepare(state: PrepareState) = Unit
+    fun onPrepare(state: ImperfectState) = Unit
 
     fun onStart(state: TransformState) = Unit
 
@@ -44,9 +44,9 @@ interface Transformer {
 }
 
 /**
- * [Transformer]的准备状态
+ * [Transformer]的不完整状态，用于[Transformer.match]和[Transformer.onPrepare]
  */
-interface PrepareState {
+interface ImperfectState {
 
     val rootView: ViewGroup
 
@@ -69,46 +69,10 @@ interface PrepareState {
     val endViews: TransformViews
 }
 
-fun PrepareState.isPrevious(scene: Scene<*, *>?) = previous === scene
-
-fun PrepareState.isCurrent(scene: Scene<*, *>?) = current === scene
-
-fun PrepareState.isPrevious(content: Content?) = previous?.content === content
-
-fun PrepareState.isCurrent(content: Content?) = current?.content === content
-
-fun PrepareState.isPrevious(editor: Editor?) = previous?.editor === editor
-
-fun PrepareState.isCurrent(editor: Editor?) = current?.editor === editor
-
-fun PrepareState.view(content: Content) = when {
-    isPrevious(content) -> startViews.content
-    isCurrent(content) -> endViews.content
-    else -> null
-}
-
-fun PrepareState.view(editor: Editor?) = when {
-    isPrevious(editor) -> startViews.editor
-    isCurrent(editor) -> endViews.editor
-    else -> null
-}
-
-fun PrepareState.alpha(content: Content) = when {
-    isPrevious(content) -> startViews.alpha
-    isCurrent(content) -> endViews.alpha
-    else -> 1f
-}
-
-fun PrepareState.alpha(editor: Editor?) = when {
-    isPrevious(editor) -> startViews.alpha
-    isCurrent(editor) -> endViews.alpha
-    else -> 1f
-}
-
 /**
  * [Transformer]的动画状态
  */
-interface TransformState : PrepareState {
+interface TransformState : ImperfectState {
 
     /**
      * 动画起始偏移值，等同于[AnimationState.startOffset]
@@ -162,4 +126,40 @@ interface TransformViews {
         content?.alpha = alpha
         editor?.alpha = alpha
     }
+}
+
+fun ImperfectState.isPrevious(scene: Scene<*, *>?) = previous === scene
+
+fun ImperfectState.isPrevious(content: Content?) = previous?.content === content
+
+fun ImperfectState.isPrevious(editor: Editor?) = previous?.editor === editor
+
+fun ImperfectState.isCurrent(scene: Scene<*, *>?) = current === scene
+
+fun ImperfectState.isCurrent(content: Content?) = current?.content === content
+
+fun ImperfectState.isCurrent(editor: Editor?) = current?.editor === editor
+
+fun ImperfectState.view(content: Content) = when {
+    isPrevious(content) -> startViews.content
+    isCurrent(content) -> endViews.content
+    else -> null
+}
+
+fun ImperfectState.view(editor: Editor?) = when {
+    isPrevious(editor) -> startViews.editor
+    isCurrent(editor) -> endViews.editor
+    else -> null
+}
+
+fun ImperfectState.alpha(content: Content) = when {
+    isPrevious(content) -> startViews.alpha
+    isCurrent(content) -> endViews.alpha
+    else -> 1f
+}
+
+fun ImperfectState.alpha(editor: Editor?) = when {
+    isPrevious(editor) -> startViews.alpha
+    isCurrent(editor) -> endViews.alpha
+    else -> 1f
 }

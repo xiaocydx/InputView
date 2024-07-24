@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="50dp"
-    android:background="#1D1D1D"
-    android:orientation="horizontal">
+    android:orientation="horizontal"
+    tools:background="#1D1D1D">
 
     <TextView
         android:id="@+id/tvTitle"

@@ -1,11 +1,15 @@
 package com.xiaocydx.inputview.sample.scene.video
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.ActivityVideoEditBinding
+import com.xiaocydx.inputview.transform.ContentBackground
+import com.xiaocydx.inputview.transform.ContentBoundsChange
+import com.xiaocydx.inputview.transform.ContentTranslation
 import com.xiaocydx.inputview.transform.createOverlay
 import com.xiaocydx.insets.insets
 import com.xiaocydx.insets.navigationBars
@@ -36,6 +40,10 @@ class VideoEditActivity : AppCompatActivity() {
         )
 
         overlay.addToOnBackPressedDispatcher(onBackPressedDispatcher)
+
+        overlay.addTransformer(ContentTranslation())
+        overlay.addTransformer(ContentBoundsChange())
+        // overlay.addTransformer(ContentBackground(Color.RED))
         overlay.attachToWindow(initCompat = false) {
             it.setEditorBackgroundColor(0xFF1D1D1D.toInt())
             it.editorAnimator = FadeEditorAnimator(durationMillis = 5000)

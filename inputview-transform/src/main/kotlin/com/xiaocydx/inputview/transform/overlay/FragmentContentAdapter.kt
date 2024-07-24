@@ -186,9 +186,9 @@ abstract class FragmentContentAdapter<T : Content>(
                 updateFragmentMaxLifecycle(host.current)
             }
             transformer = object : Transformer {
-                override fun match(state: PrepareState) = true
+                override fun match(state: ImperfectState) = true
 
-                override fun onPrepare(state: PrepareState) {
+                override fun onPrepare(state: ImperfectState) {
                     isAnimationRunning = true
                 }
 

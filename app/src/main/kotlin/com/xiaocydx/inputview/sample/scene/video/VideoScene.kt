@@ -5,9 +5,6 @@ import android.view.View
 import android.view.ViewGroup
 import com.xiaocydx.inputview.sample.databinding.VideoCommonTitlebarBinding
 import com.xiaocydx.inputview.sample.databinding.VideoTextTitlebarBinding
-import com.xiaocydx.inputview.sample.scene.video.transformer.ContentBoundsChange
-import com.xiaocydx.inputview.sample.scene.video.transformer.ContentFadeChange
-import com.xiaocydx.inputview.sample.scene.video.transformer.ContentTranslation
 import com.xiaocydx.inputview.transform.Content
 import com.xiaocydx.inputview.transform.ContentAdapter
 import com.xiaocydx.inputview.transform.Overlay
@@ -47,9 +44,7 @@ class VideoTitleAdapter : ContentAdapter<VideoTitle>(), Overlay.Transform {
                 binding.root
             }
         }
-        view.transform().addTransformer(ContentTranslation(content))
-        view.transform().addTransformer(ContentBoundsChange(content))
-        view.transform().addTransformer(ContentFadeChange(content, children = true))
+        // view.transform().addTransformer(ContentFadeChange(content, children = true))
         return view
     }
 }
