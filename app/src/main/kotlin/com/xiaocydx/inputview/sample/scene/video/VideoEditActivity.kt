@@ -4,9 +4,9 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
-import com.xiaocydx.inputview.overlay.createOverlay
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.ActivityVideoEditBinding
+import com.xiaocydx.inputview.transform.createOverlay
 import com.xiaocydx.insets.insets
 import com.xiaocydx.insets.navigationBars
 import com.xiaocydx.insets.statusBars

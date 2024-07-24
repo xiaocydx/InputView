@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "PackageDirectoryMismatch")
 
-package com.xiaocydx.inputview.overlay
+package com.xiaocydx.inputview.transform
 
 import android.annotation.SuppressLint
 import android.view.View
@@ -44,13 +44,12 @@ import com.xiaocydx.inputview.initCompat
 import com.xiaocydx.inputview.isVisible
 import com.xiaocydx.inputview.notifyHideCurrent
 import com.xiaocydx.inputview.notifyShow
-import com.xiaocydx.inputview.overlay.Overlay.Scene
 
 /**
  * @author xcc
  * @date 2024/7/23
  */
-internal class InputViewOverlay<C : Content, E : Editor>(
+internal class OverlayImpl<C : Content, E : Editor>(
     private val window: Window,
     private val lifecycleOwner: LifecycleOwner,
     private val contentAdapter: ContentAdapter<C>,
@@ -165,11 +164,11 @@ internal class InputViewOverlay<C : Content, E : Editor>(
         }
 
         override fun addTransformer(transformer: Transformer) {
-            this@InputViewOverlay.addTransformer(transformer)
+            this@OverlayImpl.addTransformer(transformer)
         }
 
         override fun removeTransformer(transformer: Transformer) {
-            this@InputViewOverlay.removeTransformer(transformer)
+            this@OverlayImpl.removeTransformer(transformer)
         }
     }
 
@@ -215,6 +214,7 @@ internal class InputViewOverlay<C : Content, E : Editor>(
         }
     }
 
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     private inner class TransformerEnforcer : AnimationCallback {
         private val transformers = mutableListOf<Transformer>()
         private val dispatchingTransformers = mutableListOf<Transformer>()
@@ -323,7 +323,7 @@ internal class InputViewOverlay<C : Content, E : Editor>(
             rootView.isVisible = false
             rootView.addView(contentView, MATCH_PARENT, MATCH_PARENT)
             rootView.addView(inputView, MATCH_PARENT, MATCH_PARENT)
-            rootView.setTransformerHost(this@InputViewOverlay)
+            rootView.setTransformerHost(this@OverlayImpl)
             if (rootParent == null || rootParent.id == windowRootParentId()) {
                 lifecycleOwner.lifecycle.doOnCreated { window.rootParent().addView(rootView) }
             } else {
@@ -393,6 +393,7 @@ internal class InputViewOverlay<C : Content, E : Editor>(
         }
     }
 
+    @Suppress("ConstPropertyName")
     private companion object {
         const val statusBarEdgeToEdge = true
         const val gestureNavBarEdgeToEdge = true

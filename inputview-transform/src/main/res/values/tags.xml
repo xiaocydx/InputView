@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="tag_transform_content_container_id" type="id" />
+    <item name="tag_transform_view_transformer_host" type="id" />
+    <item name="tag_transform_view_transformer_owner" type="id" />
+</resources>

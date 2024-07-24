@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.xiaocydx.inputview.overlay
+@file:Suppress("PackageDirectoryMismatch")
+
+package com.xiaocydx.inputview.transform
 
 import android.view.View
 import android.view.ViewGroup
@@ -24,19 +26,18 @@ import androidx.lifecycle.LifecycleOwner
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.InputView
-import com.xiaocydx.inputview.overlay.Overlay.Scene
 
 fun <C : Content, E : Editor> InputView.Companion.createOverlay(
     window: Window,
     lifecycleOwner: LifecycleOwner,
     contentAdapter: ContentAdapter<C>,
     editorAdapter: EditorAdapter<E>,
-): Overlay<C, E> = InputViewOverlay(
+): Overlay<C, E> = OverlayImpl(
     window, lifecycleOwner,
     contentAdapter, editorAdapter
 )
 
-interface Overlay<C : Content, E : Editor> : Transformer.Owner {
+interface Overlay<C : Content, E : Editor> : TransformerOwner {
 
     val currentScene: Scene<C, E>?
 
@@ -54,15 +55,10 @@ interface Overlay<C : Content, E : Editor> : Transformer.Owner {
 
     fun go(scene: Scene<C, E>?): Boolean
 
-    interface Scene<C : Content, E : Editor> {
-        val content: C
-        val editor: E
-    }
-
     interface Transform {
 
         /**
-         * 调用[Transformer.Owner.addTransformer]添加[Transformer]：
+         * 调用[TransformerOwner.addTransformer]添加[Transformer]：
          * 1. 当View附加到Window时，[Transformer]同步添加到[Overlay]。
          * 2. 当View从Window分离时，[Transformer]从[Overlay]同步移除。
          */

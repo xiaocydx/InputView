@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "PackageDirectoryMismatch")
 
-package com.xiaocydx.inputview.overlay
+package com.xiaocydx.inputview.transform
 
 import android.content.Context
 import android.os.Parcelable
@@ -41,7 +41,7 @@ internal class ContentContainer(context: Context) : FrameLayout(context) {
     lateinit var adapter: ContentAdapter<*>; private set
 
     init {
-        id = R.id.tag_overlay_content_container_id
+        id = R.id.tag_transform_content_container_id
         setAdapter(EmptyAdapter())
     }
 

@@ -3,14 +3,15 @@ package com.xiaocydx.inputview.sample.scene.video
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.xiaocydx.inputview.overlay.Content
-import com.xiaocydx.inputview.overlay.ContentAdapter
-import com.xiaocydx.inputview.overlay.Overlay
 import com.xiaocydx.inputview.sample.databinding.VideoCommonTitlebarBinding
 import com.xiaocydx.inputview.sample.databinding.VideoTextTitlebarBinding
 import com.xiaocydx.inputview.sample.scene.video.transformer.ContentBoundsChange
 import com.xiaocydx.inputview.sample.scene.video.transformer.ContentFadeChange
 import com.xiaocydx.inputview.sample.scene.video.transformer.ContentTranslation
+import com.xiaocydx.inputview.transform.Content
+import com.xiaocydx.inputview.transform.ContentAdapter
+import com.xiaocydx.inputview.transform.Overlay
+import com.xiaocydx.inputview.transform.Scene
 
 sealed class VideoTitle : Content {
     data object Text : VideoTitle()
@@ -20,7 +21,7 @@ sealed class VideoTitle : Content {
 sealed class VideoScene(
     override val content: VideoTitle,
     override val editor: VideoEditor
-) : Overlay.Scene<VideoTitle, VideoEditor> {
+) : Scene<VideoTitle, VideoEditor> {
     data object Input : VideoScene(VideoTitle.Text, VideoEditor.Text.Input)
     data object Emoji : VideoScene(VideoTitle.Text, VideoEditor.Text.Emoji)
     data object Style : VideoScene(VideoTitle.Text, VideoEditor.Text.Style)

@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.xiaocydx.inputview.overlay"
+    namespace = "com.xiaocydx.inputview.transform"
     kotlinOptions { jvmTarget = Versions.jvmTarget }
 }
 

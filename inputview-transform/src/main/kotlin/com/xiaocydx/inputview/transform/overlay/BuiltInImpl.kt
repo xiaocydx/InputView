@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.xiaocydx.inputview.overlay
+@file:Suppress("PackageDirectoryMismatch")
+
+package com.xiaocydx.inputview.transform
 
 import com.xiaocydx.inputview.Editor
-import com.xiaocydx.inputview.overlay.Overlay.Scene
 
 @Suppress("UNCHECKED_CAST")
 fun <C : Content, E : Editor> defaultEditorConverter(): SceneEditorConverter<C, E> {
