@@ -184,6 +184,8 @@ abstract class FragmentContentAdapter<T : Content>(
                 updateFragmentMaxLifecycle(host.current)
             }
             transformer = object : Transformer {
+                override fun match(state: PrepareState) = true
+
                 override fun onPrepare(state: PrepareState) {
                     isAnimationRunning = true
                 }

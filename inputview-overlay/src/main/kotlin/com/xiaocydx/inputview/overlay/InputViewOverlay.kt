@@ -18,6 +18,8 @@
 
 package com.xiaocydx.inputview.overlay
 
+import android.annotation.SuppressLint
+import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.Window
@@ -33,6 +35,7 @@ import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.EditorChangedListener
 import com.xiaocydx.inputview.EditorMode
+import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.current
 import com.xiaocydx.inputview.disableGestureNavBarOffset
@@ -233,18 +236,20 @@ internal class InputViewOverlay<C : Content, E : Editor>(
             assert(transformState.previous?.editor === previous)
             assert(transformState.current?.editor === current)
             transformState.contentView.consumePendingChange()
-            transformState.root.isVisible = true
+            transformState.rootView.isVisible = true
             transformState.isDispatching = true
+            transformState.setTransformViews()
             matchDispatchingTransformers()
             dispatchTransformer { onPrepare(transformState) }
         }
 
         override fun onAnimationStart(animation: AnimationState) {
-            transformState.setAnchorY(animation)
+            transformState.setOffset(animation)
             dispatchTransformer { onStart(transformState) }
         }
 
         override fun onAnimationUpdate(animation: AnimationState) {
+            transformState.setOffset(animation)
             transformState.setAlpha(animation)
             transformState.setFraction(animation)
             dispatchTransformer { onUpdate(transformState) }
@@ -253,7 +258,7 @@ internal class InputViewOverlay<C : Content, E : Editor>(
         override fun onAnimationEnd(animation: AnimationState) {
             dispatchTransformer { onEnd(transformState) }
             transformState.contentView.removeChangeRecordPrevious()
-            transformState.root.isVisible = transformState.current != null
+            transformState.rootView.isVisible = transformState.current != null
             transformState.isDispatching = false
         }
 
@@ -285,20 +290,26 @@ internal class InputViewOverlay<C : Content, E : Editor>(
         }
     }
 
+    private class TransformViewsImpl(
+        override var content: View? = null,
+        override var editor: View? = null,
+        override var alpha: Float = 1f
+    ) : TransformViews
+
     private inner class TransformStateImpl : TransformState {
-        lateinit var root: FrameLayout; private set
+        override lateinit var rootView: FrameLayout; private set
         override lateinit var inputView: InputView; private set
         override lateinit var contentView: ContentContainer; private set
         override var previous: Scene<C, E>? = null; private set
         override var current: Scene<C, E>? = null; private set
-        override var initialAnchorY = 0; private set
-        override var startAnchorY = 0; private set
-        override var endAnchorY = 0; private set
-        override var currentAnchorY = 0; private set
+        override var startOffset = 0; private set
+        override var endOffset = 0; private set
+        override var currentOffset = 0; private set
         override var animatedFraction = 0f; private set
         override var interpolatedFraction = 0f; private set
+        override val startViews = TransformViewsImpl()
+        override val endViews = TransformViewsImpl()
 
-        private val point = IntArray(2)
         var isInitialized = false; private set
         var isActiveGoing = false
         var isDispatching = false
@@ -306,17 +317,17 @@ internal class InputViewOverlay<C : Content, E : Editor>(
         fun attachToParent(rootParent: ViewGroup?) {
             isInitialized = true
             val context = window.rootParent().context
-            root = FrameLayout(context)
+            rootView = FrameLayout(context)
             inputView = InputView(context)
             contentView = ContentContainer(context)
-            root.isVisible = false
-            root.addView(contentView, MATCH_PARENT, MATCH_PARENT)
-            root.addView(inputView, MATCH_PARENT, MATCH_PARENT)
-            root.setTransformerHost(this@InputViewOverlay)
+            rootView.isVisible = false
+            rootView.addView(contentView, MATCH_PARENT, MATCH_PARENT)
+            rootView.addView(inputView, MATCH_PARENT, MATCH_PARENT)
+            rootView.setTransformerHost(this@InputViewOverlay)
             if (rootParent == null || rootParent.id == windowRootParentId()) {
-                lifecycleOwner.lifecycle.doOnCreated { window.rootParent().addView(root) }
+                lifecycleOwner.lifecycle.doOnCreated { window.rootParent().addView(rootView) }
             } else {
-                rootParent.addView(root)
+                rootParent.addView(rootView)
             }
         }
 
@@ -328,22 +339,39 @@ internal class InputViewOverlay<C : Content, E : Editor>(
             if (changed) backPressedCallback?.isEnabled = current != null
         }
 
-        fun setAnchorY(animation: AnimationState) {
-            inputView.getLocationInWindow(point)
-            val initial = point[1] + inputView.height
-            initialAnchorY = initial
-            startAnchorY = initial - animation.startOffset
-            endAnchorY = initial - animation.endOffset
+
+        fun setTransformViews() {
+            @SuppressLint("VisibleForTests")
+            val host = inputView.getEditorHost()
+            val record = contentView.changeRecord
+            startViews.content = record.previousChild
+            startViews.editor = host.previousView
+            startViews.alpha = 1f
+            endViews.content = record.currentChild
+            endViews.editor = host.currentView
+            endViews.alpha = 1f
+            startViews.applyAlpha()
+            endViews.applyAlpha()
+        }
+
+        fun setOffset(animation: AnimationState) {
+            startOffset = animation.startOffset
+            endOffset = animation.endOffset
+            currentOffset = animation.currentOffset
         }
 
         fun setAlpha(animation: AnimationState) {
-
+            // TODO: 补充备用FadeEditorAnimator
+            val animator = inputView.editorAnimator as? FadeEditorAnimator ?: return
+            startViews.alpha = animator.calculateAlpha(animation, matchNull = true, start = true)
+            endViews.alpha = animator.calculateAlpha(animation, matchNull = true, start = false)
+            startViews.applyAlpha(alpha = 1f)
+            endViews.applyAlpha(alpha = 1f)
         }
 
         fun setFraction(animation: AnimationState) {
             animatedFraction = animation.animatedFraction
             interpolatedFraction = animation.interpolatedFraction
-            currentAnchorY = startAnchorY + ((endAnchorY - startAnchorY) * interpolatedFraction).toInt()
         }
 
         private fun windowRootParentId(): Int {

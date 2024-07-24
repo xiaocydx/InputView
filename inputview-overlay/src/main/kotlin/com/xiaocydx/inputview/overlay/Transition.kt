@@ -15,13 +15,14 @@
  */
 
 @file:JvmName("TransitionInternalKt")
-@file:Suppress("PackageDirectoryMismatch")
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "PackageDirectoryMismatch")
 
 package androidx.transition
 
 import android.graphics.Rect
 import android.view.View
-import androidx.core.view.updatePadding
+import android.widget.FrameLayout
+import com.xiaocydx.inputview.updatePadding
 
 inline fun View.getBounds(bounds: Rect, change: Rect.() -> Unit = {}) {
     bounds.set(left, top, right, bottom)
@@ -43,4 +44,11 @@ fun View.setLeftTopRightBottomCompat(left: Int, top: Int, right: Int, bottom: In
 
 fun View.updatePaddings(paddings: Rect) {
     paddings.apply { updatePadding(left, top, right, bottom) }
+}
+
+fun View.updateLayoutGravity(gravity: Int) {
+    val lp = layoutParams as? FrameLayout.LayoutParams
+    if (lp == null || lp.gravity == gravity) return
+    lp.gravity = gravity
+    layoutParams = lp
 }

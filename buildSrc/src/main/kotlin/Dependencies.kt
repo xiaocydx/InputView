@@ -52,6 +52,7 @@ object PublishLibs {
     const val `androidx-recyclerview` = "androidx.recyclerview:recyclerview:1.2.0"
     const val `androidx-fragment-old` = "androidx.fragment:fragment:1.1.0"
     const val `androidx-fragment-new` = "androidx.fragment:fragment:1.3.6"
+    const val `androidx-transition` = "androidx.transition:transition:1.2.0"
 
     const val coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4"
     const val `coroutines-android` = "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4"

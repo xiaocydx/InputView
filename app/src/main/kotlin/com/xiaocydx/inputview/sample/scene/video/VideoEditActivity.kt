@@ -4,12 +4,9 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
-import com.xiaocydx.inputview.overlay.PrepareState
-import com.xiaocydx.inputview.overlay.Transformer
 import com.xiaocydx.inputview.overlay.createOverlay
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.ActivityVideoEditBinding
-import com.xiaocydx.inputview.setWindowFocusInterceptor
 import com.xiaocydx.insets.insets
 import com.xiaocydx.insets.navigationBars
 import com.xiaocydx.insets.statusBars
@@ -33,29 +30,16 @@ class VideoEditActivity : AppCompatActivity() {
 
         val overlay = InputView.createOverlay(
             window = window,
-            lifecycle = lifecycle,
+            lifecycleOwner = this@VideoEditActivity,
             contentAdapter = VideoTitleAdapter(),
             editorAdapter = VideoEditorAdapter(lifecycle, supportFragmentManager)
         )
 
+        overlay.addToOnBackPressedDispatcher(onBackPressedDispatcher)
         overlay.attachToWindow(initCompat = false) {
             it.setEditorBackgroundColor(0xFF1D1D1D.toInt())
-            it.editorAnimator = FadeEditorAnimator(durationMillis = 300)
+            it.editorAnimator = FadeEditorAnimator(durationMillis = 5000)
         }
-
-        overlay.setListener { previous, current ->
-            println(previous)
-        }
-
-        // overlay.setConverter { currentScene, nextEditor ->
-        //     if (scene === VideoScene.Input && editor == null) {
-        //         VideoScene.Image
-        //     } else {
-        //         scene
-        //     }
-        // }
-
-        overlay.addTransformer(TouchOut { overlay.go(null) })
 
         arrayOf(
             tvInput to VideoScene.Input,
@@ -65,17 +49,6 @@ class VideoEditActivity : AppCompatActivity() {
             btnImage to VideoScene.Image
         ).forEach { (view, scene) ->
             view.onClick { overlay.go(scene) }
-        }
-    }
-}
-
-class TouchOut(private val hide: () -> Unit) : Transformer {
-
-    override fun onPrepare(state: PrepareState) {
-        if (state.current == null) {
-            state.contentView.setOnClickListener(null)
-        } else {
-            state.contentView.onClick(hide)
         }
     }
 }

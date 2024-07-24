@@ -11,4 +11,5 @@ android {
 dependencies {
     compileOnly(project(":inputview"))
     implementation(PublishLibs.`androidx-fragment-old`)
+    implementation(PublishLibs.`androidx-transition`)
 }
