@@ -47,13 +47,13 @@ class VideoEditActivity : AppCompatActivity() {
             println(previous)
         }
 
-        overlay.setConverter { scene, editor ->
-            if (scene === VideoScene.Input && editor == null) {
-                VideoScene.Image
-            } else {
-                scene
-            }
-        }
+        // overlay.setConverter { currentScene, nextEditor ->
+        //     if (scene === VideoScene.Input && editor == null) {
+        //         VideoScene.Image
+        //     } else {
+        //         scene
+        //     }
+        // }
 
         overlay.addTransformer(TouchOut { overlay.go(null) })
 

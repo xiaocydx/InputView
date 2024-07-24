@@ -70,5 +70,5 @@ fun interface SceneListener<C : Content, E : Editor> {
 }
 
 fun interface SceneConverter<C : Content, E : Editor> {
-    fun nextScene(scene: Scene<C, E>?, editor: E?): Scene<C, E>?
+    fun nextScene(currentScene: Scene<C, E>?, nextEditor: E?): Scene<C, E>?
 }

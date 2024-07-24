@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "PARAMETER_NAME_CHANGED_ON_OVERRIDE")
 
 package com.xiaocydx.inputview.overlay
 
@@ -32,6 +32,7 @@ import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.EditorChangedListener
 import com.xiaocydx.inputview.EditorMode
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.current
 import com.xiaocydx.inputview.disableGestureNavBarOffset
 import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.initCompat
@@ -44,7 +45,7 @@ import com.xiaocydx.inputview.overlay.Overlay.Scene
  * @author xcc
  * @date 2024/7/23
  */
-class InputViewOverlay<C : Content, E : Editor> internal constructor(
+internal class InputViewOverlay<C : Content, E : Editor>(
     private val window: Window,
     private val lifecycle: Lifecycle,
     private val contentAdapter: ContentAdapter<C>,
@@ -53,7 +54,7 @@ class InputViewOverlay<C : Content, E : Editor> internal constructor(
     private val transformState = TransformStateImpl()
     private val transformers = mutableListOf<Transformer>()
     private var listener: SceneListener<C, E>? = null
-    private var converter: SceneConverter<C, E>? = null
+    private var converter: SceneConverter<C, E> = defaultConverter()
 
     override fun attachToWindow(
         initCompat: Boolean,
@@ -93,7 +94,7 @@ class InputViewOverlay<C : Content, E : Editor> internal constructor(
     override fun go(scene: Scene<C, E>?): Boolean {
         if (!transformState.isInitialized) return false
         transformState.isActiveGoing = true
-        val isSameEditor = transformState.current?.editor === scene?.editor
+        val isSameEditor = editorAdapter.current === scene?.editor
 
         // editor的显示和隐藏允许被拦截
         val editorChanged = if (scene == null) {
@@ -186,21 +187,52 @@ class InputViewOverlay<C : Content, E : Editor> internal constructor(
     }
 
     private inner class ConverterListener : EditorChangedListener<E> {
+        private var isSkipChanged = false
+        private var skipPrevious: E? = null
+        private var skipCurrent: E? = null
 
         override fun onEditorChanged(previous: E?, current: E?) {
             if (transformState.isActiveGoing) return
-            val converter = requireNotNull(converter)
-            check(transformState.current?.editor === previous)
-            // FIXME: go()先执行完，才触发onEditorChanged
-            go(converter.nextScene(transformState.current, current))
+            if (consumeSkipChanged(previous, current)) return
+            assert(transformState.current?.editor === previous)
+            val nextScene = converter.nextScene(transformState.current, current)
+            checkNextScene(previous, current, transformState.current, nextScene)
+            prepareSkipChanged(current, nextScene?.editor)
+            go(nextScene)
+        }
+
+        private fun checkNextScene(
+            previous: E?, current: E?,
+            currentScene: Scene<C, E>?,
+            nextScene: Scene<C, E>?
+        ) = check(currentScene !== nextScene) {
+            """没有通过Overlay.go()更改Editor
+               |    (previousEditor = ${previous}, currentEditor = $current)
+               |    请调用Overlay.setConverter()设置${SceneConverter::class.java.simpleName}，
+               |    完成currentEditor = ${current}映射为Scene的逻辑
+            """.trimMargin()
+        }
+
+        private fun prepareSkipChanged(previous: E?, current: E?) {
+            isSkipChanged = true
+            skipPrevious = previous
+            skipCurrent = current
+        }
+
+        private fun consumeSkipChanged(previous: E?, current: E?): Boolean {
+            if (isSkipChanged && skipPrevious == previous && skipCurrent == current) {
+                isSkipChanged = false
+                return true
+            }
+            return false
         }
     }
 
-    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     private inner class AnimationCallbackImpl : AnimationCallback {
 
         override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
-            transformState.checkEditor(previous, current)
+            assert(transformState.previous?.editor === previous)
+            assert(transformState.current?.editor === current)
             transformState.contentView.consumePendingChange()
             transformState.root.isVisible = true
             transformState.isDispatching = true
@@ -268,11 +300,6 @@ class InputViewOverlay<C : Content, E : Editor> internal constructor(
             previous = current
             current = scene
             if (changed) listener?.onChanged(previous, current)
-        }
-
-        fun checkEditor(previous: Editor?, current: Editor?) {
-            check(this.previous?.editor === previous) { "previous.editor不一致" }
-            check(this.current?.editor === current) { "current.editor不一致" }
         }
 
         fun setAnchorY(animation: AnimationState) {
