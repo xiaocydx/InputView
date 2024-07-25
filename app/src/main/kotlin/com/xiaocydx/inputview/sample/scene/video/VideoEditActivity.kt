@@ -6,6 +6,7 @@ import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.ActivityVideoEditBinding
+import com.xiaocydx.inputview.transform.AnchorScaleChange
 import com.xiaocydx.inputview.transform.ContentChangeBounds
 import com.xiaocydx.inputview.transform.ContentChangeTranslation
 import com.xiaocydx.inputview.transform.ContentMatch
@@ -46,6 +47,7 @@ class VideoEditActivity : AppCompatActivity() {
         overlay.apply {
             val contentMatch = ContentMatch { _, content -> content is VideoContent }
             val editorMatch = EditorMatch { _, editor -> editor is VideoEditor }
+            addTransformer(AnchorScaleChange(preview, contentMatch, editorMatch))
             addTransformer(ContentChangeBounds(contentMatch))
             addTransformer(ContentChangeTranslation(contentMatch))
             addSceneFadeChange(contentMatch, editorMatch)

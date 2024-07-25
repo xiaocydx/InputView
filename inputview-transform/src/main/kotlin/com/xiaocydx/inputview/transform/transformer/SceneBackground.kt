@@ -36,6 +36,7 @@ fun TransformerOwner.addSceneBackground(
     addTransformer(EditorBackground(color).apply { setMatch(editorMatch) })
 }
 
+// TODO: 2024/7/25 动画结束后，观察content的尺寸变更
 class ContentBackground(private val drawable: Drawable) : ContentTransformer() {
     private val startBounds = Rect()
     private val endBounds = Rect()
