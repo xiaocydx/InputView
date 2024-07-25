@@ -24,6 +24,7 @@ import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
 import com.xiaocydx.inputview.AnimationState
 import com.xiaocydx.inputview.Editor
+import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
 
 /**
@@ -53,6 +54,8 @@ interface ImperfectState {
     val inputView: InputView
 
     val contentView: ViewGroup
+
+    val backgroundView: View
 
     val previous: Scene<*, *>?
 
@@ -109,6 +112,7 @@ interface TransformState : ImperfectState {
  * [Transformer]的动画视图组
  */
 interface TransformViews {
+
     /**
      * [Scene.content]的视图
      */
@@ -119,13 +123,11 @@ interface TransformViews {
      */
     val editor: View?
 
+    /**
+     * 通过[FadeEditorAnimator]计算的alpha，默认不对[content]和[editor]设置该属性
+     */
     @get:FloatRange(from = 0.0, to = 1.0)
     val alpha: Float
-
-    fun applyAlpha(alpha: Float = this.alpha) {
-        content?.alpha = alpha
-        editor?.alpha = alpha
-    }
 }
 
 fun ImperfectState.isPrevious(scene: Scene<*, *>?) = previous === scene

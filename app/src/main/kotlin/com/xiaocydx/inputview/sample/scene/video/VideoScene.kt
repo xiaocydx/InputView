@@ -10,41 +10,40 @@ import com.xiaocydx.inputview.transform.ContentAdapter
 import com.xiaocydx.inputview.transform.Overlay
 import com.xiaocydx.inputview.transform.Scene
 
-sealed class VideoTitle : Content {
-    data object Text : VideoTitle()
-    data object Common : VideoTitle()
+sealed class VideoContent : Content {
+    data object Text : VideoContent()
+    data object Common : VideoContent()
 }
 
 sealed class VideoScene(
-    override val content: VideoTitle,
+    override val content: VideoContent,
     override val editor: VideoEditor
-) : Scene<VideoTitle, VideoEditor> {
-    data object Input : VideoScene(VideoTitle.Text, VideoEditor.Text.Input)
-    data object Emoji : VideoScene(VideoTitle.Text, VideoEditor.Text.Emoji)
-    data object Style : VideoScene(VideoTitle.Text, VideoEditor.Text.Style)
-    data object Video : VideoScene(VideoTitle.Common, VideoEditor.Video)
-    data object Audio : VideoScene(VideoTitle.Common, VideoEditor.Audio)
-    data object Image : VideoScene(VideoTitle.Common, VideoEditor.Image)
+) : Scene<VideoContent, VideoEditor> {
+    data object Input : VideoScene(VideoContent.Text, VideoEditor.Text.Input)
+    data object Emoji : VideoScene(VideoContent.Text, VideoEditor.Text.Emoji)
+    data object Style : VideoScene(VideoContent.Text, VideoEditor.Text.Style)
+    data object Video : VideoScene(VideoContent.Common, VideoEditor.Video)
+    data object Audio : VideoScene(VideoContent.Common, VideoEditor.Audio)
+    data object Image : VideoScene(VideoContent.Common, VideoEditor.Image)
 }
 
-class VideoTitleAdapter : ContentAdapter<VideoTitle>(), Overlay.Transform {
+class VideoTitleAdapter : ContentAdapter<VideoContent>(), Overlay.Transform {
 
-    override fun onCreateView(parent: ViewGroup, content: VideoTitle): View {
+    override fun onCreateView(parent: ViewGroup, content: VideoContent): View {
         val view = when (content) {
-            VideoTitle.Common -> {
+            VideoContent.Common -> {
                 val binding = VideoCommonTitlebarBinding.inflate(
                     LayoutInflater.from(parent.context), parent, false
                 )
                 binding.root
             }
-            VideoTitle.Text -> {
+            VideoContent.Text -> {
                 val binding = VideoTextTitlebarBinding.inflate(
                     LayoutInflater.from(parent.context), parent, false
                 )
                 binding.root
             }
         }
-        // view.transform().addTransformer(ContentFadeChange(content, children = true))
         return view
     }
 }

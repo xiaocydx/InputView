@@ -290,16 +290,22 @@ internal class OverlayImpl<C : Content, E : Editor>(
         }
     }
 
-    private class TransformViewsImpl(
-        override var content: View? = null,
-        override var editor: View? = null,
-        override var alpha: Float = 1f
-    ) : TransformViews
+    private class TransformViewsImpl : TransformViews {
+        override var content: View? = null
+        override var editor: View? = null
+        override var alpha = 1f
+
+        fun applyAlpha(alpha: Float) {
+            content?.alpha = alpha
+            editor?.alpha = alpha
+        }
+    }
 
     private inner class TransformStateImpl : TransformState {
         override lateinit var rootView: FrameLayout; private set
         override lateinit var inputView: InputView; private set
         override lateinit var contentView: ContentContainer; private set
+        override lateinit var backgroundView: View; private set
         override var previous: Scene<C, E>? = null; private set
         override var current: Scene<C, E>? = null; private set
         override var startOffset = 0; private set
@@ -309,6 +315,7 @@ internal class OverlayImpl<C : Content, E : Editor>(
         override var interpolatedFraction = 0f; private set
         override val startViews = TransformViewsImpl()
         override val endViews = TransformViewsImpl()
+        private val candidateAnimator by lazy { FadeEditorAnimator() }
 
         var isInitialized = false; private set
         var isActiveGoing = false
@@ -320,7 +327,9 @@ internal class OverlayImpl<C : Content, E : Editor>(
             rootView = FrameLayout(context)
             inputView = InputView(context)
             contentView = ContentContainer(context)
+            backgroundView = View(context)
             rootView.isVisible = false
+            rootView.addView(backgroundView, MATCH_PARENT, MATCH_PARENT)
             rootView.addView(contentView, MATCH_PARENT, MATCH_PARENT)
             rootView.addView(inputView, MATCH_PARENT, MATCH_PARENT)
             rootView.setTransformerHost(this@OverlayImpl)
@@ -339,19 +348,22 @@ internal class OverlayImpl<C : Content, E : Editor>(
             if (changed) backPressedCallback?.isEnabled = current != null
         }
 
-
         fun setTransformViews() {
             @SuppressLint("VisibleForTests")
             val host = inputView.getEditorHost()
             val record = contentView.changeRecord
-            startViews.content = record.previousChild
-            startViews.editor = host.previousView
-            startViews.alpha = 1f
-            endViews.content = record.currentChild
-            endViews.editor = host.currentView
-            endViews.alpha = 1f
-            startViews.applyAlpha()
-            endViews.applyAlpha()
+            startViews.apply {
+                content = record.previousChild
+                editor = host.previousView
+                alpha = 1f
+                applyAlpha(alpha = 1f)
+            }
+            endViews.apply {
+                content = record.currentChild
+                editor = host.currentView
+                alpha = 1f
+                applyAlpha(alpha = 1f)
+            }
         }
 
         fun setOffset(animation: AnimationState) {
@@ -361,11 +373,10 @@ internal class OverlayImpl<C : Content, E : Editor>(
         }
 
         fun setAlpha(animation: AnimationState) {
-            // TODO: 补充备用FadeEditorAnimator
-            val animator = inputView.editorAnimator as? FadeEditorAnimator ?: return
-            startViews.alpha = animator.calculateAlpha(animation, matchNull = true, start = true)
-            endViews.alpha = animator.calculateAlpha(animation, matchNull = true, start = false)
+            val animator = (inputView.editorAnimator as? FadeEditorAnimator) ?: candidateAnimator
+            startViews.alpha = animator.calculateAlpha(animation, matchNull = false, start = true)
             startViews.applyAlpha(alpha = 1f)
+            endViews.alpha = animator.calculateAlpha(animation, matchNull = false, start = false)
             endViews.applyAlpha(alpha = 1f)
         }
 

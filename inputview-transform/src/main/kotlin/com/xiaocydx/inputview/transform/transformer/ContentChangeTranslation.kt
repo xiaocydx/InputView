@@ -19,46 +19,31 @@
 package com.xiaocydx.inputview.transform
 
 import android.view.Gravity.BOTTOM
-import android.view.View
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import androidx.annotation.CallSuper
 import androidx.transition.updateLayoutGravity
 
 /**
  * @author xcc
  * @date 2024/7/24
  */
-open class ContentTranslation() : Transformer {
-    private var match: ((Content?) -> Boolean)? = null
-    private var matchStart = false
-    private var matchEnd = false
+class ContentChangeTranslation() : ContentTransformer() {
 
-    constructor(content: Content) : this() {
-        setMatch { it === content }
+    constructor(matchContent: Content) : this() {
+        setMatchContent(matchContent)
     }
 
-    constructor(match: (Content?) -> Boolean) : this() {
+    constructor(match: ContentMatch) : this() {
         setMatch(match)
     }
 
-    fun setMatch(match: ((Content?) -> Boolean)?) {
-        this.match = match
-    }
-
-    @CallSuper
-    override fun match(state: ImperfectState) = with(state) {
-        matchStart = match?.invoke(previous?.content) ?: true
-        matchEnd = match?.invoke(current?.content) ?: true
+    override fun onMatch(state: ImperfectState) = with(state) {
         startView() != null || endView() != null
     }
 
-    @CallSuper
     override fun onPrepare(state: ImperfectState): Unit = with(state) {
         startView()?.updateLayoutGravity(BOTTOM)
         endView()?.updateLayoutGravity(BOTTOM)
     }
 
-    @CallSuper
     override fun onUpdate(state: TransformState) = with(state) {
         if (previous == null || current == null) {
             val fraction = when (previous) {
@@ -74,16 +59,7 @@ open class ContentTranslation() : Transformer {
         endView()?.translationY = -currentOffset.toFloat()
     }
 
-    @CallSuper
     override fun onEnd(state: TransformState) {
         state.rootView.translationY = 0f
-    }
-
-    protected fun ImperfectState.startView(): View? {
-        return startViews.content?.takeIf { matchStart && it.layoutParams?.height != MATCH_PARENT }
-    }
-
-    protected fun ImperfectState.endView(): View? {
-        return endViews.content?.takeIf { matchEnd && it.layoutParams?.height != MATCH_PARENT }
     }
 }
