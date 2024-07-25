@@ -218,6 +218,7 @@ internal class OverlayImpl<C : Content, E : Editor>(
     private inner class TransformerEnforcer : AnimationCallback {
         private val transformers = mutableListOf<Transformer>()
         private val dispatchingTransformers = mutableListOf<Transformer>()
+        private val sequenceComparator = compareBy<Transformer> { it.sequence }
 
         fun has(transformer: Transformer): Boolean {
             return transformers.contains(transformer)
@@ -279,6 +280,7 @@ internal class OverlayImpl<C : Content, E : Editor>(
         private fun matchDispatchingTransformers() {
             dispatchingTransformers.takeIf { it.isNotEmpty() }?.clear()
             val tempTransformers = ArrayList<Transformer>(transformers)
+            tempTransformers.takeIf { it.size > 1 }?.sortWith(sequenceComparator)
             for (i in tempTransformers.indices) {
                 if (!tempTransformers[i].match(transformState)) continue
                 dispatchingTransformers.add(tempTransformers[i])

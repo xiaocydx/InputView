@@ -33,6 +33,9 @@ import com.xiaocydx.inputview.InputView
  */
 interface Transformer {
 
+    val sequence: Int
+        get() = SEQUENCE_FIRST
+
     fun match(state: ImperfectState): Boolean
 
     fun onPrepare(state: ImperfectState) = Unit
@@ -42,6 +45,11 @@ interface Transformer {
     fun onUpdate(state: TransformState) = Unit
 
     fun onEnd(state: TransformState) = Unit
+
+    companion object {
+        const val SEQUENCE_FIRST = Int.MIN_VALUE
+        const val SEQUENCE_LAST = Int.MAX_VALUE
+    }
 }
 
 /**
