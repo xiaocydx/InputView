@@ -39,7 +39,9 @@ fun <C : Content, E : Editor> InputView.Companion.createOverlay(
 
 interface Overlay<C : Content, E : Editor> : TransformerOwner {
 
-    val currentScene: Scene<C, E>?
+    val previous: Scene<C, E>?
+
+    val current: Scene<C, E>?
 
     fun setSceneChangedListener(listener: SceneChangedListener<C, E>)
 

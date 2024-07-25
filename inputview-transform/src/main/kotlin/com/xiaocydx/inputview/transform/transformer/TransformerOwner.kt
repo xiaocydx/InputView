@@ -42,9 +42,9 @@ interface TransformerOwner {
     fun removeTransformer(transformer: Transformer)
 
     /**
-     * 请求重新分发调用[Transformer]的函数
+     * 请求重新分发调用[transformer]的函数
      */
-    fun requestTransform()
+    fun requestTransform(transformer: Transformer)
 }
 
 internal fun View.getTransformerHost(): TransformerOwner? {
@@ -103,8 +103,8 @@ private class ViewTransformerOwner(
         host?.removeTransformer(transformer)
     }
 
-    override fun requestTransform() {
-        host?.requestTransform()
+    override fun requestTransform(transformer: Transformer) {
+        host?.requestTransform(transformer)
     }
 
     private fun findHost(): TransformerOwner? {

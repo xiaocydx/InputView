@@ -31,20 +31,37 @@ import com.xiaocydx.inputview.InputView
  * @author xcc
  * @date 2024/7/24
  */
-interface Transformer {
+abstract class Transformer {
+    internal var owner: TransformerOwner? = null
+        private set
 
-    val sequence: Int
-        get() = SEQUENCE_FIRST
+    open val sequence = SEQUENCE_FIRST
 
-    fun match(state: ImperfectState): Boolean
+    abstract fun match(state: ImperfectState): Boolean
 
-    fun onPrepare(state: ImperfectState) = Unit
+    open fun onPrepare(state: ImperfectState) = Unit
 
-    fun onStart(state: TransformState) = Unit
+    open fun onStart(state: TransformState) = Unit
 
-    fun onUpdate(state: TransformState) = Unit
+    open fun onUpdate(state: TransformState) = Unit
 
-    fun onEnd(state: TransformState) = Unit
+    open fun onEnd(state: TransformState) = Unit
+
+    open fun onPreDraw(state: TransformState) = Unit
+
+    fun requestTransform() {
+        owner?.requestTransform(this)
+    }
+
+    internal fun onAttachedToOwner(owner: TransformerOwner) {
+        check(this.owner == null) { "Transformer已关联TransformerOwner" }
+        this.owner = owner
+    }
+
+    internal fun onDetachedFromOwner(owner: TransformerOwner) {
+        if (this.owner !== owner) return
+        this.owner = owner
+    }
 
     companion object {
         const val SEQUENCE_FIRST = Int.MIN_VALUE

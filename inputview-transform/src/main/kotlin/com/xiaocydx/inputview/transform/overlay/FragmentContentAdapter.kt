@@ -185,7 +185,7 @@ abstract class FragmentContentAdapter<T : Content>(
                 if (!isNeeded || !isDelayUpdateEnabled) return@LifecycleEventObserver
                 updateFragmentMaxLifecycle(host.current)
             }
-            transformer = object : Transformer {
+            transformer = object : Transformer() {
                 override fun match(state: ImperfectState) = true
 
                 override fun onPrepare(state: ImperfectState) {

@@ -22,6 +22,7 @@ import android.annotation.SuppressLint
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.view.ViewTreeObserver.OnPreDrawListener
 import android.view.Window
 import android.widget.FrameLayout
 import androidx.activity.OnBackPressedCallback
@@ -60,9 +61,11 @@ internal class OverlayImpl<C : Content, E : Editor>(
     private var sceneChangedListener: SceneChangedListener<C, E>? = null
     private var sceneEditorConverter: SceneEditorConverter<C, E> = defaultEditorConverter()
     private var backPressedCallback: OnBackPressedCallback? = null
+    private var isAttached = false
+    private var isActiveGoing = false
 
-    override val currentScene: Scene<C, E>?
-        get() = transformState.current
+    override var previous: Scene<C, E>? = null; private set
+    override var current: Scene<C, E>? = null; private set
 
     override fun setSceneChangedListener(listener: SceneChangedListener<C, E>) {
         sceneChangedListener = listener
@@ -92,7 +95,8 @@ internal class OverlayImpl<C : Content, E : Editor>(
         } else {
             InputView.init(window, statusBarEdgeToEdge, gestureNavBarEdgeToEdge)
         }
-        if (!first) return false
+        if (!first || isAttached) return false
+        isAttached = true
         attachToParent(rootParent)
 
         initializer?.invoke(inputView)
@@ -100,8 +104,9 @@ internal class OverlayImpl<C : Content, E : Editor>(
         inputView.disableGestureNavBarOffset()
         inputView.editorMode = EditorMode.ADJUST_PAN
         inputView.editorAdapter = editorAdapter
-        editorAnimator.addAnimationCallback(transformerEnforcer)
         editorAdapter.addEditorChangedListener(SceneEditorConverterCaller())
+        editorAnimator.addAnimationCallback(transformerEnforcer)
+        rootView.viewTreeObserver.addOnPreDrawListener(transformerEnforcer)
 
         contentView.setAdapter(contentAdapter)
         contentView.setRemovePreviousImmediately(!editorAnimator.canRunAnimation)
@@ -110,11 +115,11 @@ internal class OverlayImpl<C : Content, E : Editor>(
     }
 
     override fun go(scene: Scene<C, E>?): Boolean {
-        if (!transformState.isInitialized) return false
-        transformState.isActiveGoing = true
-        val isSameEditor = editorAdapter.current === scene?.editor
+        if (!isAttached) return false
+        isActiveGoing = true
 
         // editor的显示和隐藏允许被拦截
+        val isSameEditor = editorAdapter.current === scene?.editor
         val editorChanged = if (scene == null) {
             editorAdapter.notifyHideCurrent()
         } else {
@@ -123,14 +128,23 @@ internal class OverlayImpl<C : Content, E : Editor>(
 
         // 1. 当editor没有改变时，忽略被拦截，允许通知content。
         // 2. 当editor的显示和隐藏被拦截时，不允许通知content。
-        val succeed = isSameEditor || editorChanged
+        val editorSucceed = isSameEditor || editorChanged
         when {
-            succeed && scene == null -> contentAdapter.notifyHideCurrent()
-            succeed && scene != null -> contentAdapter.notifyShow(scene.content)
+            editorSucceed && scene == null -> contentAdapter.notifyHideCurrent()
+            editorSucceed && scene != null -> contentAdapter.notifyShow(scene.content)
         }
-        if (succeed) transformState.setCurrentScene(scene)
-        transformState.isActiveGoing = false
-        return succeed
+
+        if (editorSucceed) {
+            val sceneChanged = current !== scene
+            previous = current
+            current = scene
+            backPressedCallback?.isEnabled = current != null
+            if (sceneChanged) transformState.invalidate()
+            if (sceneChanged) sceneChangedListener?.onChanged(previous, current)
+        }
+
+        isActiveGoing = false
+        return editorSucceed
     }
 
     override fun hasTransformer(transformer: Transformer): Boolean {
@@ -145,8 +159,8 @@ internal class OverlayImpl<C : Content, E : Editor>(
         transformerEnforcer.remove(transformer)
     }
 
-    override fun requestTransform() {
-        transformerEnforcer.request()
+    override fun requestTransform(transformer: Transformer) {
+        transformerEnforcer.request(transformer)
     }
 
     private inner class ContentHostImpl : ContentHost {
@@ -176,13 +190,14 @@ internal class OverlayImpl<C : Content, E : Editor>(
         private var isSkipChanged = false
         private var skipPrevious: E? = null
         private var skipCurrent: E? = null
+        private val currentScene get() = this@OverlayImpl.current
 
         override fun onEditorChanged(previous: E?, current: E?) {
-            if (transformState.isActiveGoing) return
+            if (isActiveGoing) return
             if (consumeSkipChanged(previous, current)) return
-            assert(transformState.current?.editor === previous)
-            val nextScene = sceneEditorConverter.nextScene(transformState.current, current)
-            checkNextScene(previous, current, transformState.current, nextScene)
+            assert(currentScene?.editor === previous)
+            val nextScene = sceneEditorConverter.nextScene(currentScene, current)
+            checkNextScene(previous, current, currentScene, nextScene)
             prepareSkipChanged(current, nextScene?.editor)
             go(nextScene)
         }
@@ -215,10 +230,53 @@ internal class OverlayImpl<C : Content, E : Editor>(
     }
 
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
-    private inner class TransformerEnforcer : AnimationCallback {
+    private inner class TransformerEnforcer : AnimationCallback, OnPreDrawListener {
         private val transformers = mutableListOf<Transformer>()
-        private val dispatchingTransformers = mutableListOf<Transformer>()
+        private val matchTransformers = mutableListOf<Transformer>()
         private val sequenceComparator = compareBy<Transformer> { it.sequence }
+        private val owner = this@OverlayImpl
+        private val previousScene get() = this@OverlayImpl.previous
+        private val currentScene get() = this@OverlayImpl.current
+
+        override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
+            transformState.contentView.consumePendingChange()
+            transformState.rootView.isVisible = true
+            transformState.setScene(previousScene, currentScene)
+            transformState.setTransformViews()
+            transformState.isDispatching = true
+            findMatchTransformers()
+            dispatchMatchTransformer { onPrepare(transformState) }
+        }
+
+        override fun onAnimationStart(animation: AnimationState) {
+            transformState.setOffset(animation)
+            dispatchMatchTransformer { onStart(transformState) }
+        }
+
+        override fun onAnimationUpdate(animation: AnimationState) {
+            transformState.setOffset(animation)
+            transformState.setAlpha(animation)
+            transformState.setFraction(animation)
+            dispatchMatchTransformer { onUpdate(transformState) }
+        }
+
+        override fun onAnimationEnd(animation: AnimationState) {
+            dispatchMatchTransformer { onEnd(transformState) }
+            transformState.isDispatching = false
+            transformState.contentView.removeChangeRecordPrevious()
+            transformState.rootView.isVisible = transformState.current != null
+            if (transformState.current == null) clearMatchTransformers()
+            transformState.prepareForRequest()
+        }
+
+        override fun onPreDraw(): Boolean {
+            if (!transformState.isInvalidated
+                    && !transformState.isDispatching
+                    && matchTransformers.isNotEmpty()) {
+                dispatchMatchTransformer { onPreDraw(transformState) }
+            }
+            return true
+        }
 
         fun has(transformer: Transformer): Boolean {
             return transformers.contains(transformer)
@@ -227,68 +285,58 @@ internal class OverlayImpl<C : Content, E : Editor>(
         fun add(transformer: Transformer) {
             if (hasTransformer(transformer)) return
             transformers.add(transformer)
+            transformer.onAttachedToOwner(owner)
         }
 
         fun remove(transformer: Transformer) {
             transformers.remove(transformer)
+            transformer.onDetachedFromOwner(owner)
         }
 
-        override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
-            assert(transformState.previous?.editor === previous)
-            assert(transformState.current?.editor === current)
-            transformState.contentView.consumePendingChange()
-            transformState.rootView.isVisible = true
-            transformState.isDispatching = true
-            transformState.setTransformViews()
-            matchDispatchingTransformers()
-            dispatchTransformer { onPrepare(transformState) }
+        fun request(transformer: Transformer) {
+            if (transformer.owner === owner
+                    && !transformState.isInvalidated
+                    && !transformState.isDispatching
+                    && matchTransformers.contains(transformer)) {
+                transformState.isDispatching = true
+                transformer.onPrepare(transformState)
+                transformer.onStart(transformState)
+                transformer.onUpdate(transformState)
+                transformer.onEnd(transformState)
+                transformState.isDispatching = false
+            }
         }
 
-        override fun onAnimationStart(animation: AnimationState) {
-            transformState.setOffset(animation)
-            dispatchTransformer { onStart(transformState) }
+        private fun request() {
+            // TODO: 全局数值变更，进行全量分发
+            if (!transformState.isInvalidated
+                    && !transformState.isDispatching
+                    && matchTransformers.isNotEmpty()) {
+                transformState.isDispatching = true
+                dispatchMatchTransformer { onPrepare(transformState) }
+                dispatchMatchTransformer { onStart(transformState) }
+                dispatchMatchTransformer { onUpdate(transformState) }
+                dispatchMatchTransformer { onEnd(transformState) }
+                transformState.isDispatching = false
+            }
         }
 
-        override fun onAnimationUpdate(animation: AnimationState) {
-            transformState.setOffset(animation)
-            transformState.setAlpha(animation)
-            transformState.setFraction(animation)
-            dispatchTransformer { onUpdate(transformState) }
-        }
-
-        override fun onAnimationEnd(animation: AnimationState) {
-            dispatchTransformer { onEnd(transformState) }
-            transformState.contentView.removeChangeRecordPrevious()
-            transformState.rootView.isVisible = transformState.current != null
-            transformState.isDispatching = false
-        }
-
-        fun request() {
-            // TODO: 校验state的有效性，处理重复分发
-            // TODO: 全量copy遍历的必要性不大
-            if (!transformState.isInitialized) return
-            if (transformState.isDispatching) return
-            transformState.isDispatching = true
-            matchDispatchingTransformers()
-            dispatchTransformer { onPrepare(transformState) }
-            dispatchTransformer { onStart(transformState) }
-            dispatchTransformer { onUpdate(transformState) }
-            dispatchTransformer { onEnd(transformState) }
-            transformState.isDispatching = false
-        }
-
-        private fun matchDispatchingTransformers() {
-            dispatchingTransformers.takeIf { it.isNotEmpty() }?.clear()
+        private fun findMatchTransformers() {
+            clearMatchTransformers()
             val tempTransformers = ArrayList<Transformer>(transformers)
             tempTransformers.takeIf { it.size > 1 }?.sortWith(sequenceComparator)
             for (i in tempTransformers.indices) {
                 if (!tempTransformers[i].match(transformState)) continue
-                dispatchingTransformers.add(tempTransformers[i])
+                matchTransformers.add(tempTransformers[i])
             }
         }
 
-        private inline fun dispatchTransformer(action: Transformer.() -> Unit) {
-            for (i in dispatchingTransformers.indices) dispatchingTransformers[i].action()
+        private fun clearMatchTransformers() {
+            matchTransformers.takeIf { it.isNotEmpty() }?.clear()
+        }
+
+        private inline fun dispatchMatchTransformer(action: Transformer.() -> Unit) {
+            for (i in matchTransformers.indices) matchTransformers[i].action()
         }
     }
 
@@ -300,6 +348,12 @@ internal class OverlayImpl<C : Content, E : Editor>(
         fun applyAlpha(alpha: Float) {
             content?.alpha = alpha
             editor?.alpha = alpha
+        }
+
+        fun reset() {
+            content = null
+            editor = null
+            alpha = 1f
         }
     }
 
@@ -319,12 +373,10 @@ internal class OverlayImpl<C : Content, E : Editor>(
         override val endViews = TransformViewsImpl()
         private val candidateAnimator by lazy { FadeEditorAnimator() }
 
-        var isInitialized = false; private set
-        var isActiveGoing = false
+        var isInvalidated = false; private set
         var isDispatching = false
 
         fun attachToParent(rootParent: ViewGroup?) {
-            isInitialized = true
             val context = window.rootParent().context
             rootView = FrameLayout(context)
             inputView = InputView(context)
@@ -342,12 +394,14 @@ internal class OverlayImpl<C : Content, E : Editor>(
             }
         }
 
-        fun setCurrentScene(scene: Scene<C, E>?) {
-            val changed = current !== scene
-            previous = current
-            current = scene
-            if (changed) sceneChangedListener?.onChanged(previous, current)
-            if (changed) backPressedCallback?.isEnabled = current != null
+        fun invalidate() {
+            isInvalidated = true
+        }
+
+        fun setScene(previous: Scene<C, E>?, current: Scene<C, E>?) {
+            this.previous = previous
+            this.current = current
+            isInvalidated = false
         }
 
         fun setTransformViews() {
@@ -385,6 +439,16 @@ internal class OverlayImpl<C : Content, E : Editor>(
         fun setFraction(animation: AnimationState) {
             animatedFraction = animation.animatedFraction
             interpolatedFraction = animation.interpolatedFraction
+        }
+
+        fun prepareForRequest() {
+            previous = current
+            startOffset = endOffset
+            currentOffset = endOffset
+            animatedFraction = 1f
+            interpolatedFraction = 1f
+            startViews.reset()
+            if (current == null) endViews.reset()
         }
 
         private fun windowRootParentId(): Int {

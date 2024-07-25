@@ -19,13 +19,10 @@
 package com.xiaocydx.inputview.transform
 
 import android.view.View
-import com.xiaocydx.inputview.transform.Transformer.Companion.SEQUENCE_LAST
 import java.lang.Integer.min
 import java.lang.ref.WeakReference
 
 /**
- * // TODO: 2024/7/25 动画结束后，观察content和editor尺寸变更
- *
  * @author xcc
  * @date 2024/7/25
  */
@@ -33,11 +30,13 @@ class AnchorScaleChange(
     target: View,
     private val contentMatch: ContentMatch? = null,
     private val editorMatch: EditorMatch? = null
-) : Transformer {
+) : Transformer() {
     private val targetRef = WeakReference(target)
     private val point = IntArray(2)
     private var targetBottom = 0
     private var inputViewBottom = 0
+    private var inputViewEditorOffset = 0
+    private var endContentViewHeight = 0
     override val sequence = SEQUENCE_LAST
 
     override fun match(state: ImperfectState): Boolean {
@@ -68,6 +67,17 @@ class AnchorScaleChange(
             pivotX = view.width.toFloat() / 2
             pivotY = 0f
         }
+    }
+
+    override fun onEnd(state: TransformState) = with(state) {
+        inputViewEditorOffset = inputView.editorOffset
+        endContentViewHeight = endViews.content?.height ?: 0
+    }
+
+    override fun onPreDraw(state: TransformState) = with(state) {
+        val offset = inputView.editorOffset
+        val height = endViews.content?.height ?: 0
+        if (inputViewEditorOffset != offset || endContentViewHeight != height) requestTransform()
     }
 
     private fun TransformState.calculateAnchor(): Int {

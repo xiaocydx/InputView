@@ -24,7 +24,7 @@ import android.view.View
  * @author xcc
  * @date 2024/7/25
  */
-abstract class ContentTransformer : Transformer {
+abstract class ContentTransformer : Transformer() {
     private var match: ContentMatch? = null
     private var matchStart = false
     private var matchEnd = false

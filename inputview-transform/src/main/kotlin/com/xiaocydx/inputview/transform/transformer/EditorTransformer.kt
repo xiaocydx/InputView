@@ -25,7 +25,7 @@ import com.xiaocydx.inputview.Editor
  * @author xcc
  * @date 2024/7/25
  */
-abstract class EditorTransformer : Transformer {
+abstract class EditorTransformer : Transformer() {
     private var match: EditorMatch? = null
     private var matchStart = false
     private var matchEnd = false

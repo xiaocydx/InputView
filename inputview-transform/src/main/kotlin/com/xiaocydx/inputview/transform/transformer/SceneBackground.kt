@@ -36,12 +36,12 @@ fun TransformerOwner.addSceneBackground(
     addTransformer(EditorBackground(color).apply { setMatch(editorMatch) })
 }
 
-// TODO: 2024/7/25 动画结束后，观察content的尺寸变更
 class ContentBackground(private val drawable: Drawable) : ContentTransformer() {
     private val startBounds = Rect()
     private val endBounds = Rect()
     private val currentBounds = Rect()
     private val evaluator = RectEvaluator(currentBounds)
+    private var endViewHeight = 0
 
     constructor(
         @ColorInt color: Int
@@ -95,7 +95,13 @@ class ContentBackground(private val drawable: Drawable) : ContentTransformer() {
     }
 
     override fun onEnd(state: TransformState) = with(state) {
+        endViewHeight = endView()?.height ?: 0
         if (endView() == null) backgroundView.overlay.remove(drawable)
+    }
+
+    override fun onPreDraw(state: TransformState) = with(state) {
+        val height = endView()?.height ?: 0
+        if (endViewHeight != height) requestTransform()
     }
 
     private fun View.appendTranslation(rect: Rect) {
