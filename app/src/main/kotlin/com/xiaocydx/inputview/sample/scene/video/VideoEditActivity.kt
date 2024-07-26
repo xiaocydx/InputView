@@ -2,7 +2,6 @@ package com.xiaocydx.inputview.sample.scene.video
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.ActivityVideoEditBinding
@@ -36,7 +35,6 @@ class VideoEditActivity : AppCompatActivity() {
         preview.insets().margins(statusBars())
 
         val overlay = InputView.createOverlay(
-            window = window,
             lifecycleOwner = this@VideoEditActivity,
             contentAdapter = VideoTitleAdapter(),
             editorAdapter = VideoEditorAdapter(lifecycle, supportFragmentManager)
@@ -54,9 +52,7 @@ class VideoEditActivity : AppCompatActivity() {
             addSceneBackground(0xFF1D1D1D.toInt(), contentMatch, editorMatch)
         }
 
-        overlay.attachToWindow(initCompat = false) {
-            it.editorAnimator = FadeEditorAnimator(durationMillis = 5000)
-        }
+        overlay.attach(window, compat = false)
 
         arrayOf(
             tvInput to VideoScene.Input,

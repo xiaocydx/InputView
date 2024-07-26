@@ -45,14 +45,14 @@ import com.xiaocydx.inputview.initCompat
 import com.xiaocydx.inputview.isVisible
 import com.xiaocydx.inputview.notifyHideCurrent
 import com.xiaocydx.inputview.notifyShow
+import com.xiaocydx.inputview.transform.Overlay.Companion.ROOT_PARENT_ID
 
 /**
  * @author xcc
  * @date 2024/7/23
  */
 internal class OverlayImpl<C : Content, E : Editor>(
-    private val window: Window,
-    private val lifecycleOwner: LifecycleOwner,
+    override val lifecycleOwner: LifecycleOwner,
     private val contentAdapter: ContentAdapter<C>,
     private val editorAdapter: EditorAdapter<E>,
 ) : Overlay<C, E> {
@@ -61,61 +61,56 @@ internal class OverlayImpl<C : Content, E : Editor>(
     private var sceneChangedListener: SceneChangedListener<C, E>? = null
     private var sceneEditorConverter: SceneEditorConverter<C, E> = defaultEditorConverter()
     private var backPressedCallback: OnBackPressedCallback? = null
-    private var isAttached = false
+    private var isInitialized = false
     private var isActiveGoing = false
 
     override var previous: Scene<C, E>? = null; private set
     override var current: Scene<C, E>? = null; private set
 
-    override fun setSceneChangedListener(listener: SceneChangedListener<C, E>) {
-        sceneChangedListener = listener
-    }
-
-    override fun setSceneEditorConverter(converter: SceneEditorConverter<C, E>) {
-        sceneEditorConverter = converter
-    }
-
-    override fun addToOnBackPressedDispatcher(dispatcher: OnBackPressedDispatcher) {
-        require(backPressedCallback == null) { "已添加到OnBackPressedDispatcher" }
-        backPressedCallback = object : OnBackPressedCallback(false) {
-            override fun handleOnBackPressed() {
-                go(scene = null)
-            }
-        }
-        dispatcher.addCallback(lifecycleOwner, backPressedCallback!!)
-    }
-
-    override fun attachToWindow(
+    override fun attach(
+        window: Window,
         initCompat: Boolean,
         rootParent: ViewGroup?,
         initializer: ((inputView: InputView) -> Unit)?
-    ): Boolean = with(transformState) {
-        val first = if (initCompat) {
-            InputView.initCompat(window, gestureNavBarEdgeToEdge)
+    ): Boolean {
+        if (initCompat) {
+            InputView.initCompat(window, gestureNavBarEdgeToEdge = true)
         } else {
-            InputView.init(window, statusBarEdgeToEdge, gestureNavBarEdgeToEdge)
+            InputView.init(window, statusBarEdgeToEdge = true, gestureNavBarEdgeToEdge = true)
         }
-        if (!first || isAttached) return false
-        isAttached = true
-        attachToParent(rootParent)
+        if (isInitialized) return false
+        isInitialized = true
 
-        initializer?.invoke(inputView)
-        val editorAnimator = inputView.editorAnimator
-        inputView.disableGestureNavBarOffset()
-        inputView.editorMode = EditorMode.ADJUST_PAN
-        inputView.editorAdapter = editorAdapter
-        editorAdapter.addEditorChangedListener(SceneEditorConverterCaller())
-        editorAnimator.addAnimationCallback(transformerEnforcer)
-        rootView.viewTreeObserver.addOnPreDrawListener(transformerEnforcer)
+        transformState.apply {
+            initialize(window)
+            initializer?.invoke(inputView)
+            val editorAnimator = inputView.editorAnimator
+            inputView.disableGestureNavBarOffset()
+            inputView.editorMode = EditorMode.ADJUST_PAN
+            inputView.editorAdapter = editorAdapter
+            editorAdapter.addEditorChangedListener(SceneEditorConverterCaller())
+            editorAnimator.addAnimationCallback(transformerEnforcer)
+            // TODO: rootView从window分离时，需要移除transformerEnforcer
+            rootView.viewTreeObserver.addOnPreDrawListener(transformerEnforcer)
 
-        contentView.setAdapter(contentAdapter)
-        contentView.setRemovePreviousImmediately(!editorAnimator.canRunAnimation)
-        contentAdapter.onAttachedToHost(ContentHostImpl())
+            contentView.setAdapter(contentAdapter)
+            contentView.setRemovePreviousImmediately(!editorAnimator.canRunAnimation)
+            contentAdapter.onAttachedToHost(ContentHostImpl())
+        }
+
+        transformState.rootView.setTransformerHost(this)
+        if (rootParent != null && rootParent.id != ROOT_PARENT_ID) {
+            rootParent.addView(transformState.rootView)
+        } else {
+            lifecycleOwner.lifecycle.doOnCreated {
+                window.rootParent().addView(transformState.rootView)
+            }
+        }
         return true
     }
 
     override fun go(scene: Scene<C, E>?): Boolean {
-        if (!isAttached) return false
+        if (!isInitialized) return false
         isActiveGoing = true
 
         // editor的显示和隐藏允许被拦截
@@ -147,6 +142,25 @@ internal class OverlayImpl<C : Content, E : Editor>(
         return editorSucceed
     }
 
+    override fun setSceneChangedListener(listener: SceneChangedListener<C, E>) {
+        sceneChangedListener = listener
+    }
+
+    override fun setSceneEditorConverter(converter: SceneEditorConverter<C, E>) {
+        sceneEditorConverter = converter
+    }
+
+    override fun addToOnBackPressedDispatcher(dispatcher: OnBackPressedDispatcher): Boolean {
+        if (backPressedCallback != null) return false
+        backPressedCallback = object : OnBackPressedCallback(false) {
+            override fun handleOnBackPressed() {
+                go(scene = null)
+            }
+        }
+        dispatcher.addCallback(lifecycleOwner, backPressedCallback!!)
+        return true
+    }
+
     override fun hasTransformer(transformer: Transformer): Boolean {
         return transformerEnforcer.has(transformer)
     }
@@ -161,6 +175,20 @@ internal class OverlayImpl<C : Content, E : Editor>(
 
     override fun requestTransform(transformer: Transformer) {
         transformerEnforcer.request(transformer)
+    }
+
+    private fun Window.rootParent(): ViewGroup {
+        return findViewById(ROOT_PARENT_ID)
+    }
+
+    private inline fun Lifecycle.doOnCreated(crossinline action: () -> Unit) {
+        addObserver(object : LifecycleEventObserver {
+            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+                if (!source.lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED)) return
+                source.lifecycle.removeObserver(this)
+                action()
+            }
+        })
     }
 
     private inner class ContentHostImpl : ContentHost {
@@ -359,9 +387,9 @@ internal class OverlayImpl<C : Content, E : Editor>(
 
     private inner class TransformStateImpl : TransformState {
         override lateinit var rootView: FrameLayout; private set
-        override lateinit var inputView: InputView; private set
-        override lateinit var contentView: ContentContainer; private set
         override lateinit var backgroundView: View; private set
+        override lateinit var contentView: ContentContainer; private set
+        override lateinit var inputView: InputView; private set
         override var previous: Scene<C, E>? = null; private set
         override var current: Scene<C, E>? = null; private set
         override var startOffset = 0; private set
@@ -376,22 +404,16 @@ internal class OverlayImpl<C : Content, E : Editor>(
         var isInvalidated = false; private set
         var isDispatching = false
 
-        fun attachToParent(rootParent: ViewGroup?) {
+        fun initialize(window: Window) {
             val context = window.rootParent().context
             rootView = FrameLayout(context)
-            inputView = InputView(context)
-            contentView = ContentContainer(context)
             backgroundView = View(context)
+            contentView = ContentContainer(context)
+            inputView = InputView(context)
             rootView.isVisible = false
             rootView.addView(backgroundView, MATCH_PARENT, MATCH_PARENT)
             rootView.addView(contentView, MATCH_PARENT, MATCH_PARENT)
             rootView.addView(inputView, MATCH_PARENT, MATCH_PARENT)
-            rootView.setTransformerHost(this@OverlayImpl)
-            if (rootParent == null || rootParent.id == windowRootParentId()) {
-                lifecycleOwner.lifecycle.doOnCreated { window.rootParent().addView(rootView) }
-            } else {
-                rootParent.addView(rootView)
-            }
         }
 
         fun invalidate() {
@@ -450,29 +472,5 @@ internal class OverlayImpl<C : Content, E : Editor>(
             startViews.reset()
             if (current == null) endViews.reset()
         }
-
-        private fun windowRootParentId(): Int {
-            return android.R.id.content
-        }
-
-        private fun Window.rootParent(): ViewGroup {
-            return findViewById(windowRootParentId())
-        }
-
-        private inline fun Lifecycle.doOnCreated(crossinline action: () -> Unit) {
-            addObserver(object : LifecycleEventObserver {
-                override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-                    if (!source.lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED)) return
-                    source.lifecycle.removeObserver(this)
-                    action()
-                }
-            })
-        }
-    }
-
-    @Suppress("ConstPropertyName")
-    private companion object {
-        const val statusBarEdgeToEdge = true
-        const val gestureNavBarEdgeToEdge = true
     }
 }

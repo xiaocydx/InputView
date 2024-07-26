@@ -74,13 +74,13 @@ abstract class Transformer {
  */
 interface ImperfectState {
 
-    val rootView: ViewGroup
-
-    val inputView: InputView
-
-    val contentView: ViewGroup
+    val rootView: View
 
     val backgroundView: View
+
+    val contentView: View
+
+    val inputView: InputView
 
     val previous: Scene<*, *>?
 
