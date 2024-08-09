@@ -3,11 +3,13 @@ package com.xiaocydx.inputview.sample.scene.video
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.ActivityVideoEditBinding
 import com.xiaocydx.inputview.transform.ContentChangeBounds
 import com.xiaocydx.inputview.transform.ContentChangeTranslation
 import com.xiaocydx.inputview.transform.ScaleChange
+import com.xiaocydx.inputview.transform.SceneEditorConverter
 import com.xiaocydx.inputview.transform.addSceneBackground
 import com.xiaocydx.inputview.transform.addSceneFadeChange
 import com.xiaocydx.inputview.transform.createOverlay
@@ -25,6 +27,7 @@ class VideoEditActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        InputView.init(window, statusBarEdgeToEdge = true, gestureNavBarEdgeToEdge = true)
         setContentView(ActivityVideoEditBinding.inflate(layoutInflater).init().root)
     }
 
@@ -32,13 +35,13 @@ class VideoEditActivity : AppCompatActivity() {
         root.insets().paddings(navigationBars())
         preview.insets().margins(statusBars())
 
-        val videoTitleAdapter = VideoTitleAdapter()
+        val contentAdapter = VideoContentAdapter()
         val overlay = InputView.createOverlay(
             lifecycleOwner = this@VideoEditActivity,
-            contentAdapter = videoTitleAdapter,
+            contentAdapter = contentAdapter,
             editorAdapter = VideoEditorAdapter(lifecycle, supportFragmentManager)
         )
-        videoTitleAdapter.go = overlay::go
+        contentAdapter.go = overlay::go
 
         overlay.apply {
             addTransformer(ScaleChange(preview))
@@ -47,15 +50,22 @@ class VideoEditActivity : AppCompatActivity() {
             addSceneFadeChange()
             addSceneBackground(0xFF1D1D1D.toInt())
             addToOnBackPressedDispatcher(onBackPressedDispatcher)
-            attach(window, compat = false)
+            attach(window)
+        }
+
+        // TODO: 简化
+        val sceneEditorConverter = overlay.sceneEditorConverter
+        overlay.sceneEditorConverter = SceneEditorConverter { currentScene, nextEditor ->
+            if (nextEditor == VideoEditor.Ime) return@SceneEditorConverter VideoScene.InputText
+            sceneEditorConverter.nextScene(currentScene, nextEditor)
         }
 
         arrayOf(
-            tvInput to VideoScene.Input,
-            btnText to VideoScene.Emoji,
-            btnVideo to VideoScene.Video,
-            btnAudio to VideoScene.Audio,
-            btnImage to VideoScene.Image
+            tvInput to VideoScene.InputText,
+            btnText to VideoScene.InputEmoji,
+            btnVideo to VideoScene.SelectVideo,
+            btnAudio to VideoScene.SelectAudio,
+            btnImage to VideoScene.SelectImage
         ).forEach { (view, scene) ->
             view.onClick { overlay.go(scene) }
         }

@@ -21,8 +21,8 @@ package com.xiaocydx.inputview.transform
 import com.xiaocydx.inputview.Editor
 
 @Suppress("UNCHECKED_CAST")
-fun <C : Content, E : Editor> defaultEditorConverter(): SceneEditorConverter<C, E> {
-    return DefaultEditorConverter as SceneEditorConverter<C, E>
+internal fun <C : Content, E : Editor> defaultEditorConverter() = run {
+    DefaultEditorConverter as SceneEditorConverter<C, E>
 }
 
 private object DefaultEditorConverter : SceneEditorConverter<Content, Editor> {

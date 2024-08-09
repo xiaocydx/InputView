@@ -12,8 +12,8 @@ import androidx.lifecycle.Lifecycle
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.FragmentEditorAdapter
 import com.xiaocydx.inputview.sample.common.onClick
-import com.xiaocydx.inputview.sample.databinding.VideoCommonTitlebarBinding
-import com.xiaocydx.inputview.sample.databinding.VideoTextTitlebarBinding
+import com.xiaocydx.inputview.sample.databinding.VideoTextBinding
+import com.xiaocydx.inputview.sample.databinding.VideoTitleBinding
 import com.xiaocydx.inputview.sample.editor_adapter.fragment.EmojiFragment
 import com.xiaocydx.inputview.transform.Content
 import com.xiaocydx.inputview.transform.ContentAdapter
@@ -28,16 +28,21 @@ sealed class VideoScene(
     override val content: VideoContent,
     override val editor: VideoEditor
 ) : Scene<VideoContent, VideoEditor> {
-    data object Input : VideoScene(VideoContent.Text, VideoEditor.Input)
-    data object Emoji : VideoScene(VideoContent.Text, VideoEditor.Emoji)
-    data object Style : VideoScene(VideoContent.Text, VideoEditor.Style)
-    data object Video : VideoScene(VideoContent.Common, VideoEditor.Video)
-    data object Audio : VideoScene(VideoContent.Common, VideoEditor.Audio)
-    data object Image : VideoScene(VideoContent.Common, VideoEditor.Image)
+    data object InputText : VideoScene(VideoContent.Text, VideoEditor.Ime)
+    data object InputEmoji : VideoScene(VideoContent.Text, VideoEditor.Emoji)
+    data object SelectStyle : VideoScene(VideoContent.Text, VideoEditor.Style)
+    data object SelectVideo : VideoScene(VideoContent.Title, VideoEditor.Video)
+    data object SelectAudio : VideoScene(VideoContent.Title, VideoEditor.Audio)
+    data object SelectImage : VideoScene(VideoContent.Title, VideoEditor.Image)
+}
+
+sealed class VideoContent : Content {
+    data object Text : VideoContent()
+    data object Title : VideoContent()
 }
 
 sealed class VideoEditor(val desc: String, val size: Int) : Editor {
-    data object Input : VideoEditor(desc = "文字输入", size = WRAP_CONTENT)
+    data object Ime : VideoEditor(desc = "文字输入", size = WRAP_CONTENT)
     data object Emoji : VideoEditor(desc = "文字表情", size = WRAP_CONTENT)
     data object Style : VideoEditor(desc = "文字样式", size = 250)
     data object Video : VideoEditor(desc = "视频", size = 300)
@@ -49,7 +54,7 @@ class VideoEditorAdapter(
     lifecycle: Lifecycle,
     fragmentManager: FragmentManager
 ) : FragmentEditorAdapter<VideoEditor>(lifecycle, fragmentManager) {
-    override val ime = VideoEditor.Input
+    override val ime = VideoEditor.Ime
 
     override fun getEditorKey(editor: VideoEditor) = editor.desc
 
@@ -59,17 +64,12 @@ class VideoEditorAdapter(
     }
 }
 
-sealed class VideoContent : Content {
-    data object Text : VideoContent()
-    data object Common : VideoContent()
-}
-
-class VideoTitleAdapter : ContentAdapter<VideoContent>(), Overlay.Transform {
+class VideoContentAdapter : ContentAdapter<VideoContent>(), Overlay.Transform {
     var go: ((VideoScene?) -> Boolean)? = null
 
     override fun onCreateView(parent: ViewGroup, content: VideoContent): View {
         val view = when (content) {
-            VideoContent.Common -> VideoCommonTitlebarBinding.inflate(
+            VideoContent.Title -> VideoTitleBinding.inflate(
                 LayoutInflater.from(parent.context), parent, false
             ).run {
                 tvConfirm.onClick { go?.invoke(null) }
@@ -77,12 +77,12 @@ class VideoTitleAdapter : ContentAdapter<VideoContent>(), Overlay.Transform {
                 root
             }
 
-            VideoContent.Text -> VideoTextTitlebarBinding.inflate(
+            VideoContent.Text -> VideoTextBinding.inflate(
                 LayoutInflater.from(parent.context), parent, false
             ).run {
                 tvConfirm.onClick { go?.invoke(null) }
-                tvEmoji.onClick { go?.invoke(VideoScene.Emoji) }
-                tvStyle.onClick { go?.invoke(VideoScene.Style) }
+                tvEmoji.onClick { go?.invoke(VideoScene.InputEmoji) }
+                tvStyle.onClick { go?.invoke(VideoScene.SelectStyle) }
                 root.transform().addTransformer(EditTextChange(editText))
                 root
             }
@@ -93,7 +93,7 @@ class VideoTitleAdapter : ContentAdapter<VideoContent>(), Overlay.Transform {
     private class TitleChange(private val tvTitle: TextView) : Transformer() {
 
         override fun match(state: ImperfectState): Boolean {
-            return state.isCurrent(VideoContent.Common)
+            return state.isCurrent(VideoContent.Title)
         }
 
         override fun onPrepare(state: ImperfectState) {
@@ -103,7 +103,7 @@ class VideoTitleAdapter : ContentAdapter<VideoContent>(), Overlay.Transform {
     }
 
     private class EditTextChange(private val editText: EditText) : Transformer() {
-        private val editor = VideoEditor.Input
+        private val editor = VideoEditor.Ime
 
         override fun match(state: ImperfectState) = with(state) {
             isPrevious(editor) || isCurrent(editor)
@@ -111,14 +111,10 @@ class VideoTitleAdapter : ContentAdapter<VideoContent>(), Overlay.Transform {
 
         override fun onPrepare(state: ImperfectState) = with(state) {
             when {
-                isPrevious(editor) -> {
-                    inputView.editText = null
-                }
-                isCurrent(editor) -> {
-                    editText.requestFocus()
-                    inputView.editText = editText
-                }
+                isPrevious(editor) -> inputView.editText = null
+                isCurrent(editor) -> inputView.editText = editText
             }
+            if (isCurrent(editor)) editText.requestFocus()
         }
     }
 }

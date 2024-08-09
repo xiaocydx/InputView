@@ -31,8 +31,6 @@ import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
-import com.xiaocydx.inputview.init
-import com.xiaocydx.inputview.initCompat
 
 /**
  * 构建跟[lifecycleOwner]关联的[Overlay]
@@ -73,14 +71,27 @@ interface Overlay<C : Content, E : Editor> : TransformerOwner {
 
     /**
      * 构建[Overlay]时关联的[lifecycleOwner]
+     *
+     * 当`Lifecycle.currentState`转换为[DESTROYED]时：
+     * 1. 将[current]更改为`null`。
+     * 2. 从`rootParent`移除`rootView`。
      */
     val lifecycleOwner: LifecycleOwner
+
+    /**
+     * [Scene]更改的监听
+     */
+    var sceneChangedListener: SceneChangedListener<C, E>?
+
+    /**
+     * 设置[Editor]到[Scene]的转换器
+     */
+    var sceneEditorConverter: SceneEditorConverter<C, E>
 
     /**
      * 初始化[Overlay]，并将`rootView`添加到[rootParent]
      *
      * @param window [Activity.getWindow]或[Dialog.getWindow]。
-     * @param compat `true`-调用[initCompat]，`false`-调用[init]，`EdgeToEdge`参数都传入`true`。
      * @param rootParent `rootView`的父级，传入`null`会将id为[ROOT_PARENT_ID]的View作为父级。
      * @param initializer [InputView]的初始化函数，当[InputView.editorAnimator]
      * 的类型为[FadeEditorAnimator]时，其计算的值会赋值给[TransformViews.alpha]。
@@ -89,29 +100,23 @@ interface Overlay<C : Content, E : Editor> : TransformerOwner {
      */
     fun attach(
         window: Window,
-        compat: Boolean,
         rootParent: ViewGroup? = null,
         initializer: ((inputView: InputView) -> Unit)? = null
     ): Boolean
 
+    /**
+     * 将[current]更改为[scene]，若更改成功，则运行动画调度执行[Transformer]
+     *
+     * @return `true`-更改成功，`false`-未调用[attach]或没有改变
+     */
     fun go(scene: Scene<C, E>?): Boolean
-
-    /**
-     * 设置[Scene]更改的监听
-     */
-    fun setSceneChangedListener(listener: SceneChangedListener<C, E>)
-
-    /**
-     * 设置[Editor]到[Scene]的转换器
-     */
-    fun setSceneEditorConverter(converter: SceneEditorConverter<C, E>)
 
     /**
      * 将[Overlay]实现的[OnBackPressedCallback]，添加到[dispatcher]。
      * 当`lifecycleOwner.lifecycle.currentState`转换为[DESTROYED]时，
      * 从[dispatcher]移除添加的[OnBackPressedCallback]。
      *
-     * 当进行回退时，若`current != null`，则调用[go]传入`null`。
+     * 当进行回退时，若`current != null`，则将[current]更改为`null`。
      *
      * @return `true`-添加成功，`false`-已添加
      */
