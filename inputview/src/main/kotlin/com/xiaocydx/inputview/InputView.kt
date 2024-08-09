@@ -394,7 +394,7 @@ class InputView @JvmOverloads constructor(
     }
 
     override fun onDraw(canvas: Canvas) {
-        if (window == null) requireViewTreeWindow()
+        checkViewTreeWindow()
         editorBackground?.setBounds(0, getEditorBackgroundTop(), width, height)
         editorBackground?.takeIf { it.bounds.height() > 0 }?.draw(canvas)
     }
@@ -406,6 +406,10 @@ class InputView @JvmOverloads constructor(
     private fun enterChange() = ++changeCount
 
     private fun exitChange() = --changeCount
+
+    private fun checkViewTreeWindow() {
+        if (window == null && isAttachedToWindow) requireViewTreeWindow()
+    }
 
     private inline fun assertNotInLayout(reason: () -> String) {
         check(layoutCount <= 0) { "InputView布局期间，不允许${reason()}" }
@@ -469,6 +473,7 @@ class InputView @JvmOverloads constructor(
         }
 
         override fun run() {
+            checkViewTreeWindow()
             // 尝试消费PendingChange，在animation阶段创建、添加、移除子View
             consumePendingChange()
         }
