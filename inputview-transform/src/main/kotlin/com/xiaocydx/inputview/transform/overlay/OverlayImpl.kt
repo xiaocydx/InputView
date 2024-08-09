@@ -437,8 +437,13 @@ internal class OverlayImpl<C : Content, E : Editor>(
 
         fun prepare(previous: Scene<C, E>?, current: Scene<C, E>?) {
             rootView.isVisible = true
+            if (!isInvalidated) return
+            isInvalidated = false
+
             // 消费pendingChange，构建changeRecord
             contentView.consumePendingChange()
+            this.previous = previous
+            this.current = current
 
             @SuppressLint("VisibleForTests")
             val host = inputView.getEditorHost()
@@ -448,7 +453,6 @@ internal class OverlayImpl<C : Content, E : Editor>(
                     current?.content -> record.currentChild
                     else -> record.previousChild
                 }
-                // TODO: 修正进host中
                 editor = when (previous?.editor) {
                     current?.editor -> host.currentView
                     else -> host.previousView
@@ -462,10 +466,6 @@ internal class OverlayImpl<C : Content, E : Editor>(
                 alpha = 1f
                 applyAlpha(alpha = 1f)
             }
-
-            this.previous = previous
-            this.current = current
-            isInvalidated = false
         }
 
         fun preStart(animation: AnimationState) {
