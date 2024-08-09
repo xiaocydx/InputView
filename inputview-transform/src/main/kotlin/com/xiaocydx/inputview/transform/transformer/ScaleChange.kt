@@ -26,17 +26,16 @@ import java.lang.ref.WeakReference
  * @author xcc
  * @date 2024/7/25
  */
-class AnchorScaleChange(
+class ScaleChange(
     target: View,
     private val contentMatch: ContentMatch? = null,
     private val editorMatch: EditorMatch? = null
 ) : Transformer() {
-    private val targetRef = WeakReference(target)
+    private val ref = WeakReference(target)
     private val point = IntArray(2)
     private var targetBottom = 0
     private var inputViewBottom = 0
-    private var inputViewEditorOffset = 0
-    private var endContentViewHeight = 0
+    private var endViewHeight = 0
     override val sequence = SEQUENCE_LAST
 
     override fun match(state: ImperfectState): Boolean {
@@ -45,11 +44,11 @@ class AnchorScaleChange(
         if (!matchStart && !matchEnd) return false
         matchStart = editorMatch?.match(start = true, state.previous?.editor) ?: true
         matchEnd = editorMatch?.match(start = false, state.current?.editor) ?: true
-        return (matchStart || matchEnd) && targetRef.get() != null
+        return (matchStart || matchEnd) && ref.get() != null
     }
 
     override fun onStart(state: TransformState) {
-        val view = targetRef.get() ?: return
+        val view = ref.get() ?: return
         view.getLocationInWindow(point)
         targetBottom = point[1] + view.height
         state.inputView.getLocationInWindow(point)
@@ -57,7 +56,7 @@ class AnchorScaleChange(
     }
 
     override fun onUpdate(state: TransformState) {
-        val view = targetRef.get() ?: return
+        val view = ref.get() ?: return
         val anchor = state.calculateAnchor()
         val dy = (targetBottom - anchor).coerceAtLeast(0)
         val scale = 1f - dy.toFloat() / view.height
@@ -70,14 +69,12 @@ class AnchorScaleChange(
     }
 
     override fun onEnd(state: TransformState) = with(state) {
-        inputViewEditorOffset = inputView.editorOffset
-        endContentViewHeight = endViews.content?.height ?: 0
+        endViewHeight = endViews.content?.height ?: 0
     }
 
     override fun onPreDraw(state: TransformState) = with(state) {
-        val offset = inputView.editorOffset
         val height = endViews.content?.height ?: 0
-        if (inputViewEditorOffset != offset || endContentViewHeight != height) requestTransform()
+        if (endViewHeight != height) requestTransform()
     }
 
     private fun TransformState.calculateAnchor(): Int {

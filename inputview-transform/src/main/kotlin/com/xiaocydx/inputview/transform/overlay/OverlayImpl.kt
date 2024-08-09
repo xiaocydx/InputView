@@ -69,11 +69,11 @@ internal class OverlayImpl<C : Content, E : Editor>(
 
     override fun attach(
         window: Window,
-        initCompat: Boolean,
+        compat: Boolean,
         rootParent: ViewGroup?,
         initializer: ((inputView: InputView) -> Unit)?
     ): Boolean {
-        if (initCompat) {
+        if (compat) {
             InputView.initCompat(window, gestureNavBarEdgeToEdge = true)
         } else {
             InputView.init(window, statusBarEdgeToEdge = true, gestureNavBarEdgeToEdge = true)
@@ -267,42 +267,31 @@ internal class OverlayImpl<C : Content, E : Editor>(
         private val currentScene get() = this@OverlayImpl.current
 
         override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
-            transformState.contentView.consumePendingChange()
-            transformState.rootView.isVisible = true
-            transformState.setScene(previousScene, currentScene)
-            transformState.setTransformViews()
             transformState.isDispatching = true
+            transformState.prepare(previousScene, currentScene)
             findMatchTransformers()
             dispatchMatchTransformer { onPrepare(transformState) }
         }
 
         override fun onAnimationStart(animation: AnimationState) {
-            transformState.setOffset(animation)
+            transformState.preStart(animation)
             dispatchMatchTransformer { onStart(transformState) }
         }
 
         override fun onAnimationUpdate(animation: AnimationState) {
-            transformState.setOffset(animation)
-            transformState.setAlpha(animation)
-            transformState.setFraction(animation)
+            transformState.preUpdate(animation)
             dispatchMatchTransformer { onUpdate(transformState) }
         }
 
         override fun onAnimationEnd(animation: AnimationState) {
             dispatchMatchTransformer { onEnd(transformState) }
-            transformState.isDispatching = false
-            transformState.contentView.removeChangeRecordPrevious()
-            transformState.rootView.isVisible = transformState.current != null
+            transformState.postEnd(animation)
             if (transformState.current == null) clearMatchTransformers()
-            transformState.prepareForRequest()
+            transformState.isDispatching = false
         }
 
         override fun onPreDraw(): Boolean {
-            if (!transformState.isInvalidated
-                    && !transformState.isDispatching
-                    && matchTransformers.isNotEmpty()) {
-                dispatchMatchTransformer { onPreDraw(transformState) }
-            }
+            dispatchMatchTransformersOnPreDraw()
             return true
         }
 
@@ -335,20 +324,6 @@ internal class OverlayImpl<C : Content, E : Editor>(
             }
         }
 
-        private fun request() {
-            // TODO: 全局数值变更，进行全量分发
-            if (!transformState.isInvalidated
-                    && !transformState.isDispatching
-                    && matchTransformers.isNotEmpty()) {
-                transformState.isDispatching = true
-                dispatchMatchTransformer { onPrepare(transformState) }
-                dispatchMatchTransformer { onStart(transformState) }
-                dispatchMatchTransformer { onUpdate(transformState) }
-                dispatchMatchTransformer { onEnd(transformState) }
-                transformState.isDispatching = false
-            }
-        }
-
         private fun findMatchTransformers() {
             clearMatchTransformers()
             val tempTransformers = ArrayList<Transformer>(transformers)
@@ -361,6 +336,26 @@ internal class OverlayImpl<C : Content, E : Editor>(
 
         private fun clearMatchTransformers() {
             matchTransformers.takeIf { it.isNotEmpty() }?.clear()
+        }
+
+        private fun dispatchMatchTransformersOnPreDraw() {
+            if (!transformState.isInvalidated
+                    && !transformState.isDispatching
+                    && matchTransformers.isNotEmpty()) {
+                if (transformState.consumeOffsetChange()) {
+                    // editorOffset更改，重新分发matchTransformers执行变换逻辑，
+                    // 先将isDispatching设为true，避免onPreDraw()执行request()。
+                    transformState.isDispatching = true
+                    dispatchMatchTransformer { onPreDraw(transformState) }
+                    dispatchMatchTransformer { onPrepare(transformState) }
+                    dispatchMatchTransformer { onStart(transformState) }
+                    dispatchMatchTransformer { onUpdate(transformState) }
+                    dispatchMatchTransformer { onEnd(transformState) }
+                    transformState.isDispatching = false
+                } else {
+                    dispatchMatchTransformer { onPreDraw(transformState) }
+                }
+            }
         }
 
         private inline fun dispatchMatchTransformer(action: Transformer.() -> Unit) {
@@ -420,13 +415,11 @@ internal class OverlayImpl<C : Content, E : Editor>(
             isInvalidated = true
         }
 
-        fun setScene(previous: Scene<C, E>?, current: Scene<C, E>?) {
-            this.previous = previous
-            this.current = current
-            isInvalidated = false
-        }
+        fun prepare(previous: Scene<C, E>?, current: Scene<C, E>?) {
+            rootView.isVisible = true
+            // 消费pendingChange，构建changeRecord
+            contentView.consumePendingChange()
 
-        fun setTransformViews() {
             @SuppressLint("VisibleForTests")
             val host = inputView.getEditorHost()
             val record = contentView.changeRecord
@@ -442,35 +435,58 @@ internal class OverlayImpl<C : Content, E : Editor>(
                 alpha = 1f
                 applyAlpha(alpha = 1f)
             }
+
+            this.previous = previous
+            this.current = current
+            isInvalidated = false
         }
 
-        fun setOffset(animation: AnimationState) {
-            startOffset = animation.startOffset
-            endOffset = animation.endOffset
-            currentOffset = animation.currentOffset
+        fun preStart(animation: AnimationState) {
+            setOffset(animation)
         }
 
-        fun setAlpha(animation: AnimationState) {
+        fun preUpdate(animation: AnimationState) {
+            setOffset(animation)
             val animator = (inputView.editorAnimator as? FadeEditorAnimator) ?: candidateAnimator
             startViews.alpha = animator.calculateAlpha(animation, matchNull = false, start = true)
             startViews.applyAlpha(alpha = 1f)
             endViews.alpha = animator.calculateAlpha(animation, matchNull = false, start = false)
             endViews.applyAlpha(alpha = 1f)
-        }
-
-        fun setFraction(animation: AnimationState) {
             animatedFraction = animation.animatedFraction
             interpolatedFraction = animation.interpolatedFraction
         }
 
-        fun prepareForRequest() {
+        fun postEnd(animation: AnimationState) {
+            rootView.isVisible = current != null
+            contentView.removeChangeRecordPrevious()
             previous = current
-            startOffset = endOffset
-            currentOffset = endOffset
+            setOffset(animation.endOffset)
             animatedFraction = 1f
             interpolatedFraction = 1f
+            // 清除views，避免内存泄漏
             startViews.reset()
             if (current == null) endViews.reset()
+        }
+
+        fun consumeOffsetChange(): Boolean {
+            val offset = inputView.editorOffset
+            if (offset != endOffset) {
+                setOffset(offset)
+                return true
+            }
+            return false
+        }
+
+        private fun setOffset(animation: AnimationState) {
+            startOffset = animation.startOffset
+            endOffset = animation.endOffset
+            currentOffset = animation.currentOffset
+        }
+
+        private fun setOffset(offset: Int) {
+            startOffset = offset
+            endOffset = offset
+            currentOffset = offset
         }
     }
 }
