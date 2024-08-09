@@ -33,7 +33,7 @@ class ContentFadeChange() : ContentTransformer() {
     }
 
     override fun onMatch(state: ImperfectState) = with(state) {
-        startView() != null || endView() != null
+        previous?.content !== current?.content
     }
 
     override fun onUpdate(state: TransformState) = with(state) {
@@ -59,7 +59,7 @@ class EditorFadeChange() : EditorTransformer() {
     }
 
     override fun onMatch(state: ImperfectState) = with(state) {
-        startView() != null || endView() != null
+        previous?.editor !== current?.editor
     }
 
     override fun onUpdate(state: TransformState) = with(state) {

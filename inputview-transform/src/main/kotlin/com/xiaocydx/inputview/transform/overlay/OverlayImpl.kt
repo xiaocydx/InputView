@@ -424,8 +424,15 @@ internal class OverlayImpl<C : Content, E : Editor>(
             val host = inputView.getEditorHost()
             val record = contentView.changeRecord
             startViews.apply {
-                content = record.previousChild
-                editor = host.previousView
+                content = when (previous?.content) {
+                    current?.content -> record.currentChild
+                    else -> record.previousChild
+                }
+                // TODO: 修正进host中
+                editor = when (previous?.editor) {
+                    current?.editor -> host.currentView
+                    else -> host.previousView
+                }
                 alpha = 1f
                 applyAlpha(alpha = 1f)
             }

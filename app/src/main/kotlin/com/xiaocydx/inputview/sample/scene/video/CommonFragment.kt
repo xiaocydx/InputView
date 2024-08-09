@@ -35,7 +35,7 @@ class CommonFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View = AppCompatTextView(requireContext()).apply {
         val size = arguments?.getInt(KEY_SIZE) ?: 0
-        text = "${arguments?.getString(KEY_TITLE) ?: ""}素材"
+        text = "${arguments?.getString(KET_DESC) ?: ""}素材"
         gravity = Gravity.CENTER
         setTextColor(Color.WHITE)
         setTextSize(TypedValue.COMPLEX_UNIT_PX, 18.dp.toFloat())
@@ -46,19 +46,19 @@ class CommonFragment : Fragment() {
         // 设置通用的手势导航栏EdgeToEdge处理逻辑
         view.insets().gestureNavBarEdgeToEdge()
         viewLifecycleOwner.lifecycle.addObserver(object : LifecycleEventObserver {
-            val title = arguments?.getString(KEY_TITLE) ?: ""
+            val desc = arguments?.getString(KET_DESC) ?: ""
             override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-                println("test -> CommonFragment $title state = ${source.lifecycle.currentState}")
+                println("test -> CommonFragment $desc state = ${source.lifecycle.currentState}")
             }
         })
     }
 
     companion object {
-        private const val KEY_TITLE = "KET_TITLE"
+        private const val KET_DESC = "KET_DESC"
         private const val KEY_SIZE = "KEY_SIZE"
 
-        fun newInstance(title: String, size: Int) = CommonFragment().apply {
-            arguments = bundleOf(KEY_TITLE to title, KEY_SIZE to size)
+        fun newInstance(desc: String, size: Int) = CommonFragment().apply {
+            arguments = bundleOf(KET_DESC to desc, KEY_SIZE to size)
         }
     }
 }

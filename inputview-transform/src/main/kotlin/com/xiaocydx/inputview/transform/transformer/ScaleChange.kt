@@ -79,14 +79,18 @@ class ScaleChange(
 
     private fun TransformState.calculateAnchor(): Int {
         val editorTop = inputViewBottom + currentOffset
-        val startContentTop = startViews.content?.let {
-            it.getLocationInWindow(point)
-            point[1]
-        } ?: Int.MAX_VALUE
-        val endContentTop = endViews.content?.let {
-            it.getLocationInWindow(point)
-            point[1]
-        } ?: Int.MAX_VALUE
+
+        point[1] = Int.MAX_VALUE
+        startViews.content?.getLocationInWindow(point)
+        val startContentTop = point[1]
+
+        var endContentTop = startContentTop
+        if (startViews.content != endViews.content) {
+            point[1] = Int.MAX_VALUE
+            endViews.content?.getLocationInWindow(point)
+            endContentTop = point[1]
+        }
+
         val contentTop = min(startContentTop, endContentTop)
         return min(contentTop, editorTop)
     }

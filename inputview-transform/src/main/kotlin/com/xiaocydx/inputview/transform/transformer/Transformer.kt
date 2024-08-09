@@ -60,7 +60,7 @@ abstract class Transformer {
 
     internal fun onDetachedFromOwner(owner: TransformerOwner) {
         if (this.owner !== owner) return
-        this.owner = owner
+        this.owner = null
     }
 
     companion object {

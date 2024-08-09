@@ -7,8 +7,6 @@ import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.ActivityVideoEditBinding
 import com.xiaocydx.inputview.transform.ContentChangeBounds
 import com.xiaocydx.inputview.transform.ContentChangeTranslation
-import com.xiaocydx.inputview.transform.ContentMatch
-import com.xiaocydx.inputview.transform.EditorMatch
 import com.xiaocydx.inputview.transform.ScaleChange
 import com.xiaocydx.inputview.transform.addSceneBackground
 import com.xiaocydx.inputview.transform.addSceneFadeChange
@@ -34,22 +32,23 @@ class VideoEditActivity : AppCompatActivity() {
         root.insets().paddings(navigationBars())
         preview.insets().margins(statusBars())
 
+        val videoTitleAdapter = VideoTitleAdapter()
         val overlay = InputView.createOverlay(
             lifecycleOwner = this@VideoEditActivity,
-            contentAdapter = VideoTitleAdapter(),
+            contentAdapter = videoTitleAdapter,
             editorAdapter = VideoEditorAdapter(lifecycle, supportFragmentManager)
         )
+        videoTitleAdapter.go = overlay::go
 
         overlay.apply {
-            val contentMatch = ContentMatch { _, content -> content is VideoContent }
-            val editorMatch = EditorMatch { _, editor -> editor is VideoEditor }
-            addTransformer(ScaleChange(preview, contentMatch, editorMatch))
-            addTransformer(ContentChangeBounds(contentMatch))
-            addTransformer(ContentChangeTranslation(contentMatch))
-            addSceneFadeChange(contentMatch, editorMatch)
-            addSceneBackground(0xFF1D1D1D.toInt(), contentMatch, editorMatch)
+            addTransformer(ScaleChange(preview))
+            addTransformer(ContentChangeBounds())
+            addTransformer(ContentChangeTranslation())
+            addSceneFadeChange()
+            addSceneBackground(0xFF1D1D1D.toInt())
             addToOnBackPressedDispatcher(onBackPressedDispatcher)
-        }.attach(window, compat = false)
+            attach(window, compat = false)
+        }
 
         arrayOf(
             tvInput to VideoScene.Input,
