@@ -104,15 +104,16 @@ class VideoContentAdapter : ContentAdapter<VideoContent>(), Overlay.Transform {
 
     private class EditTextChange(private val editText: EditText) : Transformer() {
         private val editor = VideoEditor.Ime
+        private val content = VideoContent.Text
 
         override fun match(state: ImperfectState) = with(state) {
-            isPrevious(editor) || isCurrent(editor)
+            isPrevious(content) || isCurrent(content)
         }
 
         override fun onPrepare(state: ImperfectState) = with(state) {
             when {
-                isPrevious(editor) -> inputView.editText = null
                 isCurrent(editor) -> inputView.editText = editText
+                !isCurrent(content) -> inputView.editText = null
             }
             if (isCurrent(editor)) editText.requestFocus()
         }

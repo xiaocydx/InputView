@@ -481,7 +481,6 @@ internal class OverlayImpl<C : Content, E : Editor>(
             endViews.applyAlpha(alpha = 1f)
             animatedFraction = animation.animatedFraction
             interpolatedFraction = animation.interpolatedFraction
-            // TODO: 补充editor的单独透明度
         }
 
         fun postEnd(animation: AnimationState) {

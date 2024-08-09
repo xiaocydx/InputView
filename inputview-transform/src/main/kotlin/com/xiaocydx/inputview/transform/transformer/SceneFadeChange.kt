@@ -63,12 +63,23 @@ class EditorFadeChange() : EditorTransformer() {
     }
 
     override fun onUpdate(state: TransformState) = with(state) {
-        if (previous == null || current == null) {
-            startView()?.alpha = 1f
-            endView()?.alpha = 1f
-        } else {
-            startView()?.alpha = startViews.alpha
-            endView()?.alpha = endViews.alpha
+        val startView = startView()
+        val endView = endView()
+        when {
+            previous == null || current == null -> {
+                startView()?.alpha = 1f
+                endView()?.alpha = 1f
+            }
+            startView == null && endView != null -> {
+                endView.alpha = animatedFraction
+            }
+            startView != null && endView == null -> {
+                startView.alpha = 1f - animatedFraction
+            }
+            else -> {
+                startView?.alpha = startViews.alpha
+                endView?.alpha = endViews.alpha
+            }
         }
     }
 
