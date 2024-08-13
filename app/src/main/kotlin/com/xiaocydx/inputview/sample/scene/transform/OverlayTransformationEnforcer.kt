@@ -51,6 +51,10 @@ import kotlinx.coroutines.launch
  * @author xcc
  * @date 2024/4/11
  */
+@Deprecated(
+    message = "实现类的职责不够清晰，调度流程不够完善",
+    replaceWith = ReplaceWith("待替换为InputView.createOverlay()")
+)
 class OverlayTransformationEnforcer<T : Editor, S : State>(
     private val lifecycleOwner: LifecycleOwner,
     private val editorAnimator: FadeEditorAnimator,

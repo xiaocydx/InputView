@@ -27,6 +27,10 @@ import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.Enfor
  * @author xcc
  * @date 2024/4/10
  */
+@Deprecated(
+    message = "实现类的职责不够清晰，调度流程不够完善",
+    replaceWith = ReplaceWith("待替换为InputView.createOverlay()")
+)
 abstract class ContainerTransformation<S : ContainerState>(
     vararg editors: Editor
 ) : OverlayTransformation<S> {

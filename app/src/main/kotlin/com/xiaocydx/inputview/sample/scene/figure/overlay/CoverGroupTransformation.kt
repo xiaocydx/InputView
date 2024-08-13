@@ -26,6 +26,10 @@ import java.lang.ref.WeakReference
  * @author xcc
  * @date 2024/4/13
  */
+@Deprecated(
+    message = "实现类的职责不够清晰，调度流程不够完善",
+    replaceWith = ReplaceWith("待替换为InputView.createOverlay()")
+)
 class CoverGroupTransformation(
     private val updateCurrent: Flow<Figure?>,
     private val requestSnapshot: (FigureEditor?) -> Unit

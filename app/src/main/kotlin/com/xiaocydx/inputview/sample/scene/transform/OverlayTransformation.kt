@@ -31,6 +31,10 @@ import kotlinx.coroutines.CoroutineScope
  * @author xcc
  * @date 2024/4/10
  */
+@Deprecated(
+    message = "实现类的职责不够清晰，调度流程不够完善",
+    replaceWith = ReplaceWith("待替换为InputView.createOverlay()")
+)
 interface OverlayTransformation<in S : State> {
 
     /**

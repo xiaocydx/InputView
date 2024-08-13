@@ -32,6 +32,10 @@ import kotlinx.coroutines.launch
  * @author xcc
  * @date 2024/4/12
  */
+@Deprecated(
+    message = "实现类的职责不够清晰，调度流程不够完善",
+    replaceWith = ReplaceWith("待替换为InputView.createOverlay()")
+)
 class BoundsTransformation : OverlayTransformation<ContainerState> {
     private val previousBounds = Rect()
     private val currentBounds = Rect()
