@@ -22,8 +22,8 @@ fun TransformerOwner.addSceneFadeChange(
     contentMatch: ContentMatch? = null,
     editorMatch: EditorMatch? = null,
 ) {
-    addTransformer(ContentFadeChange().apply { setMatch(contentMatch) })
-    addTransformer(EditorFadeChange().apply { setMatch(editorMatch) })
+    add(ContentFadeChange().apply { setMatch(contentMatch) })
+    add(EditorFadeChange().apply { setMatch(editorMatch) })
 }
 
 class ContentFadeChange() : ContentTransformer() {

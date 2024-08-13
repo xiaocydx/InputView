@@ -26,7 +26,7 @@ import java.lang.ref.WeakReference
  * @author xcc
  * @date 2024/7/25
  */
-class ScaleChange(
+class ChangeScale(
     target: View,
     private val contentMatch: ContentMatch? = null,
     private val editorMatch: EditorMatch? = null

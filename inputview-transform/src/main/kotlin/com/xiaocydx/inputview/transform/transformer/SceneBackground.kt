@@ -32,8 +32,8 @@ fun TransformerOwner.addSceneBackground(
     contentMatch: ContentMatch? = null,
     editorMatch: EditorMatch? = null,
 ) {
-    addTransformer(ContentBackground(color).apply { setMatch(contentMatch) })
-    addTransformer(EditorBackground(color).apply { setMatch(editorMatch) })
+    add(ContentBackground(color).apply { setMatch(contentMatch) })
+    add(EditorBackground(color).apply { setMatch(editorMatch) })
 }
 
 class ContentBackground(private val drawable: Drawable) : ContentTransformer() {

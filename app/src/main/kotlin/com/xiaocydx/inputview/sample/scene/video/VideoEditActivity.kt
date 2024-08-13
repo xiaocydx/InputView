@@ -6,9 +6,10 @@ import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.ActivityVideoEditBinding
+import com.xiaocydx.inputview.transform.ChangeScale
 import com.xiaocydx.inputview.transform.ContentChangeBounds
 import com.xiaocydx.inputview.transform.ContentChangeTranslation
-import com.xiaocydx.inputview.transform.ScaleChange
+import com.xiaocydx.inputview.transform.Overlay
 import com.xiaocydx.inputview.transform.SceneEditorConverter
 import com.xiaocydx.inputview.transform.addSceneBackground
 import com.xiaocydx.inputview.transform.addSceneFadeChange
@@ -18,12 +19,13 @@ import com.xiaocydx.insets.navigationBars
 import com.xiaocydx.insets.statusBars
 
 /**
- * 通过预览编辑的交互案例，演示[InputView]的使用
+ * 通过预览编辑的交互案例，演示[createOverlay]的使用
  *
  * @author xcc
  * @date 2023/12/1
  */
 class VideoEditActivity : AppCompatActivity() {
+    private lateinit var overlay: Overlay<VideoScene>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,29 +37,22 @@ class VideoEditActivity : AppCompatActivity() {
         root.insets().paddings(navigationBars())
         preview.insets().margins(statusBars())
 
-        val contentAdapter = VideoContentAdapter()
-        val overlay = InputView.createOverlay(
+        overlay = InputView.createOverlay(
             lifecycleOwner = this@VideoEditActivity,
-            contentAdapter = contentAdapter,
+            contentAdapter = VideoContentAdapter { overlay.go(it) },
             editorAdapter = VideoEditorAdapter(lifecycle, supportFragmentManager)
-        )
-        contentAdapter.go = overlay::go
-
-        overlay.apply {
-            addTransformer(ScaleChange(preview))
-            addTransformer(ContentChangeBounds())
-            addTransformer(ContentChangeTranslation())
+        ) {
+            add(ChangeScale(preview))
+            add(ContentChangeBounds())
+            add(ContentChangeTranslation())
             addSceneFadeChange()
             addSceneBackground(0xFF1D1D1D.toInt())
             addToOnBackPressedDispatcher(onBackPressedDispatcher)
+            sceneEditorConverter = SceneEditorConverter { currentScene, nextEditor ->
+                if (nextEditor == VideoEditor.Ime) return@SceneEditorConverter VideoScene.InputText
+                if (nextEditor == null) null else currentScene
+            }
             attach(window)
-        }
-
-        // TODO: 简化
-        val sceneEditorConverter = overlay.sceneEditorConverter
-        overlay.sceneEditorConverter = SceneEditorConverter { currentScene, nextEditor ->
-            if (nextEditor == VideoEditor.Ime) return@SceneEditorConverter VideoScene.InputText
-            sceneEditorConverter.nextScene(currentScene, nextEditor)
         }
 
         arrayOf(

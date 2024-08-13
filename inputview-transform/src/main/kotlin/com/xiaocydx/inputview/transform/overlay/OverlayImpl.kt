@@ -52,21 +52,22 @@ import com.xiaocydx.inputview.transform.Overlay.Companion.ROOT_PARENT_ID
  * @author xcc
  * @date 2024/7/23
  */
-internal class OverlayImpl<C : Content, E : Editor>(
+@PublishedApi
+internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
     override val lifecycleOwner: LifecycleOwner,
     private val contentAdapter: ContentAdapter<C>,
     private val editorAdapter: EditorAdapter<E>,
-) : Overlay<C, E> {
+) : Overlay<S> {
     private val transformState = TransformStateImpl()
     private val transformerDispatcher = TransformerDispatcher()
     private var backPressedCallback: OnBackPressedCallback? = null
     private var isInitialized = false
     private var isActiveGoing = false
 
-    override var previous: Scene<C, E>? = null; private set
-    override var current: Scene<C, E>? = null; private set
-    override var sceneChangedListener: SceneChangedListener<C, E>? = null
-    override var sceneEditorConverter: SceneEditorConverter<C, E> = defaultEditorConverter()
+    override var previous: S? = null; private set
+    override var current: S? = null; private set
+    override var sceneChangedListener: SceneChangedListener<S>? = null
+    override var sceneEditorConverter = SceneEditorConverter.default<S>()
 
     override fun attach(
         window: Window,
@@ -114,7 +115,7 @@ internal class OverlayImpl<C : Content, E : Editor>(
         return true
     }
 
-    override fun go(scene: Scene<C, E>?): Boolean {
+    override fun go(scene: S?): Boolean {
         if (!isInitialized) return false
         isActiveGoing = true
 
@@ -158,15 +159,15 @@ internal class OverlayImpl<C : Content, E : Editor>(
         return true
     }
 
-    override fun hasTransformer(transformer: Transformer): Boolean {
+    override fun has(transformer: Transformer): Boolean {
         return transformerDispatcher.has(transformer)
     }
 
-    override fun addTransformer(transformer: Transformer) {
+    override fun add(transformer: Transformer) {
         transformerDispatcher.add(transformer)
     }
 
-    override fun removeTransformer(transformer: Transformer) {
+    override fun remove(transformer: Transformer) {
         transformerDispatcher.remove(transformer)
     }
 
@@ -211,11 +212,11 @@ internal class OverlayImpl<C : Content, E : Editor>(
         }
 
         override fun addTransformer(transformer: Transformer) {
-            this@OverlayImpl.addTransformer(transformer)
+            this@OverlayImpl.add(transformer)
         }
 
         override fun removeTransformer(transformer: Transformer) {
-            this@OverlayImpl.removeTransformer(transformer)
+            this@OverlayImpl.remove(transformer)
         }
     }
 
@@ -237,8 +238,8 @@ internal class OverlayImpl<C : Content, E : Editor>(
 
         private fun checkNextScene(
             previous: E?, current: E?,
-            currentScene: Scene<C, E>?,
-            nextScene: Scene<C, E>?
+            currentScene: S?,
+            nextScene: S?
         ) = check(currentScene !== nextScene) {
             """没有通过Overlay.go()更改Editor
                |    (previousEditor = ${previous}, currentEditor = $current)
@@ -320,7 +321,7 @@ internal class OverlayImpl<C : Content, E : Editor>(
         }
 
         fun add(transformer: Transformer) {
-            if (hasTransformer(transformer)) return
+            if (has(transformer)) return
             transformers.add(transformer)
             transformer.onAttachedToOwner(owner)
         }
@@ -405,8 +406,8 @@ internal class OverlayImpl<C : Content, E : Editor>(
         override lateinit var backgroundView: View; private set
         override lateinit var contentView: ContentContainer; private set
         override lateinit var inputView: InputView; private set
-        override var previous: Scene<C, E>? = null; private set
-        override var current: Scene<C, E>? = null; private set
+        override var previous: S? = null; private set
+        override var current: S? = null; private set
         override var startOffset = 0; private set
         override var endOffset = 0; private set
         override var currentOffset = 0; private set
@@ -435,7 +436,7 @@ internal class OverlayImpl<C : Content, E : Editor>(
             isInvalidated = true
         }
 
-        fun prepare(previous: Scene<C, E>?, current: Scene<C, E>?) {
+        fun prepare(previous: S?, current: S?) {
             rootView.isVisible = true
             if (!isInvalidated) return
             isInvalidated = false

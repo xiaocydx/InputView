@@ -4,7 +4,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-import android.widget.EditText
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -17,12 +16,12 @@ import com.xiaocydx.inputview.sample.databinding.VideoTitleBinding
 import com.xiaocydx.inputview.sample.editor_adapter.fragment.EmojiFragment
 import com.xiaocydx.inputview.transform.Content
 import com.xiaocydx.inputview.transform.ContentAdapter
+import com.xiaocydx.inputview.transform.ContentChangeEditText
 import com.xiaocydx.inputview.transform.ImperfectState
 import com.xiaocydx.inputview.transform.Overlay
 import com.xiaocydx.inputview.transform.Scene
 import com.xiaocydx.inputview.transform.Transformer
 import com.xiaocydx.inputview.transform.isCurrent
-import com.xiaocydx.inputview.transform.isPrevious
 
 sealed class VideoScene(
     override val content: VideoContent,
@@ -64,33 +63,34 @@ class VideoEditorAdapter(
     }
 }
 
-class VideoContentAdapter : ContentAdapter<VideoContent>(), Overlay.Transform {
-    var go: ((VideoScene?) -> Boolean)? = null
+class VideoContentAdapter(
+    private val go: (VideoScene?) -> Boolean
+) : ContentAdapter<VideoContent>(), Overlay.Transform {
 
     override fun onCreateView(parent: ViewGroup, content: VideoContent): View {
         val view = when (content) {
             VideoContent.Title -> VideoTitleBinding.inflate(
                 LayoutInflater.from(parent.context), parent, false
             ).run {
-                tvConfirm.onClick { go?.invoke(null) }
-                root.transform().addTransformer(TitleChange(tvTitle))
+                tvConfirm.onClick { go(null) }
+                root.transform().add(ContentChangeTitle(tvTitle))
                 root
             }
 
             VideoContent.Text -> VideoTextBinding.inflate(
                 LayoutInflater.from(parent.context), parent, false
             ).run {
-                tvConfirm.onClick { go?.invoke(null) }
-                tvEmoji.onClick { go?.invoke(VideoScene.InputEmoji) }
-                tvStyle.onClick { go?.invoke(VideoScene.SelectStyle) }
-                root.transform().addTransformer(EditTextChange(editText))
+                tvConfirm.onClick { go(null) }
+                tvEmoji.onClick { go(VideoScene.InputEmoji) }
+                tvStyle.onClick { go(VideoScene.SelectStyle) }
+                root.transform().add(ContentChangeEditText(editText, VideoContent.Text))
                 root
             }
         }
         return view
     }
 
-    private class TitleChange(private val tvTitle: TextView) : Transformer() {
+    private class ContentChangeTitle(private val tvTitle: TextView) : Transformer() {
 
         override fun match(state: ImperfectState): Boolean {
             return state.isCurrent(VideoContent.Title)
@@ -99,23 +99,6 @@ class VideoContentAdapter : ContentAdapter<VideoContent>(), Overlay.Transform {
         override fun onPrepare(state: ImperfectState) {
             val editor = state.current?.editor as? VideoEditor ?: return
             tvTitle.text = editor.desc
-        }
-    }
-
-    private class EditTextChange(private val editText: EditText) : Transformer() {
-        private val editor = VideoEditor.Ime
-        private val content = VideoContent.Text
-
-        override fun match(state: ImperfectState) = with(state) {
-            isPrevious(content) || isCurrent(content)
-        }
-
-        override fun onPrepare(state: ImperfectState) = with(state) {
-            when {
-                isCurrent(editor) -> inputView.editText = editText
-                !isCurrent(content) -> inputView.editText = null
-            }
-            if (isCurrent(editor)) editText.requestFocus()
         }
     }
 }

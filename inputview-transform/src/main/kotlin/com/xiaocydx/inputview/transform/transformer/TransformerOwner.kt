@@ -21,6 +21,8 @@ package com.xiaocydx.inputview.transform
 import android.view.View
 
 /**
+ * [Transformer]所有者
+ *
  * @author xcc
  * @date 2024/7/24
  */
@@ -29,17 +31,17 @@ interface TransformerOwner {
     /**
      * 是否包含[transformer]
      */
-    fun hasTransformer(transformer: Transformer): Boolean
+    fun has(transformer: Transformer): Boolean
 
     /**
      * 添加[Transformer]
      */
-    fun addTransformer(transformer: Transformer)
+    fun add(transformer: Transformer)
 
     /**
-     * 移除[addTransformer]添加的[transformer]
+     * 移除[add]添加的[transformer]
      */
-    fun removeTransformer(transformer: Transformer)
+    fun remove(transformer: Transformer)
 
     /**
      * 请求重新分发调用[transformer]的函数
@@ -79,28 +81,28 @@ private class ViewTransformerOwner(
         // attach在onPrepare()执行，此时transformers的函数还未分发调用
         if (host == null) host = findHost()
         val host = host ?: return
-        for (i in transformers.indices) host.addTransformer(transformers[i])
+        for (i in transformers.indices) host.add(transformers[i])
     }
 
     override fun onViewDetachedFromWindow(v: View) {
         // detach在onPrepare()或onEnd()执行，此时transformers的函数分发调用完毕
         val host = host ?: return
-        for (i in transformers.indices) host.removeTransformer(transformers[i])
+        for (i in transformers.indices) host.remove(transformers[i])
     }
 
-    override fun hasTransformer(transformer: Transformer): Boolean {
+    override fun has(transformer: Transformer): Boolean {
         return transformers.contains(transformer)
     }
 
-    override fun addTransformer(transformer: Transformer) {
-        if (hasTransformer(transformer)) return
+    override fun add(transformer: Transformer) {
+        if (has(transformer)) return
         transformers.add(transformer)
-        if (view.isAttachedToWindow) host?.addTransformer(transformer)
+        if (view.isAttachedToWindow) host?.add(transformer)
     }
 
-    override fun removeTransformer(transformer: Transformer) {
+    override fun remove(transformer: Transformer) {
         transformers.remove(transformer)
-        host?.removeTransformer(transformer)
+        host?.remove(transformer)
     }
 
     override fun requestTransform(transformer: Transformer) {

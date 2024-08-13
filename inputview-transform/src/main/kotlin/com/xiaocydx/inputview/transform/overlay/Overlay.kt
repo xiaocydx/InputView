@@ -36,13 +36,17 @@ import com.xiaocydx.inputview.InputView
  * 构建跟[lifecycleOwner]关联的[Overlay]
  *
  * @param contentAdapter 用于[Overlay.go]通知更改[Content]
- * @param editorAdapter 用于[Overlay.go]通知更改[Editor]
+ * @param editorAdapter  用于[Overlay.go]通知更改[Editor]
  */
-fun <C : Content, E : Editor> InputView.Companion.createOverlay(
+inline fun <S, C, E> InputView.Companion.createOverlay(
     lifecycleOwner: LifecycleOwner,
     contentAdapter: ContentAdapter<C>,
     editorAdapter: EditorAdapter<E>,
-): Overlay<C, E> = OverlayImpl(lifecycleOwner, contentAdapter, editorAdapter)
+    initializer: Overlay<S>.() -> Unit = {}
+): Overlay<S> where S : Scene<C, E>, C : Content, E : Editor {
+    val overlay: Overlay<S> = OverlayImpl(lifecycleOwner, contentAdapter, editorAdapter)
+    return overlay.apply(initializer)
+}
 
 /**
  * 包含[InputView]的覆盖层，负责更改[Scene]和调度[Transformer]
@@ -57,17 +61,17 @@ fun <C : Content, E : Editor> InputView.Companion.createOverlay(
  * [InputView.editorAnimator]是[Overlay]的动画执行器，参与调度[Transformer]。
  * 调用[go]会更改[Scene]，进而调度执行[Transformer]。
  */
-interface Overlay<C : Content, E : Editor> : TransformerOwner {
+interface Overlay<S : Scene<*, *>> : TransformerOwner {
 
     /**
      * 之前的[Scene]，调用[go]会更改[previous]
      */
-    val previous: Scene<C, E>?
+    val previous: S?
 
     /**
      * 当前的[Scene]，调用[go]会更改[current]
      */
-    val current: Scene<C, E>?
+    val current: S?
 
     /**
      * 构建[Overlay]时关联的[lifecycleOwner]
@@ -79,14 +83,18 @@ interface Overlay<C : Content, E : Editor> : TransformerOwner {
     val lifecycleOwner: LifecycleOwner
 
     /**
-     * [Scene]更改的监听
+     * [Scene]更改的监听，调用[go]更改成功，会触发该监听
      */
-    var sceneChangedListener: SceneChangedListener<C, E>?
+    var sceneChangedListener: SceneChangedListener<S>?
 
     /**
-     * 设置[Editor]到[Scene]的转换器
+     * `nextEditor`转换为[Scene]的转换器
+     *
+     * 当未调用[go]通知更改[Editor]时，会执行转换器将`nextEditor`转换为[Scene]。
+     * 转换器主要用于未调用[go]通知显示和隐藏IME的情况，比如点击EditText显示IME、
+     * 点击隐藏或手势回退IME。
      */
-    var sceneEditorConverter: SceneEditorConverter<C, E>
+    var sceneEditorConverter: SceneEditorConverter<S>
 
     /**
      * 初始化[Overlay]，并将`rootView`添加到[rootParent]
@@ -109,7 +117,7 @@ interface Overlay<C : Content, E : Editor> : TransformerOwner {
      *
      * @return `true`-更改成功，`false`-未调用[attach]或没有改变
      */
-    fun go(scene: Scene<C, E>?): Boolean
+    fun go(scene: S?): Boolean
 
     /**
      * 将[Overlay]实现的[OnBackPressedCallback]，添加到[dispatcher]。
@@ -122,25 +130,59 @@ interface Overlay<C : Content, E : Editor> : TransformerOwner {
      */
     fun addToOnBackPressedDispatcher(dispatcher: OnBackPressedDispatcher): Boolean
 
+    /**
+     * 提供扩展函数[transform]
+     */
     interface Transform {
 
         /**
-         * 调用[TransformerOwner.addTransformer]添加[Transformer]：
+         * 调用[TransformerOwner.add]添加[Transformer]：
          * 1. 当View附加到Window时，[Transformer]同步添加到[Overlay]。
-         * 2. 当View从Window分离时，[Transformer]从[Overlay]同步移除。
+         * 2. 当View从Window分离时，从[Overlay]同步移除[Transformer]。
          */
         fun View.transform() = viewTransform()
     }
 
     companion object {
-        const val ROOT_PARENT_ID = android.R.id.content
+        internal const val ROOT_PARENT_ID = android.R.id.content
     }
 }
 
-fun interface SceneChangedListener<C : Content, E : Editor> {
-    fun onChanged(previous: Scene<C, E>?, current: Scene<C, E>?)
+/**
+ * [Scene]更改的监听，调用[Overlay.go]更改成功，会触发该监听
+ */
+fun interface SceneChangedListener<S : Scene<*, *>> {
+
+    /**
+     * [Scene]已更改
+     *
+     * @param previous 之前的[Scene]
+     * @param current  当前的[Scene]
+     */
+    fun onChanged(previous: S?, current: S?)
 }
 
-fun interface SceneEditorConverter<C : Content, E : Editor> {
-    fun nextScene(currentScene: Scene<C, E>?, nextEditor: E?): Scene<C, E>?
+/**
+ * `nextEditor`转换为[Scene]的转换器
+ *
+ * 当未调用[Overlay.go]通知更改[Editor]时，会执行转换器将`nextEditor`转换为[Scene]。
+ * 转换器主要用于未调用[Overlay.go]通知显示和隐藏IME的情况，比如点击EditText显示IME、
+ * 点击隐藏或手势回退IME。
+ */
+fun interface SceneEditorConverter<S : Scene<*, *>> {
+
+    /**
+     * 下一个[Scene]
+     *
+     * @param currentScene 当前[Scene]
+     * @param nextEditor   下一个[Editor]
+     */
+    fun nextScene(currentScene: S?, nextEditor: Editor?): S?
+
+    companion object {
+        private val default = SceneEditorConverter<Scene<*, *>> { c, n -> if (n == null) null else c }
+
+        @Suppress("UNCHECKED_CAST")
+        internal fun <S : Scene<*, *>> default() = run { default as SceneEditorConverter<S> }
+    }
 }
