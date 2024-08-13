@@ -224,13 +224,14 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
         private var isSkipChanged = false
         private var skipPrevious: E? = null
         private var skipCurrent: E? = null
+        private val previousScene get() = this@OverlayImpl.previous
         private val currentScene get() = this@OverlayImpl.current
 
         override fun onEditorChanged(previous: E?, current: E?) {
             if (isActiveGoing) return
             if (consumeSkipChanged(previous, current)) return
             assert(currentScene?.editor === previous)
-            val nextScene = sceneEditorConverter.nextScene(currentScene, current)
+            val nextScene = sceneEditorConverter.nextScene(previousScene, currentScene, current)
             checkNextScene(previous, current, currentScene, nextScene)
             prepareSkipChanged(current, nextScene?.editor)
             go(nextScene)
@@ -244,7 +245,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
             """没有通过Overlay.go()更改Editor
                |    (previousEditor = ${previous}, currentEditor = $current)
                |    请调用Overlay.setConverter()设置${SceneEditorConverter::class.java.simpleName}，
-               |    完成currentEditor = ${current}映射为Scene的逻辑
+               |    完成currentEditor = ${current}转换为Scene的逻辑
             """.trimMargin()
         }
 

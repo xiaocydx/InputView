@@ -48,9 +48,11 @@ class VideoEditActivity : AppCompatActivity() {
             addSceneFadeChange()
             addSceneBackground(0xFF1D1D1D.toInt())
             addToOnBackPressedDispatcher(onBackPressedDispatcher)
-            sceneEditorConverter = SceneEditorConverter { currentScene, nextEditor ->
-                if (nextEditor == VideoEditor.Ime) return@SceneEditorConverter VideoScene.InputText
-                if (nextEditor == null) null else currentScene
+            sceneEditorConverter = SceneEditorConverter converter@{ previous, current, nextEditor ->
+                if (nextEditor == VideoEditor.Ime) return@converter VideoScene.InputText
+                // 在VideoScene.InputText下回退IME，将nextEditor转换为previous，即重定向意图
+                // if (current == VideoScene.InputText && nextEditor == null) return@converter previous
+                if (nextEditor == null) null else current
             }
             attach(window)
         }

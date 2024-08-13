@@ -19,10 +19,30 @@
 package com.xiaocydx.inputview.transform
 
 import android.view.View
+import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import com.xiaocydx.inputview.Editor
 import java.lang.Integer.min
 import java.lang.ref.WeakReference
 
 /**
+ * 对`target`进行缩放变换
+ *
+ * ### 匹配变换
+ * 当[contentMatch]和[editorMatch]都匹配时，才对`target`进行变换。
+ * 若[contentMatch]和[editorMatch]都为`null`，则表示匹配所有情况。
+ *
+ * ### 变换效果
+ * 取[Content]和[Editor]之间最小顶部Y作为锚点：
+ * 1. 上升平移过程，`target`依赖锚点进行缩小。
+ * 2. 下降平移过程，`target`依赖锚点进行放大。
+
+ * 比如，[Content]的视图是布局在[Editor]之上的标题栏，
+ * 标题栏顶部Y比[Editor]顶部Y小，将标题栏顶部Y作为锚点。
+ *
+ * ### 适用场景
+ * 1. 匹配的[Content]，其视图高度为固定值或[WRAP_CONTENT]。
+ * 2. 可搭配[ContentChangeBounds]、[ContentChangeTranslation]使用。
+ *
  * @author xcc
  * @date 2024/7/25
  */
@@ -48,22 +68,22 @@ class ChangeScale(
     }
 
     override fun onStart(state: TransformState) {
-        val view = ref.get() ?: return
-        view.getLocationInWindow(point)
-        targetBottom = point[1] + view.height
+        val target = ref.get() ?: return
+        target.getLocationInWindow(point)
+        targetBottom = point[1] + target.height
         state.inputView.getLocationInWindow(point)
         inputViewBottom = point[1] + state.inputView.height
     }
 
     override fun onUpdate(state: TransformState) {
-        val view = ref.get() ?: return
+        val target = ref.get() ?: return
         val anchor = state.calculateAnchor()
         val dy = (targetBottom - anchor).coerceAtLeast(0)
-        val scale = 1f - dy.toFloat() / view.height
-        view.apply {
+        val scale = 1f - dy.toFloat() / target.height
+        target.apply {
             scaleX = scale
             scaleY = scale
-            pivotX = view.width.toFloat() / 2
+            pivotX = target.width.toFloat() / 2
             pivotY = 0f
         }
     }
@@ -78,7 +98,7 @@ class ChangeScale(
     }
 
     private fun TransformState.calculateAnchor(): Int {
-        val editorTop = inputViewBottom + currentOffset
+        val editorTop = inputViewBottom - currentOffset
 
         point[1] = Int.MAX_VALUE
         startViews.content?.getLocationInWindow(point)

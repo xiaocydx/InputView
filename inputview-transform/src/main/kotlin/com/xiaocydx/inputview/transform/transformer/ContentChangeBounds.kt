@@ -20,10 +20,23 @@ package com.xiaocydx.inputview.transform
 
 import android.animation.RectEvaluator
 import android.graphics.Rect
+import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import androidx.transition.getBounds
 import androidx.transition.setLeftTopRightBottomCompat
 
 /**
+ * 对匹配的[Content]视图进行边界变换
+ *
+ * ### 匹配变换
+ * 当匹配到两个[Content]视图时，才进行变换。可调用[setMatch]设置匹配条件。
+ *
+ * ### 变换效果
+ * 两个[Content]视图中高度更高的那一个，调用`View.setLeftTopRightBottom()`更改边界。
+ *
+ * ### 适用场景
+ * 1. 匹配的[Content]，其视图高度为固定值或[WRAP_CONTENT]。
+ * 2. 可搭配[ChangeScale]、[ContentChangeTranslation]使用。
+ *
  * @author xcc
  * @date 2024/7/24
  */
@@ -49,6 +62,12 @@ class ContentChangeBounds() : ContentTransformer() {
     override fun onUpdate(state: TransformState) {
         if (startBounds == endBounds) return
         evaluator.evaluate(state.interpolatedFraction, startBounds, endBounds)
-        state.endView()?.setLeftTopRightBottomCompat(currentBounds)
+        val view = if (startBounds.height() > endBounds.height()) state.startView() else state.endView()
+        view?.setLeftTopRightBottomCompat(currentBounds)
+    }
+
+    override fun onEnd(state: TransformState) {
+        state.startView()?.setLeftTopRightBottomCompat(startBounds)
+        state.endView()?.setLeftTopRightBottomCompat(endBounds)
     }
 }

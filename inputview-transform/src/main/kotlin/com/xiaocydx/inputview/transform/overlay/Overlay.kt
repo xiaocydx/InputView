@@ -172,15 +172,16 @@ fun interface SceneChangedListener<S : Scene<*, *>> {
 fun interface SceneEditorConverter<S : Scene<*, *>> {
 
     /**
-     * 下一个[Scene]
+     * [nextEditor]转换为下一个[Scene]
      *
-     * @param currentScene 当前[Scene]
-     * @param nextEditor   下一个[Editor]
+     * @param previous   之前的[Scene]
+     * @param current    当前的[Scene]
+     * @param nextEditor 下一个[Editor]
      */
-    fun nextScene(currentScene: S?, nextEditor: Editor?): S?
+    fun nextScene(previous: S?, current: S?, nextEditor: Editor?): S?
 
     companion object {
-        private val default = SceneEditorConverter<Scene<*, *>> { c, n -> if (n == null) null else c }
+        private val default = SceneEditorConverter<Scene<*, *>> { _, c, n -> if (n == null) null else c }
 
         @Suppress("UNCHECKED_CAST")
         internal fun <S : Scene<*, *>> default() = run { default as SceneEditorConverter<S> }

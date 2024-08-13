@@ -22,17 +22,21 @@ import android.widget.EditText
 import java.lang.ref.WeakReference
 
 /**
+ * 当之前的[Content]或当前的[Content]匹配[matchContent]时：
+ * 1. 若显示IME，则对`state.inputView`设置`editText`并请求焦点。
+ * 2. 若隐藏IME，则清除焦点，在必要时移除第1步设置的`editText`。
+ *
  * @author xcc
  * @date 2024/8/13
  */
 class ContentChangeEditText(
     editText: EditText,
-    private val content: Content
+    private val matchContent: Content
 ) : Transformer() {
     private val ref = WeakReference(editText)
 
     override fun match(state: ImperfectState) = with(state) {
-        isPrevious(content) || isCurrent(content)
+        isPrevious(matchContent) || isCurrent(matchContent)
     }
 
     override fun onPrepare(state: ImperfectState): Unit = with(state) {
@@ -40,7 +44,7 @@ class ContentChangeEditText(
         val editText = ref.get()
         when {
             isCurrent(ime) -> inputView.editText = editText
-            !isCurrent(content) && inputView.editText == editText -> inputView.editText = null
+            !isCurrent(matchContent) && inputView.editText == editText -> inputView.editText = null
         }
         if (isCurrent(ime)) editText?.requestFocus() else editText?.clearFocus()
     }

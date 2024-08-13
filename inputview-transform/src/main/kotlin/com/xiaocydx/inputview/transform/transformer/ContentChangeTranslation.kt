@@ -19,9 +19,26 @@
 package com.xiaocydx.inputview.transform
 
 import android.view.Gravity.BOTTOM
+import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import androidx.transition.updateLayoutGravity
+import com.xiaocydx.inputview.Editor
 
 /**
+ * 对匹配的[Content]视图进行平移变换
+ *
+ * ### 匹配变换
+ * 当匹配的[Content]视图不为`null`时，才进行变换。可调用[setMatch]设置匹配条件。
+ *
+ * ### 变换效果
+ * [Content]视图布局在[Editor]之上进行平移变换。
+ * 当是`null`到`current`或`current`到`null`的变换时，
+ * 会对`state.inputView`设置[Content]视图高度的偏移，
+ * 确保[Content]视图在变换开始时，不会突然显示出来。
+ *
+ * ### 适用场景
+ * 1. 匹配的[Content]，其视图高度为固定值或[WRAP_CONTENT]。
+ * 2. 可搭配[ChangeScale]、[ContentChangeBounds]使用。
+ *
  * @author xcc
  * @date 2024/7/24
  */

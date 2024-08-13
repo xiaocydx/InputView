@@ -22,6 +22,10 @@ import android.view.View
 import com.xiaocydx.inputview.Editor
 
 /**
+ * 对匹配的[Editor]视图进行变换，用于简化模板代码
+ *
+ * 可调用[setMatch]设置匹配条件，当满足匹配条件时，才进行变换。
+ *
  * @author xcc
  * @date 2024/7/25
  */
@@ -51,10 +55,23 @@ abstract class EditorTransformer : Transformer() {
     }
 }
 
-fun interface EditorMatch {
-    fun match(start: Boolean, editor: Editor?): Boolean
-}
-
+/**
+ * [EditorTransformer.setMatch]的简化函数，当匹配[matchEditor]时，才进行变换
+ */
 fun EditorTransformer.setMatchEditor(matchEditor: Editor) {
     setMatch { _, editor -> editor === matchEditor }
+}
+
+/**
+ * [Editor]的匹配条件
+ */
+fun interface EditorMatch {
+
+    /**
+     * 是否匹配
+     *
+     * @param start  `true`-匹配起始视图，`false`-匹配结束视图
+     * @param editor `true`-`state.previous?.editor`，`false`-`state.current?.editor`
+     */
+    fun match(start: Boolean, editor: Editor?): Boolean
 }
