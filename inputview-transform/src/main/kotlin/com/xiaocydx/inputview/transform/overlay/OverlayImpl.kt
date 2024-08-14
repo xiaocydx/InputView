@@ -137,8 +137,8 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
             editorSucceed && scene != null -> contentAdapter.notifyShow(scene.content)
         }
 
+        val sceneChanged = current !== scene
         if (editorSucceed) {
-            val sceneChanged = current !== scene
             previous = current
             current = scene
             backPressedCallback?.isEnabled = current != null
@@ -147,7 +147,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
         }
 
         isActiveGoing = false
-        return editorSucceed
+        return editorSucceed && sceneChanged
     }
 
     override fun addToOnBackPressedDispatcher(dispatcher: OnBackPressedDispatcher): Boolean {

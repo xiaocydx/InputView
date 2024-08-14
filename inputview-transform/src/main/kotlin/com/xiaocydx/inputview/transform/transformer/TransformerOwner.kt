@@ -19,6 +19,7 @@
 package com.xiaocydx.inputview.transform
 
 import android.view.View
+import androidx.annotation.VisibleForTesting
 
 /**
  * [Transformer]所有者
@@ -57,7 +58,7 @@ internal fun View.setTransformerHost(host: TransformerOwner) {
     setTag(R.id.tag_transform_view_transformer_host, host)
 }
 
-internal fun View.viewTransform(): TransformerOwner {
+internal fun View.viewTransform(): ViewTransformerOwner {
     var owner = getTag(R.id.tag_transform_view_transformer_owner) as? ViewTransformerOwner
     if (owner == null) {
         owner = ViewTransformerOwner(this)
@@ -66,7 +67,7 @@ internal fun View.viewTransform(): TransformerOwner {
     return owner
 }
 
-private class ViewTransformerOwner(
+internal class ViewTransformerOwner(
     private val view: View
 ) : TransformerOwner, View.OnAttachStateChangeListener {
     private val transformers = mutableListOf<Transformer>()
@@ -75,6 +76,12 @@ private class ViewTransformerOwner(
     init {
         view.addOnAttachStateChangeListener(this)
         if (view.isAttachedToWindow) onViewAttachedToWindow(view)
+    }
+
+    @VisibleForTesting
+    fun setHost(host: TransformerOwner) {
+        require(this.host == null)
+        this.host = host
     }
 
     override fun onViewAttachedToWindow(v: View) {

@@ -14,27 +14,17 @@
  * limitations under the License.
  */
 
-package com.xiaocydx.inputview
+package com.xiaocydx.inputview.transform
 
 import android.os.Build
-import android.os.Bundle
 import android.os.Looper.getMainLooper
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.view.ViewGroup.LayoutParams
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import androidx.core.view.ViewCompat
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle.State.CREATED
 import androidx.lifecycle.Lifecycle.State.RESUMED
 import androidx.lifecycle.Lifecycle.State.STARTED
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ActivityScenario.launch
-import androidx.viewpager2.adapter.FragmentStateAdapter
-import androidx.viewpager2.widget.ViewPager2
 import com.google.common.truth.Truth.assertThat
 import org.junit.After
 import org.junit.Before
@@ -45,19 +35,19 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * [FragmentEditorAdapter]的单元测试
+ * [FragmentContentAdapter]的单元测试
  *
  * @author xcc
- * @date 2023/10/12
+ * @date 2024/8/14
  */
 @Config(sdk = [Build.VERSION_CODES.Q])
 @RunWith(RobolectricTestRunner::class)
-internal class FragmentEditorAdapterTest {
-    private lateinit var scenario: ActivityScenario<TestInputViewActivity>
+internal class FragmentContentAdapterTest {
+    private lateinit var scenario: ActivityScenario<TestActivity>
 
     @Before
     fun setup() {
-        scenario = launch(TestInputViewActivity::class.java).moveToState(RESUMED)
+        scenario = launch(TestActivity::class.java).moveToState(RESUMED)
     }
 
     @After
@@ -69,16 +59,14 @@ internal class FragmentEditorAdapterTest {
     fun createFragment() {
         scenario.onActivity {
             val fm = it.supportFragmentManager
-            val editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter
 
-            editorAdapter.notifyShow(TestEditor.A)
-            assertThat(editorAdapter.current).isEqualTo(TestEditor.A)
+            it.overlay.go(TestScene.A)
+            assertThat(it.overlay.current).isEqualTo(TestScene.A)
             shadowOf(getMainLooper()).idle()
             assertThat(fm.fragmentA()).isNotNull()
 
-            editorAdapter.notifyShow(TestEditor.B)
-            assertThat(editorAdapter.current).isEqualTo(TestEditor.B)
+            it.overlay.go(TestScene.B)
+            assertThat(it.overlay.current).isEqualTo(TestScene.B)
             shadowOf(getMainLooper()).idle()
             assertThat(fm.fragmentB()).isNotNull()
         }
@@ -88,18 +76,16 @@ internal class FragmentEditorAdapterTest {
     fun createChildFragment() {
         scenario.onActivity {
             val fm = it.supportFragmentManager
-            val editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter
 
-            editorAdapter.notifyShow(TestEditor.A)
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
             val childA = fm.fragmentA()!!.childFragmentManager
-            assertThat(childA.fragmentVp2s()).hasSize(ITEM_COUNT)
+            assertThat(childA.fragmentVp2s()).hasSize(VP2_ITEM_COUNT)
 
-            editorAdapter.notifyShow(TestEditor.B)
+            it.overlay.go(TestScene.B)
             shadowOf(getMainLooper()).idle()
             val childB = fm.fragmentB()!!.childFragmentManager
-            assertThat(childB.fragmentVp2s()).hasSize(ITEM_COUNT)
+            assertThat(childB.fragmentVp2s()).hasSize(VP2_ITEM_COUNT)
         }
     }
 
@@ -107,19 +93,17 @@ internal class FragmentEditorAdapterTest {
     fun updateFragmentMaxLifecycle() {
         scenario.onActivity {
             val fm = it.supportFragmentManager
-            val editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter
 
-            editorAdapter.notifyShow(TestEditor.A)
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(RESUMED)
 
-            editorAdapter.notifyShow(TestEditor.B)
+            it.overlay.go(TestScene.B)
             shadowOf(getMainLooper()).idle()
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(STARTED)
             assertThat(fm.fragmentB()!!.lifecycleState()).isEqualTo(RESUMED)
 
-            editorAdapter.notifyHide(TestEditor.B)
+            it.overlay.go(null)
             shadowOf(getMainLooper()).idle()
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(STARTED)
             assertThat(fm.fragmentB()!!.lifecycleState()).isEqualTo(STARTED)
@@ -130,16 +114,14 @@ internal class FragmentEditorAdapterTest {
     fun updateChildFragmentMaxLifecycle() {
         scenario.onActivity {
             val fm = it.supportFragmentManager
-            val editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter
 
-            editorAdapter.notifyShow(TestEditor.A)
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
             val childA = fm.fragmentA()!!.childFragmentManager
             assertThat(childA.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(RESUMED)
             assertThat(childA.fragmentVp2s().lastOrNull()?.lifecycleState()).isEqualTo(STARTED)
 
-            editorAdapter.notifyShow(TestEditor.B)
+            it.overlay.go(TestScene.B)
             shadowOf(getMainLooper()).idle()
             val childB = fm.fragmentB()!!.childFragmentManager
             assertThat(childB.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(RESUMED)
@@ -147,7 +129,7 @@ internal class FragmentEditorAdapterTest {
             assertThat(childA.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(STARTED)
             assertThat(childA.fragmentVp2s().lastOrNull()?.lifecycleState()).isEqualTo(STARTED)
 
-            editorAdapter.notifyHide(TestEditor.B)
+            it.overlay.go(null)
             shadowOf(getMainLooper()).idle()
             assertThat(childB.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(STARTED)
             assertThat(childB.fragmentVp2s().lastOrNull()?.lifecycleState()).isEqualTo(STARTED)
@@ -158,14 +140,11 @@ internal class FragmentEditorAdapterTest {
 
     @Test
     fun missUpdateFragmentMaxLifecycle() {
-        var editorAdapter: TestEditorAdapter? = null
         scenario.onActivity {
             val fm = it.supportFragmentManager
-            editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter!!
-            editorAdapter!!.setDelayUpdateFragmentMaxLifecycleEnabled(false)
+            it.contentAdapter.setDelayUpdateFragmentMaxLifecycleEnabled(false)
 
-            editorAdapter!!.notifyShow(TestEditor.A)
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(RESUMED)
         }
@@ -173,7 +152,7 @@ internal class FragmentEditorAdapterTest {
         scenario.moveToState(CREATED).onActivity {
             val fm = it.supportFragmentManager
             assertThat(fm.isStateSaved).isTrue()
-            editorAdapter!!.notifyHide(TestEditor.A)
+            it.overlay.go(null)
             shadowOf(getMainLooper()).idle()
             // Activity已完成saveState，不允许提交事务将fragmentA的max设为STARTED
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(CREATED)
@@ -182,6 +161,7 @@ internal class FragmentEditorAdapterTest {
         scenario.moveToState(RESUMED).onActivity {
             val fm = it.supportFragmentManager
             assertThat(fm.isStateSaved).isFalse()
+            shadowOf(getMainLooper()).idle()
             // Activity转换到RESUMED，fragmentA的max仍为RESUMED
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(RESUMED)
         }
@@ -189,14 +169,11 @@ internal class FragmentEditorAdapterTest {
 
     @Test
     fun missUpdateChildFragmentMaxLifecycle() {
-        var editorAdapter: TestEditorAdapter? = null
         scenario.onActivity {
             val fm = it.supportFragmentManager
-            editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter!!
-            editorAdapter!!.setDelayUpdateFragmentMaxLifecycleEnabled(false)
+            it.contentAdapter.setDelayUpdateFragmentMaxLifecycleEnabled(false)
 
-            editorAdapter!!.notifyShow(TestEditor.A)
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
             val child = fm.fragmentA()!!.childFragmentManager
             assertThat(child.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(RESUMED)
@@ -205,7 +182,7 @@ internal class FragmentEditorAdapterTest {
         scenario.moveToState(CREATED).onActivity {
             val fm = it.supportFragmentManager
             assertThat(fm.isStateSaved).isTrue()
-            editorAdapter!!.notifyHide(TestEditor.A)
+            it.overlay.go(null)
             shadowOf(getMainLooper()).idle()
             // Activity已完成saveState，不允许提交事务将fragmentVp2的max设为STARTED
             val child = fm.fragmentA()!!.childFragmentManager
@@ -215,6 +192,7 @@ internal class FragmentEditorAdapterTest {
         scenario.moveToState(RESUMED).onActivity {
             val fm = it.supportFragmentManager
             assertThat(fm.isStateSaved).isFalse()
+            shadowOf(getMainLooper()).idle()
             // Activity转换到RESUMED，fragmentVp2的max仍为RESUMED
             val child = fm.fragmentA()!!.childFragmentManager
             assertThat(child.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(RESUMED)
@@ -223,12 +201,9 @@ internal class FragmentEditorAdapterTest {
 
     @Test
     fun delayUpdateFragmentMaxLifecycle() {
-        var editorAdapter: TestEditorAdapter? = null
         scenario.onActivity {
             val fm = it.supportFragmentManager
-            editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter!!
-            editorAdapter!!.notifyShow(TestEditor.A)
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(RESUMED)
         }
@@ -236,7 +211,7 @@ internal class FragmentEditorAdapterTest {
         scenario.moveToState(CREATED).onActivity {
             val fm = it.supportFragmentManager
             assertThat(fm.isStateSaved).isTrue()
-            editorAdapter!!.notifyHide(TestEditor.A)
+            it.overlay.go(null)
             shadowOf(getMainLooper()).idle()
             // Activity已完成saveState，不允许提交事务将fragmentA的max设为STARTED
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(CREATED)
@@ -252,12 +227,9 @@ internal class FragmentEditorAdapterTest {
 
     @Test
     fun delayUpdateChildFragmentMaxLifecycle() {
-        var editorAdapter: TestEditorAdapter? = null
         scenario.onActivity {
             val fm = it.supportFragmentManager
-            editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter!!
-            editorAdapter!!.notifyShow(TestEditor.A)
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
             val child = fm.fragmentA()!!.childFragmentManager
             assertThat(child.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(RESUMED)
@@ -266,7 +238,7 @@ internal class FragmentEditorAdapterTest {
         scenario.moveToState(CREATED).onActivity {
             val fm = it.supportFragmentManager
             assertThat(fm.isStateSaved).isTrue()
-            editorAdapter!!.notifyHide(TestEditor.A)
+            it.overlay.go(null)
             shadowOf(getMainLooper()).idle()
             // Activity已完成saveState，不允许提交事务将fragmentVp2的max设为STARTED
             val child = fm.fragmentA()!!.childFragmentManager
@@ -285,9 +257,7 @@ internal class FragmentEditorAdapterTest {
     @Test
     fun recreateFragment() {
         scenario.onActivity {
-            val editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter
-            editorAdapter.notifyShow(TestEditor.A)
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
         }
 
@@ -300,33 +270,27 @@ internal class FragmentEditorAdapterTest {
     @Test
     fun recreateChildFragment() {
         scenario.onActivity {
-            val editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter
-            editorAdapter.notifyShow(TestEditor.A)
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
         }
 
         scenario.recreate().onActivity {
             val fm = it.supportFragmentManager
-            assertThat(fm.fragmentA()!!.childFragmentManager.fragmentVp2s()).hasSize(ITEM_COUNT)
+            assertThat(fm.fragmentA()!!.childFragmentManager.fragmentVp2s()).hasSize(VP2_ITEM_COUNT)
         }
     }
 
     @Test
     fun restoreFragment() {
         scenario.onActivity {
-            val editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter
-            editorAdapter.notifyShow(TestEditor.A)
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
         }
 
         scenario.recreate().onActivity {
             val fm = it.supportFragmentManager
-            val editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter
-            assertThat(editorAdapter.current).isNull()
-            editorAdapter.notifyShow(TestEditor.A)
+            assertThat(it.overlay.current).isNull()
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
             assertThat(fm.fragments.filterIsInstance<TestFragmentA>()).hasSize(1)
         }
@@ -335,41 +299,29 @@ internal class FragmentEditorAdapterTest {
     @Test
     fun restoreChildFragment() {
         scenario.onActivity {
-            val editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter
-            editorAdapter.notifyShow(TestEditor.A)
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
         }
 
         scenario.recreate().onActivity {
             val fm = it.supportFragmentManager
-            val editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter
-            assertThat(editorAdapter.current).isNull()
-            editorAdapter.notifyShow(TestEditor.A)
+            assertThat(it.overlay.current).isNull()
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
-            assertThat(fm.fragmentA()!!.childFragmentManager.fragmentVp2s()).hasSize(ITEM_COUNT)
+            assertThat(fm.fragmentA()!!.childFragmentManager.fragmentVp2s()).hasSize(VP2_ITEM_COUNT)
         }
     }
 
     @Test
     fun recreateFragmentAddToContainer() {
         scenario.onActivity {
-            val editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter
-            editorAdapter.notifyShow(TestEditor.A)
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
         }
 
         scenario.recreate().onActivity {
             val fm = it.supportFragmentManager
-            assertThat(fm.fragmentA()!!.view!!.parent).isNotNull()
-        }
-
-        scenario.recreate().onActivity {
-            val fm = it.supportFragmentManager
-            // FragmentEditorAdapter在重建完成后，移除Fragment.view
-            it.inputView.editorAdapter = TestEditorAdapter(it)
+            // FragmentContentAdapter在重建完成后，移除Fragment.view
             assertThat(fm.fragmentA()!!.view!!.parent).isNull()
         }
     }
@@ -377,22 +329,18 @@ internal class FragmentEditorAdapterTest {
     @Test
     fun recreateUpdateFragmentMaxLifecycle() {
         scenario.onActivity {
-            val editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter
             val fm = it.supportFragmentManager
-            editorAdapter.notifyShow(TestEditor.A)
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(RESUMED)
         }
 
         scenario.recreate().onActivity {
             val fm = it.supportFragmentManager
-            // FragmentEditorAdapter在重建完成后，更新fragmentA的生命周期状态
-            val editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter
+            // FragmentContentAdapter在重建完成后，更新fragmentA的生命周期状态
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(STARTED)
 
-            editorAdapter.notifyShow(TestEditor.A)
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
             assertThat(fm.fragmentA()!!.lifecycleState()).isEqualTo(RESUMED)
         }
@@ -401,10 +349,8 @@ internal class FragmentEditorAdapterTest {
     @Test
     fun recreateUpdateChildFragmentMaxLifecycle() {
         scenario.onActivity {
-            val editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter
             val fm = it.supportFragmentManager
-            editorAdapter.notifyShow(TestEditor.A)
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
             val childA = fm.fragmentA()!!.childFragmentManager
             assertThat(childA.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(RESUMED)
@@ -412,13 +358,11 @@ internal class FragmentEditorAdapterTest {
 
         scenario.recreate().onActivity {
             val fm = it.supportFragmentManager
-            // FragmentEditorAdapter在重建完成后，更新fragmentVp2的生命周期状态
-            val editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter
+            // FragmentContentAdapter在重建完成后，更新fragmentVp2的生命周期状态
             val childA = fm.fragmentA()!!.childFragmentManager
             assertThat(childA.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(STARTED)
 
-            editorAdapter.notifyShow(TestEditor.A)
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
             assertThat(childA.fragmentVp2s().firstOrNull()?.lifecycleState()).isEqualTo(RESUMED)
         }
@@ -427,20 +371,17 @@ internal class FragmentEditorAdapterTest {
     @Test
     fun removeRecreateFragment() {
         scenario.onActivity {
-            val editorAdapter = TestEditorAdapter(it)
-            it.inputView.editorAdapter = editorAdapter
-            it.viewModel.canSetInputView = false
-            editorAdapter.notifyShow(TestEditor.A)
+            it.viewModel.canAttachOverlay = false
+            it.overlay.go(TestScene.A)
             shadowOf(getMainLooper()).idle()
         }
 
         scenario.recreate().onActivity {
             val fm = it.supportFragmentManager
             // 重建的FragmentA缺少container，无法恢复view.layoutParams。
-            // FragmentEditorAdapter在重建完成后，移除fragmentA及其childFragment
-            it.inputView.editorAdapter = TestEditorAdapter(it)
+            // FragmentContentAdapter在重建完成后，移除fragmentA及其childFragment
             assertThat(fm.fragmentA()).isNull()
-            it.viewModel.canSetInputView = true
+            it.viewModel.canAttachOverlay = true
         }
     }
 
@@ -456,59 +397,5 @@ internal class FragmentEditorAdapterTest {
 
     private fun FragmentManager.fragmentVp2s(): List<TestFragmentVp2> {
         return fragments.filterIsInstance<TestFragmentVp2>()
-    }
-
-    private enum class TestEditor : Editor {
-        IME, A, B
-    }
-
-    private class TestEditorAdapter(
-        fragmentActivity: FragmentActivity
-    ) : FragmentEditorAdapter<TestEditor>(fragmentActivity) {
-        override val ime = TestEditor.IME
-        override fun getEditorKey(editor: TestEditor) = editor.name
-        override fun onCreateFragment(editor: TestEditor) = when (editor) {
-            TestEditor.IME -> null
-            TestEditor.A -> TestFragmentA()
-            TestEditor.B -> TestFragmentB()
-        }
-    }
-
-    class TestFragmentA : TestFragment()
-    class TestFragmentB : TestFragment()
-
-    abstract class TestFragment : Fragment() {
-        override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
-        ) = ViewPager2(requireContext()).also {
-            it.id = VP2_ID
-            it.offscreenPageLimit = 1
-            it.adapter = TestFragmentStateAdapter(this)
-            it.layoutParams = LayoutParams(MATCH_PARENT, 400)
-        }
-    }
-
-    private class TestFragmentStateAdapter(
-        fragment: Fragment
-    ) : FragmentStateAdapter(fragment) {
-        override fun getItemCount() = ITEM_COUNT
-        override fun createFragment(position: Int) = TestFragmentVp2()
-    }
-
-    class TestFragmentVp2 : Fragment() {
-        override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
-        ) = View(requireContext()).apply {
-            layoutParams = LayoutParams(MATCH_PARENT, MATCH_PARENT)
-        }
-    }
-
-    private companion object {
-        const val ITEM_COUNT = 2
-        val VP2_ID = ViewCompat.generateViewId()
     }
 }

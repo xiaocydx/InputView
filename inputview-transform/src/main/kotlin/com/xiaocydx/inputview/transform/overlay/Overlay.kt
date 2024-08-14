@@ -140,7 +140,7 @@ interface Overlay<S : Scene<*, *>> : TransformerOwner {
          * 1. 当View附加到Window时，[Transformer]同步添加到[Overlay]。
          * 2. 当View从Window分离时，从[Overlay]同步移除[Transformer]。
          */
-        fun View.transform() = viewTransform()
+        fun View.transform(): TransformerOwner = viewTransform()
     }
 
     companion object {
