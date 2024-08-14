@@ -49,20 +49,6 @@ sealed class VideoEditor(val desc: String, val size: Int) : Editor {
     data object Image : VideoEditor(desc = "图片", size = 250)
 }
 
-class VideoEditorAdapter(
-    lifecycle: Lifecycle,
-    fragmentManager: FragmentManager
-) : FragmentEditorAdapter<VideoEditor>(lifecycle, fragmentManager) {
-    override val ime = VideoEditor.Ime
-
-    override fun getEditorKey(editor: VideoEditor) = editor.desc
-
-    override fun onCreateFragment(editor: VideoEditor): Fragment {
-        if (editor == VideoEditor.Emoji) return EmojiFragment()
-        return CommonFragment.newInstance(editor.desc, editor.size)
-    }
-}
-
 class VideoContentAdapter(
     private val go: (VideoScene?) -> Boolean
 ) : ContentAdapter<VideoContent>(), Overlay.Transform {
@@ -100,5 +86,19 @@ class VideoContentAdapter(
             val editor = state.current?.editor as? VideoEditor ?: return
             tvTitle.text = editor.desc
         }
+    }
+}
+
+class VideoEditorAdapter(
+    lifecycle: Lifecycle,
+    fragmentManager: FragmentManager
+) : FragmentEditorAdapter<VideoEditor>(lifecycle, fragmentManager) {
+    override val ime = VideoEditor.Ime
+
+    override fun getEditorKey(editor: VideoEditor) = editor.desc
+
+    override fun onCreateFragment(editor: VideoEditor): Fragment {
+        if (editor == VideoEditor.Emoji) return EmojiFragment()
+        return CommonFragment.newInstance(editor.desc, editor.size)
     }
 }

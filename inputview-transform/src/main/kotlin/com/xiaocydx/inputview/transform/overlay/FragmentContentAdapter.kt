@@ -22,6 +22,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.VisibleForTesting
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentFactory
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Lifecycle.State.RESUMED
@@ -31,6 +33,30 @@ import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 
 /**
+ * [Content]的Fragment适配器，负责创建和通知显示[Content]的Fragment，
+ * [current]的Fragment，生命周期状态是[RESUMED]，其它Fragment是[STARTED]。
+ *
+ * ```
+ * enum class VideoContent : Content {
+ *     TEXT, TITLE
+ * }
+ *
+ * class VideoFragmentEditorAdapter(
+ *     lifecycle: Lifecycle,
+ *     fragmentManager: FragmentManager
+ * ) : FragmentContentAdapter<VideoContent>(lifecycle, fragmentManager) {
+ *
+ *     override fun getContentKey(content: VideoContent) = content.name
+ *
+ *     override fun onCreateFragment(content: VideoContent): Fragment {
+ *         return when(content) {
+ *             VideoContent.TEXT -> TextFragment()
+ *             VideoContent.TITLE -> TitleFragment()
+ *         }
+ *     }
+ * }
+ * ```
+ *
  * @author xcc
  * @date 2024/7/22
  */
@@ -43,11 +69,32 @@ abstract class FragmentContentAdapter<T : Content>(
     private val fragmentRestoreEnforcer = FragmentRestoreEnforcer()
     private val fragmentMaxLifecycleEnforcer = FragmentMaxLifecycleEnforcer()
 
+    constructor(fragmentActivity: FragmentActivity) : this(
+        lifecycle = fragmentActivity.lifecycle,
+        fragmentManager = fragmentActivity.supportFragmentManager
+    )
+
+    constructor(fragment: Fragment) : this(
+        lifecycle = fragment.lifecycle,
+        fragmentManager = fragment.childFragmentManager
+    )
+
     /**
      * 获取[content]的Key，Key将作为`Fragment.tag`的一部分
      */
     protected abstract fun getContentKey(content: T): String
 
+    /**
+     * 创建[content]的Fragment，返回`null`表示不需要Fragment
+     *
+     * 创建的Fragment，在[Overlay.go]调度运行的动画结束时，生命周期状态才会转换为[RESUMED]，
+     * 当执行Fragment重建流程时，若[Overlay]还未添加到视图树，则移除重建的Fragment，放弃恢复状态。
+     *
+     * **注意**：重建且可恢复状态的Fragment会被使用，不会调用该函数再次创建Fragment，
+     * 在创建Fragment时，不要对Fragment的构造函数传参，重建的Fragment会缺少这些传参，
+     * 除非在重建Fragment之前，设置自定义[FragmentFactory]，重新对构造函数进行传参，
+     * 不过这种做法有些麻烦，一般不会考虑。
+     */
     protected abstract fun onCreateFragment(content: T): Fragment?
 
     final override fun onCreateView(parent: ViewGroup, content: T): View? {
@@ -246,6 +293,6 @@ abstract class FragmentContentAdapter<T : Content>(
     }
 
     private companion object {
-        const val KEY_PREFIX_FRAGMENT = "com.xiaocydx.inputview.overlay.FragmentContentAdapter.f#"
+        const val KEY_PREFIX_FRAGMENT = "com.xiaocydx.inputview.transform.FragmentContentAdapter.f#"
     }
 }

@@ -21,10 +21,43 @@ package com.xiaocydx.inputview.transform
 import com.xiaocydx.inputview.Editor
 
 /**
+ * [Overlay]的场景，用于[Overlay.go]
+ *
+ * 推荐用`enum class`或`sealed class`实现[Scene]，例如：
+ * ```
+ * enum class VideoScene(
+ *     override val content: VideoContent,
+ *     override val editor: VideoEditor
+ * ) : Scene<VideoContent, VideoEditor> {
+ *     INPUT_TEXT(VideoContent.Text, VideoEditor.Ime),
+ *     INPUT_EMOJI(VideoContent.Text, VideoEditor.Emoji),
+ *     SELECT_AUDIO(VideoContent.Title, VideoEditor.Audio),
+ *     SELECT_IMAGE(VideoContent.Title, VideoEditor.Image)
+ * }
+ *
+ * enum class VideoContent : Content {
+ *     TEXT, TITLE
+ * }
+ *
+ * enum class VideoEditor : Editor {
+ *     IME, EMOJI, AUDIO, IMAGE
+ * }
+ * ```
+ *
+ * 用`enum class`或`sealed class`能更好的进行模式匹配。
+ *
  * @author xcc
  * @date 2024/7/24
  */
 interface Scene<C : Content, E : Editor> {
+
+    /**
+     * [Overlay]内容区的内容
+     */
     val content: C
+
+    /**
+     * [Overlay]编辑区的编辑器
+     */
     val editor: E
 }
