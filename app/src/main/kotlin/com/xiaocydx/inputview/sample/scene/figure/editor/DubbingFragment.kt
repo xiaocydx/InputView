@@ -10,8 +10,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.HORIZONTAL
 import androidx.recyclerview.widget.optimizeNextFrameScroll
@@ -24,20 +22,13 @@ import com.xiaocydx.cxrv.itemselect.SingleSelection
 import com.xiaocydx.cxrv.itemselect.select
 import com.xiaocydx.cxrv.itemselect.singleSelection
 import com.xiaocydx.cxrv.list.ListAdapter
-import com.xiaocydx.cxrv.list.MutableStateList
 import com.xiaocydx.cxrv.list.adapter
 import com.xiaocydx.cxrv.list.linear
 import com.xiaocydx.cxrv.paging.LoadHeaderAdapter
-import com.xiaocydx.cxrv.paging.LoadResult
 import com.xiaocydx.cxrv.paging.LoadType
-import com.xiaocydx.cxrv.paging.Pager
-import com.xiaocydx.cxrv.paging.PagingConfig
 import com.xiaocydx.cxrv.paging.PagingEvent.LoadDataSuccess
-import com.xiaocydx.cxrv.paging.PagingPrefetch
-import com.xiaocydx.cxrv.paging.appendPrefetch
 import com.xiaocydx.cxrv.paging.onEach
 import com.xiaocydx.cxrv.paging.pagingCollector
-import com.xiaocydx.cxrv.paging.storeIn
 import com.xiaocydx.inputview.sample.common.awaitTargetState
 import com.xiaocydx.inputview.sample.common.disableItemAnimator
 import com.xiaocydx.inputview.sample.common.dp
@@ -55,7 +46,6 @@ import com.xiaocydx.inputview.sample.scene.figure.FigureScene
 import com.xiaocydx.inputview.sample.scene.figure.FigureViewModel
 import com.xiaocydx.insets.insets
 import com.xiaocydx.insets.navigationBars
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -75,7 +65,7 @@ class DubbingFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View = FragmentDubbingBinding.inflate(
+    ) = FragmentDubbingBinding.inflate(
         layoutInflater, container, false
     ).apply {
         binding = this
@@ -84,24 +74,8 @@ class DubbingFragment : Fragment() {
         tvFigure.onClick { sharedViewModel.submitPendingScene(FigureScene.SelectFigure) }
         ivConfirm.onClick { sharedViewModel.confirmDubbing(dubbingSelection.selectedItem()) }
 
-        dubbingAdapter = bindingAdapter(
-            uniqueId = Dubbing::id,
-            inflate = ItemDubbingBinding::inflate
-        ) {
-            val corners = 8.dp
-            dubbingSelection = singleSelection(itemKey = Dubbing::id)
-            onCreateView {
-                root.setRoundRectOutlineProvider(corners)
-                bgSelected.setRoundRectOutlineProvider(corners)
-            }
-            onBindView {
-                tvName.text = it.name
-                ivSelected.isVisible = dubbingSelection.isSelected(holder)
-                bgSelected.isVisible = dubbingSelection.isSelected(holder)
-            }
-            doOnSimpleItemClick(dubbingSelection::select)
-        }
-
+        dubbingAdapter = createDubbingAdapter()
+        dubbingSelection = dubbingAdapter.singleSelection(itemKey = Dubbing::id)
         val header = LoadHeaderAdapter(dubbingAdapter) {
             loadingView { HeaderDubbingLoadingBinding.inflate(layoutInflater).root }
         }
@@ -110,10 +84,31 @@ class DubbingFragment : Fragment() {
             .adapter(Concat.header(header).content(dubbingAdapter).concat())
     }.root
 
-    override fun onViewCreated(
-        view: View,
-        savedInstanceState: Bundle?
-    ): Unit = with(binding) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        launchDubbingPagingJob()
+        launchDubbingSelectJob()
+    }
+
+    private fun createDubbingAdapter() = bindingAdapter(
+        uniqueId = Dubbing::id,
+        inflate = ItemDubbingBinding::inflate
+    ) {
+        val corners = 8.dp
+        onCreateView {
+            root.setRoundRectOutlineProvider(corners)
+            bgSelected.setRoundRectOutlineProvider(corners)
+        }
+
+        onBindView {
+            tvName.text = it.name
+            ivSelected.isVisible = dubbingSelection.isSelected(holder)
+            bgSelected.isVisible = dubbingSelection.isSelected(holder)
+        }
+
+        doOnSimpleItemClick { dubbingSelection.select(it) }
+    }
+
+    private fun launchDubbingPagingJob() {
         // Editor动画结束时，Lifecycle状态才会转换为RESUMED，
         // 刷新加载完成，挂起等待Lifecycle状态转换为RESUMED，
         // 避免动画运行时，其中一帧创建大量View造成动画卡顿。
@@ -122,12 +117,13 @@ class DubbingFragment : Fragment() {
                 viewLifecycle.awaitTargetState(Lifecycle.State.RESUMED)
             }
         }
-
         // 收集配音的分页数据流
         dubbingViewModel.dubbingPagingFlow
             .onEach(dubbingAdapter.pagingCollector)
             .launchRepeatOnLifecycle(viewLifecycle)
+    }
 
+    private fun launchDubbingSelectJob() {
         // 当Editor更改为FigureDubbing时，
         // 选中当前数字人的配音，并滚动到目标位置。
         sharedViewModel.currentSceneFlow()
@@ -141,7 +137,7 @@ class DubbingFragment : Fragment() {
                     dubbingSelection.select(current.dubbing)
                     dubbingViewModel.findTargetPosition(current.dubbing)
                 }
-                rvDubbing.scrollToCenter(targetPosition)
+                binding.rvDubbing.scrollToCenter(targetPosition)
             }
             .launchIn(viewLifecycleScope)
     }
@@ -157,29 +153,5 @@ class DubbingFragment : Fragment() {
             scrollBy(itemCenterX - rvCenterX, 0)
         }
         optimizeNextFrameScroll()
-    }
-}
-
-class DubbingViewModel : ViewModel() {
-    private val list = MutableStateList<Dubbing>()
-    private val pager = Pager(
-        initKey = 1,
-        config = PagingConfig(pageSize = 10)
-    ) { params ->
-        // 100ms模拟很快的加载
-        delay(100)
-        val start = params.pageSize * (params.key - 1) + 1
-        val end = start + params.pageSize - 1
-        val data = (start..end).map { Dubbing(id = it.toString(), name = "配音$it") }
-        val nextKey = if (params.key == 10) null else params.key + 1
-        LoadResult.Success(data, nextKey)
-    }
-
-    val dubbingPagingFlow = pager.flow
-        .storeIn(list, viewModelScope)
-        .appendPrefetch(PagingPrefetch.ItemCount(3))
-
-    fun findTargetPosition(dubbing: Dubbing): Int {
-        return list.indexOf(dubbing).coerceAtLeast(0)
     }
 }

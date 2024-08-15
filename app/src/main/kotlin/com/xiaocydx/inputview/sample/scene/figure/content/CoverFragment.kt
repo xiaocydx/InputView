@@ -36,9 +36,8 @@ class CoverFragment : Fragment(), Overlay.Transform {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ) = View(requireContext()).layoutParams(matchParent, matchParent)
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    ): View {
+        val view = View(requireContext())
         viewDrawable.addToHost(view)
         view.transform().add(coverEnterReturn)
         view.transform().add(coverFitCenterChange)
@@ -48,23 +47,24 @@ class CoverFragment : Fragment(), Overlay.Transform {
                 bottom = 20.dp, horizontal = 20.dp
             )
         }
-        launchCollectCurrentScene()
+        return view.layoutParams(matchParent, matchParent)
     }
 
-    private fun launchCollectCurrentScene() {
-        var figureJob: Job? = null
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        var selectJob: Job? = null
         sharedViewModel.currentSceneFlow().onEach {
             val isCover = it?.content == Cover
-            if (isCover && figureJob == null) {
-                figureJob = launchCollectCurrentFigure()
-            } else if (!isCover && figureJob != null) {
-                figureJob?.cancel()
-                figureJob = null
+            if (isCover && selectJob == null) {
+                // 当Content更改为Cover时，启动selectJob
+                selectJob = launchFigureSelectJob()
+            } else if (!isCover && selectJob != null) {
+                selectJob?.cancel()
+                selectJob = null
             }
         }.launchIn(viewLifecycleScope)
     }
 
-    private fun launchCollectCurrentFigure() = run {
+    private fun launchFigureSelectJob() = run {
         sharedViewModel.currentFigureFlow().onEach {
             val ref = sharedViewModel.requestView(Request.Figure)
             val previous = viewDrawable.setTarget(ref) as? FigureView

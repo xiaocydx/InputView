@@ -1,5 +1,6 @@
 package com.xiaocydx.inputview.sample.scene.figure
 
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
 import com.xiaocydx.inputview.Editor
@@ -13,6 +14,7 @@ import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.FigureGrid
 import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.Ime
 import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.ImeIdle
 import com.xiaocydx.inputview.sample.scene.figure.content.CoverFragment
+import com.xiaocydx.inputview.sample.scene.figure.content.TextFragment
 import com.xiaocydx.inputview.sample.scene.figure.editor.DubbingFragment
 import com.xiaocydx.inputview.sample.scene.figure.editor.FigureGridFragment
 import com.xiaocydx.inputview.transform.Content
@@ -49,8 +51,8 @@ class FigureContentAdapter(
 
     override fun getContentKey(content: FigureContent) = content.name
 
-    override fun onCreateFragment(content: FigureContent) = when(content) {
-        Text -> null
+    override fun onCreateFragment(content: FigureContent): Fragment = when (content) {
+        Text -> TextFragment()
         Cover -> CoverFragment()
     }
 }
@@ -64,8 +66,7 @@ class FigureEditAdapter(
     override fun getEditorKey(editor: FigureEditor) = editor.name
 
     override fun onCreateFragment(editor: FigureEditor) = when (editor) {
-        Ime,
-        ImeIdle -> null
+        Ime, ImeIdle -> null
         Emoji -> EmojiFragment()
         FigureGrid -> FigureGridFragment()
         FigureDubbing -> DubbingFragment()

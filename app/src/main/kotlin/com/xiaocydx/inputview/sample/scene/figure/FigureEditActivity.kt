@@ -11,6 +11,8 @@ import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.common.launchRepeatOnLifecycle
 import com.xiaocydx.inputview.sample.common.snackbar
 import com.xiaocydx.inputview.sample.databinding.ActivityFigureEditBinding
+import com.xiaocydx.inputview.sample.scene.figure.PendingView.Request
+import com.xiaocydx.inputview.sample.scene.figure.PendingView.Result
 import com.xiaocydx.inputview.sample.scene.figure.pager.FigurePager
 import com.xiaocydx.inputview.sample.scene.figure.pager.TextPager
 import com.xiaocydx.inputview.transform.EditorBackground
@@ -35,36 +37,36 @@ import kotlinx.coroutines.flow.onEach
  */
 class FigureEditActivity : AppCompatActivity() {
     private val sharedViewModel: FigureViewModel by viewModels()
+    private lateinit var figurePager: FigurePager
+    private lateinit var textPager: TextPager
+    private lateinit var overlay: Overlay<FigureScene>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         InputView.init(window, statusBarEdgeToEdge = true, gestureNavBarEdgeToEdge = true)
         setContentView(ActivityFigureEditBinding.inflate(layoutInflater).init().root)
+        launchUpdatePageJob()
+        launchPendingViewJob()
     }
 
     private fun ActivityFigureEditBinding.init() = apply {
         root.insets().paddings(statusBars() or navigationBars())
-        val requestManager = Glide.with(this@FigureEditActivity)
-
-        // 数字人列表
-        val figurePager = FigurePager(
+        figurePager = FigurePager(
             lifecycle = lifecycle,
             viewPager2 = vpFigure,
-            requestManager = requestManager,
+            requestManager = Glide.with(this@FigureEditActivity),
             goScene = sharedViewModel::submitPendingScene,
             removeFigure = sharedViewModel::submitPendingRemove,
             selectPosition = sharedViewModel::selectPosition,
             figureListFlow = sharedViewModel.figureListFlow
         )
-
-        // 文字输入
-        val textPager = TextPager(
+        textPager = TextPager(
             textView = tvFigure,
             goScene = sharedViewModel::submitPendingScene,
         )
 
         // 覆盖层，包含内容区、编辑区、变换操作
-        val overlay: Overlay<FigureScene> = InputView.createOverlay(
+        overlay = InputView.createOverlay(
             lifecycleOwner = this@FigureEditActivity,
             contentAdapter = FigureContentAdapter(lifecycle, supportFragmentManager),
             editorAdapter = FigureEditAdapter(lifecycle, supportFragmentManager)
@@ -72,11 +74,16 @@ class FigureEditActivity : AppCompatActivity() {
             addSceneFadeChange()
             add(EditorBackground(0xFF1D1D1D.toInt()))
             add(OverlayBackground(0xFF111113.toInt(), sharedViewModel::submitPendingScene))
-            sceneChangedListener = SceneChangedListener { _, c -> sharedViewModel.submitPendingScene(c) }
             addToOnBackPressedDispatcher(onBackPressedDispatcher)
             attach(window) { it.editorAnimator = FadeEditorAnimator(durationMillis = 300) }
         }
+        // 同步当前的FigureScene
+        overlay.sceneChangedListener = SceneChangedListener { _, current ->
+            sharedViewModel.submitPendingScene(current)
+        }
+    }
 
+    private fun launchUpdatePageJob() {
         sharedViewModel.figureState.onEach {
             if (it.pendingRemove != null) {
                 window.snackbar().setText("已删除").show()
@@ -89,17 +96,19 @@ class FigureEditActivity : AppCompatActivity() {
             figurePager.updateCurrentPage(it)
             textPager.updateCurrentPage(it)
         }.launchRepeatOnLifecycle(lifecycle)
+    }
 
+    private fun launchPendingViewJob() {
         // pendingView不结合repeatOnLifecycle收集
         sharedViewModel.figureState
             .mapNotNull { it.pendingView }
-            .filterIsInstance<PendingView.Request>()
+            .filterIsInstance<Request>()
             .mapLatest {
                 val ref = when (it) {
-                    PendingView.Request.Figure -> figurePager.awaitFigureView()
-                    PendingView.Request.Text -> textPager.textView()
+                    Request.Figure -> figurePager.awaitFigureView()
+                    Request.Text -> textPager.textView()
                 }
-                sharedViewModel.consumePendingView(PendingView.Result(ref))
+                sharedViewModel.consumePendingView(Result(ref))
             }
             .launchIn(lifecycleScope)
     }
