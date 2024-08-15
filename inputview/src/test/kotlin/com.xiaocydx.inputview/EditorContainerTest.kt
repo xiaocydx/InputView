@@ -64,15 +64,15 @@ internal class EditorContainerTest {
             val listener = spyk<EditorChangedListener<TestEditor>>()
             adapter.addEditorChangedListener(listener)
 
-            assertThat(container.showChecked(TestEditor.IME)).isTrue()
-            assertThat(container.current).isEqualTo(TestEditor.IME)
+            assertThat(container.showChecked(TestEditor.Ime)).isTrue()
+            assertThat(container.current).isEqualTo(TestEditor.Ime)
             assertThat(container.childCount).isEqualTo(0)
-            verify(exactly = 1) { listener.onEditorChanged(null, TestEditor.IME) }
+            verify(exactly = 1) { listener.onEditorChanged(null, TestEditor.Ime) }
 
             assertThat(container.showChecked(TestEditor.A)).isTrue()
             assertThat(container.current).isEqualTo(TestEditor.A)
             assertThat(container.childCount).isEqualTo(0)
-            verify(exactly = 1) { listener.onEditorChanged(TestEditor.IME, TestEditor.A) }
+            verify(exactly = 1) { listener.onEditorChanged(TestEditor.Ime, TestEditor.A) }
 
             assertThat(container.showChecked(TestEditor.B)).isTrue()
             assertThat(container.current).isEqualTo(TestEditor.B)
@@ -145,7 +145,7 @@ internal class EditorContainerTest {
             val lastListener = spyk<EditorChangedListener<TestEditor>>()
             val midListener = spyk(object : EditorChangedListener<TestEditor> {
                 override fun onEditorChanged(previous: TestEditor?, current: TestEditor?) {
-                    if (previous == null && current == TestEditor.IME) container.showChecked(TestEditor.A)
+                    if (previous == null && current == TestEditor.Ime) container.showChecked(TestEditor.A)
                 }
             })
             adapter.addEditorChangedListener(lastListener)
@@ -153,15 +153,15 @@ internal class EditorContainerTest {
             adapter.addEditorChangedListener(firstListener)
 
             // null变为IME，分发过程被midListener拦截，lastListener不会触发
-            container.showChecked(TestEditor.IME)
-            verify(exactly = 1) { firstListener.onEditorChanged(null, TestEditor.IME) }
-            verify(exactly = 1) { midListener.onEditorChanged(null, TestEditor.IME) }
-            verify(exactly = 0) { lastListener.onEditorChanged(null, TestEditor.IME) }
+            container.showChecked(TestEditor.Ime)
+            verify(exactly = 1) { firstListener.onEditorChanged(null, TestEditor.Ime) }
+            verify(exactly = 1) { midListener.onEditorChanged(null, TestEditor.Ime) }
+            verify(exactly = 0) { lastListener.onEditorChanged(null, TestEditor.Ime) }
 
             // midListener拦截后，触发IME变为A，重新执行完整的分发过程
-            verify(exactly = 1) { firstListener.onEditorChanged(TestEditor.IME, TestEditor.A) }
-            verify(exactly = 1) { midListener.onEditorChanged(TestEditor.IME, TestEditor.A) }
-            verify(exactly = 1) { lastListener.onEditorChanged(TestEditor.IME, TestEditor.A) }
+            verify(exactly = 1) { firstListener.onEditorChanged(TestEditor.Ime, TestEditor.A) }
+            verify(exactly = 1) { midListener.onEditorChanged(TestEditor.Ime, TestEditor.A) }
+            verify(exactly = 1) { lastListener.onEditorChanged(TestEditor.Ime, TestEditor.A) }
         }
     }
 
@@ -176,7 +176,7 @@ internal class EditorContainerTest {
             val lastListener = spyk<EditorChangedListener<TestEditor>>()
             val midListener = spyk(object : EditorChangedListener<TestEditor> {
                 override fun onEditorChanged(previous: TestEditor?, current: TestEditor?) {
-                    if (previous == null && current == TestEditor.IME) container.hideChecked(TestEditor.IME)
+                    if (previous == null && current == TestEditor.Ime) container.hideChecked(TestEditor.Ime)
                 }
             })
             adapter.addEditorChangedListener(lastListener)
@@ -184,15 +184,15 @@ internal class EditorContainerTest {
             adapter.addEditorChangedListener(firstListener)
 
             // null变为IME，分发过程被midListener拦截，lastListener不会触发
-            container.showChecked(TestEditor.IME)
-            verify(exactly = 1) { firstListener.onEditorChanged(null, TestEditor.IME) }
-            verify(exactly = 1) { midListener.onEditorChanged(null, TestEditor.IME) }
-            verify(exactly = 0) { lastListener.onEditorChanged(null, TestEditor.IME) }
+            container.showChecked(TestEditor.Ime)
+            verify(exactly = 1) { firstListener.onEditorChanged(null, TestEditor.Ime) }
+            verify(exactly = 1) { midListener.onEditorChanged(null, TestEditor.Ime) }
+            verify(exactly = 0) { lastListener.onEditorChanged(null, TestEditor.Ime) }
 
             // midListener拦截后，触发IME变为null，重新执行完整的分发过程
-            verify(exactly = 1) { firstListener.onEditorChanged(TestEditor.IME, null) }
-            verify(exactly = 1) { midListener.onEditorChanged(TestEditor.IME, null) }
-            verify(exactly = 1) { lastListener.onEditorChanged(TestEditor.IME, null) }
+            verify(exactly = 1) { firstListener.onEditorChanged(TestEditor.Ime, null) }
+            verify(exactly = 1) { midListener.onEditorChanged(TestEditor.Ime, null) }
+            verify(exactly = 1) { lastListener.onEditorChanged(TestEditor.Ime, null) }
         }
     }
 
@@ -269,14 +269,14 @@ internal class EditorContainerTest {
     }
 
     private enum class TestEditor : Editor {
-        IME, A, B
+        Ime, A, B
     }
 
     private class TestEditorAdapter : EditorAdapter<TestEditor>() {
-        override val ime: TestEditor = TestEditor.IME
+        override val ime: TestEditor = TestEditor.Ime
 
         override fun onCreateView(parent: ViewGroup, editor: TestEditor): View? = when (editor) {
-            TestEditor.IME -> null
+            TestEditor.Ime -> null
             TestEditor.A -> TestViewA(parent.context)
             TestEditor.B -> TestViewB(parent.context)
         }

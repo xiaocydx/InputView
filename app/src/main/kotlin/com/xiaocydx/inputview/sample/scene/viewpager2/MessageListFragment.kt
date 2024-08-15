@@ -10,7 +10,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle.State.RESUMED
 import com.xiaocydx.inputview.AnimationInterceptor
 import com.xiaocydx.inputview.Editor
-import com.xiaocydx.inputview.sample.basic.message.MessageEditor.IME
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor.Ime
 import com.xiaocydx.inputview.sample.basic.message.init
 import com.xiaocydx.inputview.sample.common.viewLifecycle
 import com.xiaocydx.inputview.sample.databinding.MessageListBinding
@@ -39,8 +39,8 @@ class MessageListFragment : Fragment() {
         tvTitle.text = "消息列表-$num"
         inputView.editorAnimator.setAnimationInterceptor(object : AnimationInterceptor {
             override fun onInterceptChange(current: Editor?, next: Editor?): Boolean {
-                // 显示IME时，若当前生命周期状态不是RESUMED，则不允许Editor更改为IME
-                return next === IME && viewLifecycle.currentState !== RESUMED
+                // 显示IME时，若当前生命周期状态不是RESUMED，则不允许Editor更改为Ime
+                return next === Ime && viewLifecycle.currentState !== RESUMED
             }
         })
     }

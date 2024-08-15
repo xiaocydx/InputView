@@ -5,7 +5,7 @@ import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.scene.figure.FigureSnapshot
 import com.xiaocydx.inputview.sample.scene.figure.FigureState
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.INPUT
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.Ime
 import java.lang.ref.WeakReference
 
 /**
@@ -19,7 +19,7 @@ class TextPager(
     private var text: String? = null
 
     init {
-        textView.onClick { showEditor(INPUT) }
+        textView.onClick { showEditor(Ime) }
     }
 
     fun updateCurrentPage(state: FigureState) {

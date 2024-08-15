@@ -12,11 +12,11 @@ import com.xiaocydx.inputview.sample.common.dp
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.FigureTextLayoutBinding
 import com.xiaocydx.inputview.sample.scene.figure.ViewBounds
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.DUBBING
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.EMOJI
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.GRID
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.INPUT
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.INPUT_IDLE
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.FigureDubbing
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.Emoji
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.FigureGrid
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.Ime
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.ImeIdle
 import com.xiaocydx.inputview.sample.scene.transform.ContainerTransformation
 import com.xiaocydx.insets.getRootWindowInsetsCompat
 import com.xiaocydx.insets.isGestureNavigationBar
@@ -34,7 +34,7 @@ class TextGroupTransformation(
     private val showEditor: (FigureEditor?) -> Unit,
     private val currentText: () -> String,
     private val confirmText: (text: String) -> Unit
-) : ContainerTransformation<FigureSnapshotState>(INPUT, INPUT_IDLE, EMOJI) {
+) : ContainerTransformation<FigureSnapshotState>(Ime, ImeIdle, Emoji) {
     private var binding: FigureTextLayoutBinding? = null
     private var textBounds: ViewBounds? = null
     private val startPaddings = Rect()
@@ -52,9 +52,9 @@ class TextGroupTransformation(
             false
         ).apply {
             binding = this
-            tvEmoji.onClick { showEditor(EMOJI) }
-            tvFigure.onClick { showEditor(GRID) }
-            tvDubbing.onClick { showEditor(DUBBING) }
+            tvEmoji.onClick { showEditor(Emoji) }
+            tvFigure.onClick { showEditor(FigureGrid) }
+            tvDubbing.onClick { showEditor(FigureDubbing) }
             ivConfirm.onClick { showEditor(null) }
         }.root
     }
@@ -82,7 +82,7 @@ class TextGroupTransformation(
         when {
             !isPrevious(state) -> {
                 inputView.editText = binding.editText
-                if (current == INPUT) {
+                if (current == Ime) {
                     inputView.editText?.requestFocus()
                     binding.editText.setText(currentText())
                     binding.editText.setSelection(binding.editText.text.length)
@@ -145,7 +145,7 @@ class TextGroupTransformation(
         val fraction = when {
             navigationBarHeight <= 0 || !isGestureNavigationBar -> 0f
             // 退出INPUT_IDLE，按interpolatedFraction减小marginBottom
-            previous === INPUT_IDLE && current == null -> 1 - interpolatedFraction
+            previous === ImeIdle && current == null -> 1 - interpolatedFraction
             // currentAnchorY处于navigationBar的范围，计算当前marginBottom
             currentAnchorY in (initialAnchorY - navigationBarHeight)..initialAnchorY -> {
                 val current = currentAnchorY - (initialAnchorY - navigationBarHeight)

@@ -21,9 +21,9 @@ import com.xiaocydx.inputview.linearEditorOffset
 import com.xiaocydx.inputview.notifyHideCurrent
 import com.xiaocydx.inputview.notifyToggle
 import com.xiaocydx.inputview.sample.R
-import com.xiaocydx.inputview.sample.basic.message.MessageEditor.EMOJI
-import com.xiaocydx.inputview.sample.basic.message.MessageEditor.EXTRA
-import com.xiaocydx.inputview.sample.basic.message.MessageEditor.VOICE
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor.Emoji
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor.Extra
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor.Voice
 import com.xiaocydx.inputview.sample.common.addOnItemTouchListener
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.MessageListBinding
@@ -130,7 +130,7 @@ private fun MessageListBinding.initTouch(window: Window) {
     // 触摸RecyclerView隐藏当前MessageEditor
     rvMessage.addOnItemTouchListener(onInterceptTouchEvent = { _, ev ->
         if (ev.action == MotionEvent.ACTION_DOWN
-                && inputView.editorAdapter.current !== VOICE) {
+                && inputView.editorAdapter.current !== Voice) {
             inputView.editorAdapter.notifyHideCurrent()
         }
         false
@@ -148,21 +148,21 @@ private fun MessageListBinding.initTouch(window: Window) {
  */
 private fun MessageListBinding.initToggle(editorAdapter: EditorAdapter<MessageEditor>) {
     val actions = mutableMapOf<MessageEditor, Action>()
-    actions[VOICE] = Action(ivVoice, R.mipmap.ic_message_editor_voice)
-    actions[EMOJI] = Action(ivEmoji, R.mipmap.ic_message_editor_emoji)
-    actions[EXTRA] = Action(ivExtra, R.mipmap.ic_message_editor_extra, isKeep = true)
+    actions[Voice] = Action(ivVoice, R.mipmap.ic_message_editor_voice)
+    actions[Emoji] = Action(ivEmoji, R.mipmap.ic_message_editor_emoji)
+    actions[Extra] = Action(ivExtra, R.mipmap.ic_message_editor_extra, isKeep = true)
     // 初始化各个按钮显示的图标
     actions.forEach { it.value.showSelfIcon() }
 
     editorAdapter.addEditorChangedListener { _, current ->
-        tvVoice.isVisible = current === VOICE
+        tvVoice.isVisible = current === Voice
         actions.forEach { it.value.showSelfIcon() }
         current?.let(actions::get)?.takeIf { !it.isKeep }?.showImeIcon()
     }
 
-    ivVoice.onClick { editorAdapter.notifyToggle(VOICE) }
-    ivEmoji.onClick { editorAdapter.notifyToggle(EMOJI) }
-    ivExtra.onClick { editorAdapter.notifyToggle(EXTRA) }
+    ivVoice.onClick { editorAdapter.notifyToggle(Voice) }
+    ivEmoji.onClick { editorAdapter.notifyToggle(Emoji) }
+    ivExtra.onClick { editorAdapter.notifyToggle(Extra) }
 }
 
 private class Action(

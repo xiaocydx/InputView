@@ -96,7 +96,7 @@ internal enum class TestScene(
 }
 
 internal enum class TestEditor : Editor {
-    IME, A, B
+    Ime, A, B
 }
 
 internal enum class TestContent : Content {
@@ -104,7 +104,7 @@ internal enum class TestContent : Content {
 }
 
 internal class TestEditorAdapter : EditorAdapter<TestEditor>() {
-    override val ime = TestEditor.IME
+    override val ime = TestEditor.Ime
     override fun onCreateView(parent: ViewGroup, editor: TestEditor) = null
 }
 

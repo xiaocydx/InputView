@@ -27,15 +27,15 @@ import androidx.annotation.CallSuper
  *
  * ```
  * enum class VideoContent : Content {
- *     TEXT, TITLE
+ *     Text, Title
  * }
  *
  * class VideoEditorAdapter : ContentAdapter<VideoContent>() {
  *
  *     override fun onCreateView(parent: ViewGroup, content: VideoContent): View {
  *         return when(content) {
- *             VideoContent.TEXT -> TextView()
- *             VideoContent.TITLE -> TitleView()
+ *             VideoContent.Text -> TextView()
+ *             VideoContent.Title -> TitleView()
  *         }
  *     }
  * }
@@ -71,7 +71,7 @@ abstract class ContentAdapter<T : Content> {
  * 推荐用`enum class`或`sealed class`实现[Content]，例如：
  * ```
  * enum class VideoContent : Content {
- *     TEXT, TITLE
+ *     Text, Title
  * }
  * ```
  *

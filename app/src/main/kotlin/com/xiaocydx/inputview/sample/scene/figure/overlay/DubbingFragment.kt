@@ -51,9 +51,9 @@ import com.xiaocydx.inputview.sample.databinding.HeaderDubbingLoadingBinding
 import com.xiaocydx.inputview.sample.databinding.ItemDubbingBinding
 import com.xiaocydx.inputview.sample.scene.figure.Dubbing
 import com.xiaocydx.inputview.sample.scene.figure.FigureViewModel
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.DUBBING
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.GRID
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.INPUT
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.FigureDubbing
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.FigureGrid
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.Ime
 import com.xiaocydx.insets.insets
 import com.xiaocydx.insets.navigationBars
 import kotlinx.coroutines.delay
@@ -81,8 +81,8 @@ class DubbingFragment : Fragment() {
     ).apply {
         binding = this
         root.insets().paddings(navigationBars())
-        tvInput.onClick { sharedViewModel.submitPendingEditor(INPUT) }
-        tvFigure.onClick { sharedViewModel.submitPendingEditor(GRID) }
+        tvInput.onClick { sharedViewModel.submitPendingEditor(Ime) }
+        tvFigure.onClick { sharedViewModel.submitPendingEditor(FigureGrid) }
         ivConfirm.onClick { sharedViewModel.confirmDubbing(dubbingSelection.selectedItem()) }
 
         dubbingAdapter = bindingAdapter(
@@ -129,10 +129,10 @@ class DubbingFragment : Fragment() {
             .onEach(dubbingAdapter.pagingCollector)
             .launchRepeatOnLifecycle(viewLifecycle)
 
-        // 当Editor更改为FigureEditor.DUBBING时，
+        // 当Editor更改为FigureDubbing时，
         // 选中当前数字人的配音，并滚动到目标位置。
         sharedViewModel.currentEditorFlow()
-            .filter { it == DUBBING }
+            .filter { it == FigureDubbing }
             .onEach {
                 val current = sharedViewModel.currentFigure
                 val targetPosition = if (current == null) {

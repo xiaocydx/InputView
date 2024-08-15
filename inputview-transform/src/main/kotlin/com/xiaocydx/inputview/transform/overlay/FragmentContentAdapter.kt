@@ -38,7 +38,7 @@ import androidx.lifecycle.LifecycleOwner
  *
  * ```
  * enum class VideoContent : Content {
- *     TEXT, TITLE
+ *     Text, Title
  * }
  *
  * class VideoFragmentEditorAdapter(
@@ -50,8 +50,8 @@ import androidx.lifecycle.LifecycleOwner
  *
  *     override fun onCreateFragment(content: VideoContent): Fragment {
  *         return when(content) {
- *             VideoContent.TEXT -> TextFragment()
- *             VideoContent.TITLE -> TitleFragment()
+ *             VideoContent.Text -> TextFragment()
+ *             VideoContent.Title -> TitleFragment()
  *         }
  *     }
  * }

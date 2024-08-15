@@ -10,8 +10,8 @@ import androidx.core.graphics.withMatrix
 import com.xiaocydx.inputview.sample.common.dp
 import com.xiaocydx.inputview.sample.scene.figure.Figure
 import com.xiaocydx.inputview.sample.scene.figure.ViewBounds
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.DUBBING
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.GRID
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.FigureDubbing
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.FigureGrid
 import com.xiaocydx.inputview.sample.scene.figure.pager.FigureView
 import com.xiaocydx.inputview.sample.scene.transform.ContainerTransformation
 import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.EnforcerScope
@@ -29,7 +29,7 @@ import java.lang.ref.WeakReference
 class CoverGroupTransformation(
     private val updateCurrent: Flow<Figure?>,
     private val requestSnapshot: (FigureEditor?) -> Unit
-) : ContainerTransformation<FigureSnapshotState>(GRID, DUBBING) {
+) : ContainerTransformation<FigureSnapshotState>(FigureGrid, FigureDubbing) {
     private var view: View? = null
     private val drawable = FigureViewDrawable()
 

@@ -14,10 +14,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.sample.R
-import com.xiaocydx.inputview.sample.basic.message.MessageEditor.EMOJI
-import com.xiaocydx.inputview.sample.basic.message.MessageEditor.EXTRA
-import com.xiaocydx.inputview.sample.basic.message.MessageEditor.IME
-import com.xiaocydx.inputview.sample.basic.message.MessageEditor.VOICE
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor.Emoji
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor.Extra
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor.Ime
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor.Voice
 import com.xiaocydx.inputview.sample.common.dp
 import com.xiaocydx.inputview.sample.common.layoutParams
 import com.xiaocydx.inputview.sample.common.matchParent
@@ -29,12 +29,12 @@ import com.xiaocydx.insets.insets
  * @date 2023/1/8
  */
 open class MessageEditorAdapter : EditorAdapter<MessageEditor>() {
-    override val ime: MessageEditor = IME
+    override val ime: MessageEditor = Ime
 
     override fun onCreateView(parent: ViewGroup, editor: MessageEditor): View? = when (editor) {
-        IME, VOICE -> null
-        EMOJI -> EmojiRecyclerView(parent.context)
-        EXTRA -> createView(R.layout.message_editor_extra, parent)
+        Ime, Voice -> null
+        Emoji -> EmojiRecyclerView(parent.context)
+        Extra -> createView(R.layout.message_editor_extra, parent)
     }
 
     private fun createView(@LayoutRes resource: Int, parent: ViewGroup): View {
@@ -43,7 +43,7 @@ open class MessageEditorAdapter : EditorAdapter<MessageEditor>() {
 }
 
 enum class MessageEditor : Editor {
-    IME, VOICE, EMOJI, EXTRA
+    Ime, Voice, Emoji, Extra
 }
 
 class EmojiRecyclerView(context: Context) : RecyclerView(context) {

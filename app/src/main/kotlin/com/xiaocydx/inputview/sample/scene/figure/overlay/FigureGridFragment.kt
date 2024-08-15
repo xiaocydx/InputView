@@ -36,9 +36,9 @@ import com.xiaocydx.inputview.sample.databinding.FragmentFigureGridBinding
 import com.xiaocydx.inputview.sample.databinding.ItemFigureGridBinding
 import com.xiaocydx.inputview.sample.scene.figure.Figure
 import com.xiaocydx.inputview.sample.scene.figure.FigureViewModel
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.DUBBING
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.GRID
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.INPUT
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.FigureDubbing
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.FigureGrid
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.Ime
 import com.xiaocydx.insets.insets
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
@@ -62,8 +62,8 @@ class FigureGridFragment : Fragment() {
         layoutInflater, container, false
     ).apply {
         binding = this
-        tvInput.onClick { sharedViewModel.submitPendingEditor(INPUT) }
-        tvDubbing.onClick { sharedViewModel.submitPendingEditor(DUBBING) }
+        tvInput.onClick { sharedViewModel.submitPendingEditor(Ime) }
+        tvDubbing.onClick { sharedViewModel.submitPendingEditor(FigureDubbing) }
 
         val requestManager = Glide.with(this@FigureGridFragment)
         figureAdapter = bindingAdapter(
@@ -116,10 +116,10 @@ class FigureGridFragment : Fragment() {
             }
             .launchRepeatOnLifecycle(viewLifecycle)
 
-        // 当Editor更改为FigureEditor.GRID时，
+        // 当Editor更改为FigureGrid时，
         // 选中当前数字人，并滚动到目标位置。
         sharedViewModel.currentEditorFlow()
-            .filter { it == GRID }
+            .filter { it == FigureGrid }
             .onEach {
                 val figureState = sharedViewModel.figureState.value
                 rvFigure.scrollToPosition(figureState.currentPosition)

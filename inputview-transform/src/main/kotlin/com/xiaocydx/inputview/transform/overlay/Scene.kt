@@ -29,18 +29,18 @@ import com.xiaocydx.inputview.Editor
  *     override val content: VideoContent,
  *     override val editor: VideoEditor
  * ) : Scene<VideoContent, VideoEditor> {
- *     INPUT_TEXT(VideoContent.Text, VideoEditor.Ime),
- *     INPUT_EMOJI(VideoContent.Text, VideoEditor.Emoji),
- *     SELECT_AUDIO(VideoContent.Title, VideoEditor.Audio),
- *     SELECT_IMAGE(VideoContent.Title, VideoEditor.Image)
+ *     InputText(Text, Ime),
+ *     InputEmoji(Text, Emoji),
+ *     SelectAudio(Title, Audio),
+ *     SelectImage(Title, Image)
  * }
  *
  * enum class VideoContent : Content {
- *     TEXT, TITLE
+ *     Text, Title
  * }
  *
  * enum class VideoEditor : Editor {
- *     IME, EMOJI, AUDIO, IMAGE
+ *     Ime, Emoji, Audio, Image
  * }
  * ```
  *

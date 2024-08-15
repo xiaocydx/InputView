@@ -459,16 +459,16 @@ internal class FragmentEditorAdapterTest {
     }
 
     private enum class TestEditor : Editor {
-        IME, A, B
+        Ime, A, B
     }
 
     private class TestEditorAdapter(
         fragmentActivity: FragmentActivity
     ) : FragmentEditorAdapter<TestEditor>(fragmentActivity) {
-        override val ime = TestEditor.IME
+        override val ime = TestEditor.Ime
         override fun getEditorKey(editor: TestEditor) = editor.name
         override fun onCreateFragment(editor: TestEditor) = when (editor) {
-            TestEditor.IME -> null
+            TestEditor.Ime -> null
             TestEditor.A -> TestFragmentA()
             TestEditor.B -> TestFragmentB()
         }

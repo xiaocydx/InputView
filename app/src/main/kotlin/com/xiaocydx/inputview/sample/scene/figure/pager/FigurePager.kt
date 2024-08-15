@@ -31,8 +31,8 @@ import com.xiaocydx.inputview.sample.scene.figure.Figure
 import com.xiaocydx.inputview.sample.scene.figure.FigureSnapshot
 import com.xiaocydx.inputview.sample.scene.figure.FigureState
 import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.DUBBING
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.GRID
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.FigureDubbing
+import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.FigureGrid
 import kotlinx.coroutines.flow.Flow
 import java.lang.ref.WeakReference
 import kotlin.math.absoluteValue
@@ -62,10 +62,10 @@ class FigurePager(
         ) {
             onBindView { figureView.setFigure(requestManager, it) }
             doOnItemClick(target = { binding.figureView }) { holder, _ ->
-                showOrScroll(holder, GRID)
+                showOrScroll(holder, FigureGrid)
             }
             doOnItemClick(target = { binding.figureView.tvDubbing }) { holder, _ ->
-                showOrScroll(holder, DUBBING)
+                showOrScroll(holder, FigureDubbing)
             }
             doOnLongItemClick(target = { binding.figureView }) { holder, item ->
                 if (!isCurrent(holder)) return@doOnLongItemClick false

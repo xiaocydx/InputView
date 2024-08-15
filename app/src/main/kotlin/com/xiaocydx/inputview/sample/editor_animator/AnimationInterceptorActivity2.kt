@@ -8,8 +8,8 @@ import com.xiaocydx.inputview.AnimationInterceptor
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.init
-import com.xiaocydx.inputview.sample.basic.message.MessageEditor.EMOJI
-import com.xiaocydx.inputview.sample.basic.message.MessageEditor.IME
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor.Emoji
+import com.xiaocydx.inputview.sample.basic.message.MessageEditor.Ime
 import com.xiaocydx.inputview.sample.basic.message.init
 import com.xiaocydx.inputview.sample.common.gravity
 import com.xiaocydx.inputview.sample.common.snackbar
@@ -32,16 +32,16 @@ class AnimationInterceptorActivity2 : AppCompatActivity() {
     private fun MessageListBinding.intercept() = apply {
         inputView.editorAnimator.setAnimationInterceptor(object : AnimationInterceptor {
             override fun onInterceptDurationMillis(previous: Editor?, current: Editor?, durationMillis: Long): Long {
-                if (previous != IME && current == IME) {
-                    showSnackbar("previous != IME，current = IME\n动画时长调整为1000ms")
+                if (previous != Ime && current == Ime) {
+                    showSnackbar("previous != Ime，current = Ime\n动画时长调整为1000ms")
                     return 1000L
                 }
-                if (previous == IME && current != IME) {
-                    showSnackbar("previous = IME，current != IME\n动画时长调整为100ms")
+                if (previous == Ime && current != Ime) {
+                    showSnackbar("previous = Ime，current != Ime\n动画时长调整为100ms")
                     return 100L
                 }
-                if (current == EMOJI) {
-                    showSnackbar("current = EMOJI\n动画时长调整为500ms")
+                if (current == Emoji) {
+                    showSnackbar("current = Emoji\n动画时长调整为500ms")
                     return 500L
                 }
                 return super.onInterceptDurationMillis(previous, current, durationMillis)
