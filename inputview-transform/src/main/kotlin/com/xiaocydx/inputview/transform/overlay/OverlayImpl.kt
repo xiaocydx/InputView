@@ -293,7 +293,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
         override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
             transformState.isDispatching = true
             transformState.prepare(previousScene, currentScene)
-            findMatchTransformers()
+            findMatchTransformers(checkState = false)
             dispatchMatchTransformers { onPrepare(transformState) }
         }
 
@@ -310,7 +310,8 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
         override fun onAnimationEnd(animation: AnimationState) {
             dispatchMatchTransformers { onEnd(transformState) }
             transformState.postEnd(animation)
-            if (transformState.current == null) clearMatchTransformers()
+            // 更改transformState后，再次查找matchTransformers
+            findMatchTransformers(checkState = true)
             transformState.isDispatching = false
         }
 
@@ -338,7 +339,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
             if (transformer.owner === owner
                     && !transformState.isInvalidated
                     && !transformState.isDispatching
-                    && addToMatchTransformers(transformer)) {
+                    && matchTransformers.contains(transformer)) {
                 transformState.isDispatching = true
                 transformer.onPrepare(transformState)
                 transformer.onStart(transformState)
@@ -348,26 +349,16 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
             }
         }
 
-        private fun findMatchTransformers() {
-            clearMatchTransformers()
-            val tempTransformers = ArrayList<Transformer>(transformers)
-            tempTransformers.takeIf { it.size > 1 }?.sortWith(sequenceComparator)
-            for (i in tempTransformers.indices) {
-                if (!tempTransformers[i].match(transformState)) continue
-                matchTransformers.add(tempTransformers[i])
-            }
-        }
-
-        private fun addToMatchTransformers(transformer: Transformer): Boolean {
-            if (matchTransformers.contains(transformer)) return true
-            if (!transformer.match(transformState)) return false
-            matchTransformers.add(transformer)
-            matchTransformers.takeIf { it.size > 1 }?.sortWith(sequenceComparator)
-            return true
-        }
-
-        private fun clearMatchTransformers() {
+        private fun findMatchTransformers(checkState: Boolean) {
             matchTransformers.takeIf { it.isNotEmpty() }?.clear()
+            if (checkState && transformState.current == null) return
+            // 按add顺序匹配matchTransformers
+            for (i in transformers.indices) {
+                if (!transformers[i].match(transformState)) continue
+                matchTransformers.add(transformers[i])
+            }
+            // 按sequence顺序分发matchTransformers
+            matchTransformers.takeIf { it.size > 1 }?.sortWith(sequenceComparator)
         }
 
         private fun dispatchMatchTransformersOnPreDraw() {
