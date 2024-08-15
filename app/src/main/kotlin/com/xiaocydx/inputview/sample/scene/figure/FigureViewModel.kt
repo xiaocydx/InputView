@@ -1,16 +1,19 @@
 package com.xiaocydx.inputview.sample.scene.figure
 
+import android.view.View
 import androidx.lifecycle.ViewModel
 import androidx.recyclerview.widget.RecyclerView.NO_POSITION
 import com.xiaocydx.cxrv.list.MutableStateList
 import com.xiaocydx.cxrv.list.asStateFlow
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import java.lang.ref.WeakReference
 
 /**
  * @author xcc
@@ -33,8 +36,8 @@ class FigureViewModel : ViewModel() {
         return _figureState.map { currentFigure }.distinctUntilChanged()
     }
 
-    fun currentEditorFlow(): Flow<FigureEditor?> {
-        return _figureState.map { it.currentEditor }.distinctUntilChanged()
+    fun currentSceneFlow(): Flow<FigureScene?> {
+        return _figureState.map { it.currentScene }.distinctUntilChanged()
     }
 
     fun selectPosition(position: Int) {
@@ -49,7 +52,7 @@ class FigureViewModel : ViewModel() {
         val position = _figureState.value.currentPosition
         val current = figureList.getOrNull(position) ?: return
         figureList[position] = current.copy(dubbing = dubbing ?: Dubbing())
-        submitPendingEditor(editor = null)
+        submitPendingScene(scene = null)
     }
 
     fun confirmText(text: String?) {
@@ -83,37 +86,54 @@ class FigureViewModel : ViewModel() {
     }
 
     /**
-     * 提交待处理的[editor]，由视图做进一步处理
+     * 提交待处理的[scene]，由视图做进一步处理
      */
-    fun submitPendingEditor(
-        editor: FigureEditor?,
-        request: Boolean = false
-    ) = _figureState.update {
-        val pending = it.pendingEditor
-        if (!request && it.currentEditor == editor) {
+    fun submitPendingScene(scene: FigureScene?) = _figureState.update {
+        val pending = it.pendingScene
+        if (it.currentScene == scene) {
             if (pending == null) return
-            return@update it.copy(pendingEditor = null)
+            return@update it.copy(pendingScene = null)
         }
-        if (request && pending != null) return
-        if (pending != null && pending.editor == editor) return
-        it.copy(pendingEditor = PendingEditor(editor, request))
+        if (pending != null && pending.scene == scene) return
+        it.copy(pendingScene = PendingScene(scene))
     }
 
     /**
-     * 消费待处理的`editor`，设置当前的[FigureEditor]
+     * 消费待处理的`scene`，设置当前的[FigureScene]
      */
-    fun consumePendingEditor(current: FigureEditor?) = _figureState.update {
-        it.pendingEditor ?: return
-        it.copy(pendingEditor = null, currentEditor = current)
+    fun consumePendingScene(current: FigureScene?) = _figureState.update {
+        it.pendingScene ?: return
+        it.copy(pendingScene = null, currentScene = current)
+    }
+
+    suspend fun requestView(request: PendingView.Request): WeakReference<View>? {
+        _figureState.update { it.copy(pendingView = request) }
+        val result = _figureState.map { it.pendingView }
+            .filterIsInstance<PendingView.Result>().first()
+        consumePendingView(current = null)
+        return result.ref
+    }
+
+    fun consumePendingView(current: PendingView?) {
+        _figureState.update { it.copy(pendingView = current) }
     }
 }
 
 data class FigureState(
     val currentPosition: Int = NO_POSITION,
-    val currentEditor: FigureEditor? = null,
+    val currentScene: FigureScene? = null,
     val currentText: String = "",
     val pendingRemove: Figure? = null,
-    val pendingEditor: PendingEditor? = null
+    val pendingScene: PendingScene? = null,
+    val pendingView: PendingView? = null
 )
 
-data class PendingEditor(val editor: FigureEditor?, val request: Boolean)
+data class PendingScene(val scene: FigureScene?)
+
+sealed class PendingView {
+    sealed class Request : PendingView() {
+        data object Figure : Request()
+        data object Text : Request()
+    }
+    data class Result(val ref: WeakReference<View>?) : PendingView()
+}

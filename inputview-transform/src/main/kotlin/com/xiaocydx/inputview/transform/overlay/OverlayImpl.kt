@@ -138,13 +138,13 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
         }
 
         val sceneChanged = current !== scene
-        if (editorSucceed) {
+        if (editorSucceed && sceneChanged) {
             previous = current
             current = scene
-            backPressedCallback?.isEnabled = current != null
-            if (sceneChanged) transformState.invalidate()
-            if (sceneChanged) sceneChangedListener?.onChanged(previous, current)
+            transformState.invalidate()
+            sceneChangedListener?.onChanged(previous, current)
         }
+        backPressedCallback?.isEnabled = current != null
 
         isActiveGoing = false
         return editorSucceed && sceneChanged
@@ -338,7 +338,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
             if (transformer.owner === owner
                     && !transformState.isInvalidated
                     && !transformState.isDispatching
-                    && matchTransformers.contains(transformer)) {
+                    && addToMatchTransformers(transformer)) {
                 transformState.isDispatching = true
                 transformer.onPrepare(transformState)
                 transformer.onStart(transformState)
@@ -356,6 +356,14 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
                 if (!tempTransformers[i].match(transformState)) continue
                 matchTransformers.add(tempTransformers[i])
             }
+        }
+
+        private fun addToMatchTransformers(transformer: Transformer): Boolean {
+            if (matchTransformers.contains(transformer)) return true
+            if (!transformer.match(transformState)) return false
+            matchTransformers.add(transformer)
+            matchTransformers.takeIf { it.size > 1 }?.sortWith(sequenceComparator)
+            return true
         }
 
         private fun clearMatchTransformers() {

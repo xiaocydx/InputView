@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.figure.overlay
+package com.xiaocydx.inputview.sample.scene.figure.editor
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -50,10 +50,9 @@ import com.xiaocydx.inputview.sample.databinding.FragmentDubbingBinding
 import com.xiaocydx.inputview.sample.databinding.HeaderDubbingLoadingBinding
 import com.xiaocydx.inputview.sample.databinding.ItemDubbingBinding
 import com.xiaocydx.inputview.sample.scene.figure.Dubbing
+import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.FigureDubbing
+import com.xiaocydx.inputview.sample.scene.figure.FigureScene
 import com.xiaocydx.inputview.sample.scene.figure.FigureViewModel
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.FigureDubbing
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.FigureGrid
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.Ime
 import com.xiaocydx.insets.insets
 import com.xiaocydx.insets.navigationBars
 import kotlinx.coroutines.delay
@@ -81,8 +80,8 @@ class DubbingFragment : Fragment() {
     ).apply {
         binding = this
         root.insets().paddings(navigationBars())
-        tvInput.onClick { sharedViewModel.submitPendingEditor(Ime) }
-        tvFigure.onClick { sharedViewModel.submitPendingEditor(FigureGrid) }
+        tvInput.onClick { sharedViewModel.submitPendingScene(FigureScene.InputText) }
+        tvFigure.onClick { sharedViewModel.submitPendingScene(FigureScene.SelectFigure) }
         ivConfirm.onClick { sharedViewModel.confirmDubbing(dubbingSelection.selectedItem()) }
 
         dubbingAdapter = bindingAdapter(
@@ -131,8 +130,8 @@ class DubbingFragment : Fragment() {
 
         // 当Editor更改为FigureDubbing时，
         // 选中当前数字人的配音，并滚动到目标位置。
-        sharedViewModel.currentEditorFlow()
-            .filter { it == FigureDubbing }
+        sharedViewModel.currentSceneFlow()
+            .filter { it?.editor == FigureDubbing }
             .onEach {
                 val current = sharedViewModel.currentFigure
                 val targetPosition = if (current == null) {

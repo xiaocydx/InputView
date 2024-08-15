@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.figure.overlay
+package com.xiaocydx.inputview.sample.scene.figure.editor
 
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
@@ -35,10 +35,9 @@ import com.xiaocydx.inputview.sample.common.viewLifecycleScope
 import com.xiaocydx.inputview.sample.databinding.FragmentFigureGridBinding
 import com.xiaocydx.inputview.sample.databinding.ItemFigureGridBinding
 import com.xiaocydx.inputview.sample.scene.figure.Figure
+import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.FigureGrid
+import com.xiaocydx.inputview.sample.scene.figure.FigureScene
 import com.xiaocydx.inputview.sample.scene.figure.FigureViewModel
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.FigureDubbing
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.FigureGrid
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.Ime
 import com.xiaocydx.insets.insets
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
@@ -62,8 +61,8 @@ class FigureGridFragment : Fragment() {
         layoutInflater, container, false
     ).apply {
         binding = this
-        tvInput.onClick { sharedViewModel.submitPendingEditor(Ime) }
-        tvDubbing.onClick { sharedViewModel.submitPendingEditor(FigureDubbing) }
+        tvInput.onClick { sharedViewModel.submitPendingScene(FigureScene.InputText) }
+        tvDubbing.onClick { sharedViewModel.submitPendingScene(FigureScene.SelectDubbing) }
 
         val requestManager = Glide.with(this@FigureGridFragment)
         figureAdapter = bindingAdapter(
@@ -118,8 +117,8 @@ class FigureGridFragment : Fragment() {
 
         // 当Editor更改为FigureGrid时，
         // 选中当前数字人，并滚动到目标位置。
-        sharedViewModel.currentEditorFlow()
-            .filter { it == FigureGrid }
+        sharedViewModel.currentSceneFlow()
+            .filter { it?.editor == FigureGrid }
             .onEach {
                 val figureState = sharedViewModel.figureState.value
                 rvFigure.scrollToPosition(figureState.currentPosition)

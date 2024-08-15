@@ -1,11 +1,10 @@
 package com.xiaocydx.inputview.sample.scene.figure.pager
 
+import android.view.View
 import android.widget.TextView
 import com.xiaocydx.inputview.sample.common.onClick
-import com.xiaocydx.inputview.sample.scene.figure.FigureSnapshot
+import com.xiaocydx.inputview.sample.scene.figure.FigureScene
 import com.xiaocydx.inputview.sample.scene.figure.FigureState
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.Ime
 import java.lang.ref.WeakReference
 
 /**
@@ -14,12 +13,12 @@ import java.lang.ref.WeakReference
  */
 class TextPager(
     private val textView: TextView,
-    private val showEditor: (FigureEditor?) -> Unit
+    private val goScene: (FigureScene?) -> Unit
 ) {
     private var text: String? = null
 
     init {
-        textView.onClick { showEditor(Ime) }
+        textView.onClick { goScene(FigureScene.InputText) }
     }
 
     fun updateCurrentPage(state: FigureState) {
@@ -29,7 +28,7 @@ class TextPager(
         }
     }
 
-    fun snapshot(): FigureSnapshot {
-        return FigureSnapshot(textView = WeakReference(textView))
+    fun textView(): WeakReference<View> {
+        return WeakReference(textView)
     }
 }

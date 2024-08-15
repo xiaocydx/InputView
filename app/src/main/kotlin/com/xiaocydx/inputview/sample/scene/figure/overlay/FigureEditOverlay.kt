@@ -7,7 +7,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.widget.FrameLayout
-import androidx.activity.OnBackPressedDispatcher
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle.State.CREATED
 import androidx.lifecycle.Lifecycle.State.DESTROYED
@@ -20,12 +19,8 @@ import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.common.doOnTargetState
 import com.xiaocydx.inputview.sample.common.isDispatchTouchEventEnabled
 import com.xiaocydx.inputview.sample.common.matchParent
-import com.xiaocydx.inputview.sample.scene.figure.FigureSnapshot
+import com.xiaocydx.inputview.sample.scene.figure.FigureEditAdapter
 import com.xiaocydx.inputview.sample.scene.figure.FigureViewModel
-import com.xiaocydx.inputview.sample.scene.transform.OverlayStateExtraHolder
-import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformation.ContainerState
-import com.xiaocydx.inputview.sample.scene.transform.OverlayTransformationEnforcer
-import kotlinx.coroutines.flow.drop
 
 /**
  * @author xcc
@@ -41,17 +36,8 @@ class FigureEditOverlay(
     private val container = FrameLayout(context)
     private val animator = FadeEditorAnimator(durationMillis = 300)
     private val adapter = FigureEditAdapter(lifecycleOwner.lifecycle, fragmentManager)
-    private val snapshotHolder = OverlayStateExtraHolder(FigureSnapshot())
-    private val transformationEnforcer = OverlayTransformationEnforcer(
-        lifecycleOwner = lifecycleOwner,
-        editorAnimator = animator, editorAdapter = adapter,
-        stateProvider = { FigureSnapshotState(inputView, container, snapshotHolder) }
-    )
 
-    fun attachToWindow(
-        window: Window,
-        dispatcher: OnBackPressedDispatcher? = null
-    ) = apply {
+    fun attachToWindow(window: Window) = apply {
         val first = InputView.init(
             window = window,
             statusBarEdgeToEdge = true,
@@ -61,20 +47,10 @@ class FigureEditOverlay(
         lifecycleOwner.lifecycle.doOnTargetState(CREATED) {
             val contentParent = window.findViewById<ViewGroup>(android.R.id.content)
             contentParent.addView(initRoot(window), matchParent, matchParent)
-            initEnforcer(dispatcher)
         }
         lifecycleOwner.lifecycle.doOnTargetState(DESTROYED) {
-            sharedViewModel.submitPendingEditor(null)
+            sharedViewModel.submitPendingScene(null)
         }
-    }
-
-    fun notify(
-        snapshot: FigureSnapshot,
-        editor: FigureEditor?,
-        request: Boolean
-    ): FigureEditor? {
-        snapshotHolder.setValue(snapshot, request)
-        return transformationEnforcer.notify(editor)
     }
 
     private fun initRoot(window: Window): View {
@@ -91,45 +67,17 @@ class FigureEditOverlay(
         )
         // 同步当前Editor，例如隐藏IME
         adapter.addEditorChangedListener { previous, current ->
-            if (previous === FigureEditor.Ime && current == null
-                    && sharedViewModel.figureState.value.pendingEditor == null) {
-                // 非主动隐藏IME，重定向为INPUT_IDLE，实现不退出文字输入的效果
-                transformationEnforcer.notify(FigureEditor.ImeIdle)
-            } else {
-                sharedViewModel.submitPendingEditor(current)
-            }
+            // if (previous === FigureEditor.Ime && current == null
+            //         && sharedViewModel.figureState.value.pendingScene == null) {
+            //     // 非主动隐藏IME，重定向为INPUT_IDLE，实现不退出文字输入的效果
+            //     transformationEnforcer.notify(FigureEditor.ImeIdle)
+            // } else {
+            //     sharedViewModel.submitPendingEditor(current)
+            // }
         }
         val root = FrameLayout(context)
         root.addView(container, matchParent, matchParent)
         root.addView(inputView, matchParent, matchParent)
         return root
     }
-
-    private fun initEnforcer(dispatcher: OnBackPressedDispatcher?) {
-        transformationEnforcer
-            .add(snapshotHolder)
-            .add(BackgroundTransformation(
-                showEditor = sharedViewModel::submitPendingEditor
-            ))
-            .add(CoverGroupTransformation(
-                updateCurrent = sharedViewModel.currentFigureFlow().drop(count = 1),
-                requestSnapshot = { sharedViewModel.submitPendingEditor(it, request = true) }
-            ))
-            .add(TextGroupTransformation(
-                showEditor = sharedViewModel::submitPendingEditor,
-                currentText = { sharedViewModel.figureState.value.currentText },
-                confirmText = sharedViewModel::confirmText,
-            ))
-            .attach(inputView, dispatcher)
-    }
-}
-
-class FigureSnapshotState(
-    inputView: InputView,
-    container: ViewGroup,
-    private val holder: OverlayStateExtraHolder<FigureSnapshot>
-) : ContainerState(inputView, container) {
-
-    val snapshot: FigureSnapshot
-        get() = holder.value
 }
