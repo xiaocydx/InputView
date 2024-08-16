@@ -4,6 +4,7 @@ import android.graphics.Canvas
 import android.graphics.ColorFilter
 import android.graphics.Matrix
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.view.View
 import androidx.core.graphics.withMatrix
@@ -14,42 +15,59 @@ import kotlin.math.min
  * @author xcc
  * @date 2024/8/15
  */
-class ViewDrawable : Drawable() {
+class ViewDrawable<T : View> : Drawable() {
     private val matrix = Matrix()
-    private var ref: WeakReference<View>? = null
     private var scale = 1f
     private var translationY = 0f
     private var marginTop = 0
     private var marginBottom = 0
     private var marginHorizontal = 0
+    private var targetRef: WeakReference<T>? = null
+    private var targetBounds: ViewBounds = ViewBounds()
 
-    val target: View?
-        get() = ref?.get()
+    /**
+     * 用于绘制的目标View
+     */
+    val target: T?
+        get() = targetRef?.get()
 
-    var targetBounds: ViewBounds = ViewBounds()
-        private set
-
-    fun addToHost(host: View) {
+    /**
+     * 附加到[host]，当[host]尺寸变更时，同步调用[setBounds]
+     */
+    fun attachToHost(host: View) {
         host.overlay.add(this)
         host.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
             setBounds(0, 0, host.width, host.height)
         }
     }
 
-    fun setTarget(ref: WeakReference<View>?): View? {
+    /**
+     * 设置用于绘制的目标View，内部弱引用持有[target]，
+     * [target]当前尺寸和在Window的位置，将作为绘制参数。
+     */
+    fun setTarget(target: T?): T? {
         val previous = target
-        this.ref = ref
-        targetBounds = ref?.get()?.let(ViewBounds::from) ?: ViewBounds()
+        this.targetRef = target?.let(::WeakReference)
+        targetBounds = targetRef?.get()?.let(ViewBounds::from) ?: ViewBounds()
         invalidateSelf()
         return previous
     }
 
+    /**
+     * 设置绘制[target]的[scale]和[translationY]
+     *
+     * @param scale        相对[target]尺寸的缩放
+     * @param translationY 相对[target]中心点的y轴平移
+     */
     fun setValues(scale: Float, translationY: Float) {
         this.scale = scale
         this.translationY = translationY
         invalidateSelf()
     }
 
+    /**
+     * 设置用于[calculateFitCenter]的`margins`
+     */
     fun setMargins(
         top: Int = marginTop,
         bottom: Int = marginBottom,
@@ -60,6 +78,9 @@ class ViewDrawable : Drawable() {
         marginHorizontal = horizontal
     }
 
+    /**
+     * 在`bounds`去除`margin`后的区域中，计算[target]居中的绘制参数
+     */
     fun calculateFitCenter(
         extraMarginTop: Int = 0,
         extraMarginBottom: Int = 0,
@@ -83,15 +104,16 @@ class ViewDrawable : Drawable() {
 
     override fun draw(canvas: Canvas) {
         val target = target ?: return
-        val x = targetBounds.left.toFloat()
-        val y = targetBounds.top.toFloat()
-        val width = targetBounds.width.toFloat()
-        val height = targetBounds.height.toFloat()
+        val targetW = targetBounds.width.toFloat()
+        val targetH = targetBounds.height.toFloat()
+        val targetCenterX = targetBounds.left.toFloat() + targetW / 2
+        val targetCenterY = targetBounds.top.toFloat() + targetH / 2
+        // canvas的矩阵变换是右乘，为了让代码容易理解，用matrix编写左乘
         matrix.reset()
-        matrix.postTranslate(-width / 2, -height / 2)
+        // target默认绘制在左上角
+        matrix.postTranslate(-targetW / 2, -targetH / 2)
         matrix.postScale(scale, scale)
-        matrix.postTranslate(width / 2, height / 2)
-        matrix.postTranslate(x, y + translationY)
+        matrix.postTranslate(targetCenterX, targetCenterY + translationY)
         canvas.withMatrix(matrix, target::draw)
     }
 
@@ -123,4 +145,8 @@ data class ViewBounds(
             )
         }
     }
+}
+
+fun Rect.set(bounds: ViewBounds) {
+    bounds.apply { set(left, top, right, bottom) }
 }

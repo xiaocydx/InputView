@@ -28,26 +28,26 @@ import kotlinx.coroutines.flow.onEach
  */
 class CoverFragment : Fragment(), Overlay.Transform {
     private val sharedViewModel: FigureViewModel by activityViewModels()
-    private val viewDrawable = ViewDrawable()
+    private val viewDrawable = ViewDrawable<FigureView>()
     private val coverEnterReturn = CoverEnterReturn(viewDrawable)
-    private val coverFitCenterChange = CoverFitCenterChange(viewDrawable)
+    private val coverChangeFitCenter = CoverChangeFitCenter(viewDrawable)
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val view = View(requireContext())
-        viewDrawable.addToHost(view)
-        view.transform().add(coverEnterReturn)
-        view.transform().add(coverFitCenterChange)
-        view.doOnApplyWindowInsets { _, insets, _ ->
+        val host = View(requireContext())
+        viewDrawable.attachToHost(host)
+        host.transform().add(coverEnterReturn)
+        host.transform().add(coverChangeFitCenter)
+        host.doOnApplyWindowInsets { _, insets, _ ->
             viewDrawable.setMargins(
                 top = insets.statusBarHeight + 10.dp,
                 bottom = 20.dp, horizontal = 20.dp
             )
         }
-        return view.layoutParams(matchParent, matchParent)
+        return host.layoutParams(matchParent, matchParent)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -55,7 +55,7 @@ class CoverFragment : Fragment(), Overlay.Transform {
         sharedViewModel.currentSceneFlow().onEach {
             val isCover = it?.content == Cover
             if (isCover && selectJob == null) {
-                // 当Content更改为Cover时，启动selectJob
+                // Content更改为Cover，启动selectJob
                 selectJob = launchFigureSelectJob()
             } else if (!isCover && selectJob != null) {
                 selectJob?.cancel()
@@ -66,12 +66,12 @@ class CoverFragment : Fragment(), Overlay.Transform {
 
     private fun launchFigureSelectJob() = run {
         sharedViewModel.currentFigureFlow().onEach {
-            val ref = sharedViewModel.requestView(Request.Figure)
-            val previous = viewDrawable.setTarget(ref) as? FigureView
+            val target = sharedViewModel.requestView(Request.Figure) as? FigureView
+            val previous = viewDrawable.setTarget(target)
             // 恢复之前的figureView.children.alpha
             previous?.setAnimationAlpha(1f)
             // 基于当前的figureView，请求执行变换操作
-            coverFitCenterChange.requestTransform()
+            coverChangeFitCenter.requestTransform()
         }.launchIn(viewLifecycleScope)
     }
 }

@@ -43,7 +43,7 @@ class FigurePager(
     private val lifecycle: Lifecycle,
     private val viewPager2: ViewPager2,
     private val requestManager: RequestManager,
-    private val goScene: (FigureScene?) -> Unit,
+    private val go: (FigureScene?) -> Unit,
     private val removeFigure: (Figure) -> Unit,
     private val selectPosition: (Int) -> Unit,
     private val figureListFlow: Flow<ListData<Figure>>
@@ -128,7 +128,7 @@ class FigurePager(
 
     private fun showOrScroll(holder: ViewHolder, scene: FigureScene?) {
         if (isCurrent(holder)) {
-            goScene(scene)
+            go(scene)
             return
         }
         // 超过3页的平滑滚动，ViewPager2会先非平滑到靠近的位置，再进行平滑滚动，

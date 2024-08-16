@@ -61,8 +61,8 @@ class FigureGridFragment : Fragment() {
         layoutInflater, container, false
     ).apply {
         binding = this
-        tvInput.onClick { sharedViewModel.submitPendingScene(FigureScene.InputText) }
-        tvDubbing.onClick { sharedViewModel.submitPendingScene(FigureScene.SelectDubbing) }
+        tvInput.onClick { sharedViewModel.submitScene(FigureScene.InputText) }
+        tvDubbing.onClick { sharedViewModel.submitScene(FigureScene.SelectDubbing) }
 
         figureAdapter = createFigureAdapter()
         figureSelection = figureAdapter.singleSelection(itemKey = Figure::id)
@@ -97,7 +97,7 @@ class FigureGridFragment : Fragment() {
         }
 
         doOnSimpleLongItemClick {
-            sharedViewModel.submitPendingRemove(it)
+            sharedViewModel.submitRemove(it)
             true
         }
         doOnSimpleItemClick(sharedViewModel::selectFigure)
@@ -115,13 +115,13 @@ class FigureGridFragment : Fragment() {
         sharedViewModel.currentSceneFlow().onEach {
             val isGrid = it?.editor == FigureGrid
             if (isGrid) {
-                // 当Editor更改为FigureGrid时，滚动到目标位置
+                // Editor更改为FigureGrid，滚动到目标位置
                 val figureState = sharedViewModel.figureState.value
                 binding.rvFigure.scrollToPosition(figureState.currentPosition)
             }
 
             if (isGrid && selectJob == null) {
-                // 当Editor更改为FigureGrid时，启动selectJob
+                // Editor更改为FigureGrid，启动selectJob
                 selectJob = launchFigureSelectJob()
             } else if (!isGrid && selectJob != null) {
                 selectJob?.cancel()

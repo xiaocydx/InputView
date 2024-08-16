@@ -52,7 +52,7 @@ class FigureViewModel : ViewModel() {
         val position = _figureState.value.currentPosition
         val current = figureList.getOrNull(position) ?: return
         figureList[position] = current.copy(dubbing = dubbing ?: Dubbing())
-        submitPendingScene(scene = null)
+        submitScene(scene = null)
     }
 
     fun confirmText(text: String?) {
@@ -62,7 +62,7 @@ class FigureViewModel : ViewModel() {
     /**
      * 提交待移除的[figure]，由视图做进一步处理
      */
-    fun submitPendingRemove(figure: Figure) {
+    fun submitRemove(figure: Figure) {
         _figureState.update { it.copy(pendingRemove = figure) }
     }
 
@@ -88,7 +88,7 @@ class FigureViewModel : ViewModel() {
     /**
      * 提交待处理的[scene]，由视图做进一步处理
      */
-    fun submitPendingScene(scene: FigureScene?) = _figureState.update {
+    fun submitScene(scene: FigureScene?) = _figureState.update {
         val pending = it.pendingScene
         if (it.currentScene == scene) {
             if (pending == null) return
@@ -106,12 +106,12 @@ class FigureViewModel : ViewModel() {
         it.copy(pendingScene = null, currentScene = current)
     }
 
-    suspend fun requestView(request: PendingView.Request): WeakReference<View>? {
+    suspend fun requestView(request: PendingView.Request): View? {
         _figureState.update { it.copy(pendingView = request) }
         val result = _figureState.map { it.pendingView }
             .filterIsInstance<PendingView.Result>().first()
         consumePendingView(current = null)
-        return result.ref
+        return result.ref?.get()
     }
 
     fun consumePendingView(current: PendingView?) {
@@ -135,5 +135,6 @@ sealed class PendingView {
         data object Figure : Request()
         data object Text : Request()
     }
+
     data class Result(val ref: WeakReference<View>?) : PendingView()
 }

@@ -18,6 +18,7 @@ import com.xiaocydx.inputview.sample.scene.figure.pager.TextPager
 import com.xiaocydx.inputview.transform.EditorBackground
 import com.xiaocydx.inputview.transform.Overlay
 import com.xiaocydx.inputview.transform.SceneChangedListener
+import com.xiaocydx.inputview.transform.SceneEditorConverter
 import com.xiaocydx.inputview.transform.addSceneFadeChange
 import com.xiaocydx.inputview.transform.createOverlay
 import com.xiaocydx.insets.insets
@@ -45,6 +46,7 @@ class FigureEditActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         InputView.init(window, statusBarEdgeToEdge = true, gestureNavBarEdgeToEdge = true)
         setContentView(ActivityFigureEditBinding.inflate(layoutInflater).init().root)
+        configureOverlay()
         launchUpdatePageJob()
         launchPendingViewJob()
     }
@@ -55,32 +57,44 @@ class FigureEditActivity : AppCompatActivity() {
             lifecycle = lifecycle,
             viewPager2 = vpFigure,
             requestManager = Glide.with(this@FigureEditActivity),
-            goScene = sharedViewModel::submitPendingScene,
-            removeFigure = sharedViewModel::submitPendingRemove,
+            go = sharedViewModel::submitScene,
+            removeFigure = sharedViewModel::submitRemove,
             selectPosition = sharedViewModel::selectPosition,
             figureListFlow = sharedViewModel.figureListFlow
         )
         textPager = TextPager(
             textView = tvFigure,
-            goScene = sharedViewModel::submitPendingScene,
+            go = sharedViewModel::submitScene,
         )
-
         // 覆盖层，包含内容区、编辑区、变换操作
         overlay = InputView.createOverlay(
             lifecycleOwner = this@FigureEditActivity,
             contentAdapter = FigureContentAdapter(lifecycle, supportFragmentManager),
-            editorAdapter = FigureEditAdapter(lifecycle, supportFragmentManager)
-        ) {
-            addSceneFadeChange()
-            add(EditorBackground(0xFF1D1D1D.toInt()))
-            add(OverlayBackground(0xFF111113.toInt(), sharedViewModel::submitPendingScene))
-            addToOnBackPressedDispatcher(onBackPressedDispatcher)
-            attach(window) { it.editorAnimator = FadeEditorAnimator(durationMillis = 300) }
+            editorAdapter = FigureEditAdapter(lifecycle, supportFragmentManager),
+            editorAnimator = FadeEditorAnimator(durationMillis = 300)
+        )
+        overlay.attach(window)
+    }
+
+    private fun configureOverlay() = with(overlay) {
+        addSceneFadeChange() // 添加overlay的透明度变换
+        add(EditorBackground(0xFF1D1D1D.toInt())) // 添加overlay的编辑区背景
+        add(FigureSceneBackground(0xFF111113.toInt())) // 添加overlay的整体背景
+        // overlay调度Transformer期间拦截触摸事件，点击backgroundView退出当前FigureScene
+        add(FigureSceneDispatchTouch(window, go = sharedViewModel::submitScene))
+
+        sceneChangedListener = SceneChangedListener { _, current ->
+            sharedViewModel.submitScene(current) // 同步当前FigureScene
         }
-        // 同步当前的FigureScene
-        overlay.sceneChangedListener = SceneChangedListener { _, current ->
-            sharedViewModel.submitPendingScene(current)
+        sceneEditorConverter = SceneEditorConverter next@{ _, current, nextEditor ->
+            // 未调用overlay.go()，点击EditText显示Ime，转换为FigureScene.InputText
+            if (nextEditor == FigureEditor.Ime) return@next FigureScene.InputText
+            // 处于FigureScene.InputText，点击或回退隐藏Ime，转换为FigureScene.InputIdle，表示不退出
+            if (current == FigureScene.InputText && nextEditor == null) return@next FigureScene.InputIdle
+            if (nextEditor == null) null else current
         }
+
+        addToOnBackPressedDispatcher(onBackPressedDispatcher)
     }
 
     private fun launchUpdatePageJob() {

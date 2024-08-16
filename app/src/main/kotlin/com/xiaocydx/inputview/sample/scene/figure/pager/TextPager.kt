@@ -13,12 +13,12 @@ import java.lang.ref.WeakReference
  */
 class TextPager(
     private val textView: TextView,
-    private val goScene: (FigureScene?) -> Unit
+    private val go: (FigureScene?) -> Unit
 ) {
     private var text: String? = null
 
     init {
-        textView.onClick { goScene(FigureScene.InputText) }
+        textView.onClick { go(FigureScene.InputText) }
     }
 
     fun updateCurrentPage(state: FigureState) {

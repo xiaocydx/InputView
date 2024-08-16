@@ -70,8 +70,8 @@ class DubbingFragment : Fragment() {
     ).apply {
         binding = this
         root.insets().paddings(navigationBars())
-        tvInput.onClick { sharedViewModel.submitPendingScene(FigureScene.InputText) }
-        tvFigure.onClick { sharedViewModel.submitPendingScene(FigureScene.SelectFigure) }
+        tvInput.onClick { sharedViewModel.submitScene(FigureScene.InputText) }
+        tvFigure.onClick { sharedViewModel.submitScene(FigureScene.SelectFigure) }
         ivConfirm.onClick { sharedViewModel.confirmDubbing(dubbingSelection.selectedItem()) }
 
         dubbingAdapter = createDubbingAdapter()

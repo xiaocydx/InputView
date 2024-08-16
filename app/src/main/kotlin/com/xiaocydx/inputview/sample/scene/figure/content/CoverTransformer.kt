@@ -2,6 +2,7 @@ package com.xiaocydx.inputview.sample.scene.figure.content
 
 import android.animation.FloatEvaluator
 import com.xiaocydx.inputview.sample.scene.figure.FigureContent.Cover
+import com.xiaocydx.inputview.sample.scene.figure.FigureScene
 import com.xiaocydx.inputview.sample.scene.figure.FitCenter
 import com.xiaocydx.inputview.sample.scene.figure.ViewDrawable
 import com.xiaocydx.inputview.sample.scene.figure.pager.FigureView
@@ -9,14 +10,19 @@ import com.xiaocydx.inputview.transform.ImperfectState
 import com.xiaocydx.inputview.transform.TransformState
 import com.xiaocydx.inputview.transform.Transformer
 import com.xiaocydx.inputview.transform.isCurrent
+import com.xiaocydx.inputview.transform.isEnter
 import com.xiaocydx.inputview.transform.isPrevious
+import com.xiaocydx.inputview.transform.isReturn
 
-class CoverEnterReturn(private val drawable: ViewDrawable) : Transformer() {
+/**
+ * [CoverFragment]的进入和退出变换
+ */
+class CoverEnterReturn(private val drawable: ViewDrawable<FigureView>) : Transformer() {
     private var fitCenter: FitCenter? = null
     private val evaluator = FloatEvaluator()
 
     override fun match(state: ImperfectState) = with(state) {
-        (previous == null && isCurrent(Cover)) || (isPrevious(Cover) && current == null)
+        isEnter(Cover) || isReturn(Cover)
     }
 
     override fun onStart(state: TransformState): Unit = with(state) {
@@ -27,7 +33,7 @@ class CoverEnterReturn(private val drawable: ViewDrawable) : Transformer() {
 
     override fun onUpdate(state: TransformState) = with(state) {
         val isEnter = current != null
-        (drawable.target as? FigureView)?.setAnimationAlpha(when {
+        drawable.target?.setAnimationAlpha(when {
             isEnter -> 1f - interpolatedFraction
             else -> interpolatedFraction
         })
@@ -45,7 +51,10 @@ class CoverEnterReturn(private val drawable: ViewDrawable) : Transformer() {
     }
 }
 
-class CoverFitCenterChange(private val drawable: ViewDrawable) : Transformer() {
+/**
+ * [CoverFragment]的居中变换，支持转换到其它[FigureScene]
+ */
+class CoverChangeFitCenter(private val drawable: ViewDrawable<FigureView>) : Transformer() {
     private var start: FitCenter? = null
     private var end: FitCenter? = null
     private val evaluator = FloatEvaluator()
@@ -55,7 +64,6 @@ class CoverFitCenterChange(private val drawable: ViewDrawable) : Transformer() {
     }
 
     override fun onStart(state: TransformState) = with(state) {
-        (drawable.target as? FigureView)?.setAnimationAlpha(0f)
         start = drawable.calculateFitCenter(extraMarginBottom = startOffset)
         end = drawable.calculateFitCenter(extraMarginBottom = endOffset)
     }
@@ -63,6 +71,7 @@ class CoverFitCenterChange(private val drawable: ViewDrawable) : Transformer() {
     override fun onUpdate(state: TransformState) = with(state) {
         val scale = evaluator.evaluate(interpolatedFraction, start!!.scale, end!!.scale)
         val translationY = evaluator.evaluate(interpolatedFraction, start!!.translationY, end!!.translationY)
+        drawable.target?.setAnimationAlpha(0f)
         drawable.setValues(scale, translationY)
     }
 }
