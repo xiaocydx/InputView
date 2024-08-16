@@ -36,22 +36,22 @@ import androidx.lifecycle.LifecycleOwner
  *
  * ```
  * enum class MessageEditor : Editor {
- *     IME, VOICE, EMOJI
+ *     Ime, Voice, Emoji
  * }
  *
  * class MessageFragmentEditorAdapter(
  *     lifecycle: Lifecycle,
  *     fragmentManager: FragmentManager
  * ) : FragmentEditorAdapter<MessageEditor>(lifecycle, fragmentManager) {
- *     override val ime = MessageEditor.IME
+ *     override val ime = MessageEditor.Ime
  *
  *     override fun getEditorKey(editor: MessageEditor) = editor.name
  *
  *     override fun onCreateFragment(editor: MessageEditor): Fragment? {
  *         return when(editor) {
- *             MessageEditor.IME -> null
- *             MessageEditor.VOICE -> VoiceFragment()
- *             MessageEditor.EMOJI -> EmojiFragment()
+ *             MessageEditor.Ime -> null
+ *             MessageEditor.Voice -> VoiceFragment()
+ *             MessageEditor.Emoji -> EmojiFragment()
  *         }
  *     }
  * }

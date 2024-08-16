@@ -64,9 +64,9 @@ class MessageListBottomSheetDialog(
         }
 
         inputView.editorAdapter.addEditorChangedListener { _, current ->
-            // 当current为MessageEditor.EMOJI时，禁用rvMessage的嵌套滚动，
+            // 当current为MessageEditor.Emoji时，禁用rvMessage的嵌套滚动，
             // 让behavior.onLayoutChild()查找到current的NestedScrollingChild。
-            rvMessage.isNestedScrollingEnabled = current != MessageEditor.EMOJI
+            rvMessage.isNestedScrollingEnabled = current != MessageEditor.Emoji
         }
     }
 }

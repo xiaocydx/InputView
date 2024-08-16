@@ -37,7 +37,7 @@ class FragmentEditorAdapterActivity : AppCompatActivity() {
     private class MessageFragmentEditorAdapter(
         fragmentActivity: FragmentActivity
     ) : FragmentEditorAdapter<MessageEditor>(fragmentActivity) {
-        override val ime = MessageEditor.IME
+        override val ime = MessageEditor.Ime
 
         /**
          * 重建的Fragment会恢复[Editor]视图的状态，例如恢复列表滚动位置，
@@ -52,9 +52,10 @@ class FragmentEditorAdapterActivity : AppCompatActivity() {
         override fun getEditorKey(editor: MessageEditor) = editor.name
 
         override fun onCreateFragment(editor: MessageEditor): Fragment? = when (editor) {
-            MessageEditor.IME, MessageEditor.VOICE -> null
-            MessageEditor.EMOJI -> EmojiFragment()
-            MessageEditor.EXTRA -> ExtraFragment()
+            MessageEditor.Ime,
+            MessageEditor.Voice -> null
+            MessageEditor.Emoji -> EmojiFragment()
+            MessageEditor.Extra -> ExtraFragment()
         }
     }
 }

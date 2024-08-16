@@ -1,53 +1,11 @@
 package com.xiaocydx.inputview.sample.scene.figure
 
-import android.view.View
-import androidx.annotation.CheckResult
-import com.xiaocydx.inputview.sample.scene.figure.pager.FigureView
-import java.lang.ref.WeakReference
-
 data class Figure(
     val id: String,
     val coverUrl: String,
     val coverRatio: Float,
     val dubbing: Dubbing = Dubbing()
 )
-
-data class FigureSnapshot(
-    val figureView: WeakReference<FigureView>? = null,
-    val textView: WeakReference<View>? = null
-) {
-    val isEmpty: Boolean
-        get() = figureView == null && textView == null
-
-    @CheckResult
-    fun merge(other: FigureSnapshot) = copy(
-        figureView = figureView ?: other.figureView,
-        textView = textView ?: other.textView
-    )
-}
-
-data class ViewBounds(
-    val left: Int = 0,
-    val top: Int = 0,
-    val right: Int = 0,
-    val bottom: Int = 0
-) {
-    val width = right - left
-    val height = bottom - top
-
-    companion object {
-        fun from(view: View) = run {
-            val out = IntArray(2)
-            view.getLocationInWindow(out)
-            ViewBounds(
-                left = out[0],
-                top = out[1],
-                right = out[0] + view.width,
-                bottom = out[1] + view.height
-            )
-        }
-    }
-}
 
 data class Dubbing(val id: String = "", val name: String = "配音")
 

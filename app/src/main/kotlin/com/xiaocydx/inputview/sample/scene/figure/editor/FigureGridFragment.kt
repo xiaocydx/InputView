@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.figure.overlay
+package com.xiaocydx.inputview.sample.scene.figure.editor
 
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
@@ -35,12 +35,11 @@ import com.xiaocydx.inputview.sample.common.viewLifecycleScope
 import com.xiaocydx.inputview.sample.databinding.FragmentFigureGridBinding
 import com.xiaocydx.inputview.sample.databinding.ItemFigureGridBinding
 import com.xiaocydx.inputview.sample.scene.figure.Figure
+import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.FigureGrid
+import com.xiaocydx.inputview.sample.scene.figure.FigureScene
 import com.xiaocydx.inputview.sample.scene.figure.FigureViewModel
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.DUBBING
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.GRID
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.INPUT
 import com.xiaocydx.insets.insets
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
@@ -58,72 +57,86 @@ class FigureGridFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View = FragmentFigureGridBinding.inflate(
+    ) = FragmentFigureGridBinding.inflate(
         layoutInflater, container, false
     ).apply {
         binding = this
-        tvInput.onClick { sharedViewModel.submitPendingEditor(INPUT) }
-        tvDubbing.onClick { sharedViewModel.submitPendingEditor(DUBBING) }
+        tvInput.onClick { sharedViewModel.submitScene(FigureScene.InputText) }
+        tvDubbing.onClick { sharedViewModel.submitScene(FigureScene.SelectDubbing) }
 
-        val requestManager = Glide.with(this@FigureGridFragment)
-        figureAdapter = bindingAdapter(
-            uniqueId = Figure::id,
-            inflate = ItemFigureGridBinding::inflate
-        ) {
-            val corners = 8.dp
-            figureSelection = singleSelection(itemKey = Figure::id)
-            onCreateView {
-                ivCover.setRoundRectOutlineProvider(corners)
-                bgSelected.setRoundRectOutlineProvider(corners)
-            }
-            onBindView {
-                requestManager.load(it.coverUrl)
-                    .placeholder(ColorDrawable(0xFF212123.toInt()))
-                    .transform(MultiTransformation(CenterCrop(), RoundedCorners(corners)))
-                    .into(ivCover)
-                ivSelected.isVisible = figureSelection.isSelected(holder)
-                bgSelected.isVisible = figureSelection.isSelected(holder)
-            }
-            doOnSimpleLongItemClick {
-                sharedViewModel.submitPendingRemove(it)
-                true
-            }
-            doOnSimpleItemClick(sharedViewModel::selectFigure)
-        }
-
+        figureAdapter = createFigureAdapter()
+        figureSelection = figureAdapter.singleSelection(itemKey = Figure::id)
         rvFigure.grid(spanCount = 3).disableItemAnimator()
             .divider { width(6.dp).height(6.dp).edge(Edge.all()) }
             .adapter(figureAdapter).insets().gestureNavBarEdgeToEdge()
     }.root
 
-    override fun onViewCreated(
-        view: View,
-        savedInstanceState: Bundle?
-    ): Unit = with(binding) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        launchFigureListJob()
+        launchFigureGridJob()
+    }
+
+    private fun createFigureAdapter() = bindingAdapter(
+        uniqueId = Figure::id,
+        inflate = ItemFigureGridBinding::inflate
+    ) {
+        val corners = 8.dp
+        onCreateView {
+            ivCover.setRoundRectOutlineProvider(corners)
+            bgSelected.setRoundRectOutlineProvider(corners)
+        }
+
+        val requestManager = Glide.with(this@FigureGridFragment)
+        onBindView {
+            requestManager.load(it.coverUrl)
+                .placeholder(ColorDrawable(0xFF212123.toInt()))
+                .transform(MultiTransformation(CenterCrop(), RoundedCorners(corners)))
+                .into(ivCover)
+            ivSelected.isVisible = figureSelection.isSelected(holder)
+            bgSelected.isVisible = figureSelection.isSelected(holder)
+        }
+
+        doOnSimpleLongItemClick {
+            sharedViewModel.submitRemove(it)
+            true
+        }
+        doOnSimpleItemClick(sharedViewModel::selectFigure)
+    }
+
+    private fun launchFigureListJob() {
         // 收集数字人的列表数据流
         sharedViewModel.figureListFlow
             .onEach(figureAdapter.listCollector)
             .launchRepeatOnLifecycle(viewLifecycle)
+    }
 
-        // 当前数字人改变，选中当前数字人
-        sharedViewModel.currentFigureFlow()
-            .onEach { current ->
-                if (current == null) {
-                    figureSelection.clearSelected()
-                } else {
-                    figureSelection.select(current)
-                }
-            }
-            .launchRepeatOnLifecycle(viewLifecycle)
-
-        // 当Editor更改为FigureEditor.GRID时，
-        // 选中当前数字人，并滚动到目标位置。
-        sharedViewModel.currentEditorFlow()
-            .filter { it == GRID }
-            .onEach {
+    private fun launchFigureGridJob() {
+        var selectJob: Job? = null
+        sharedViewModel.currentSceneFlow().onEach {
+            val isGrid = it?.editor == FigureGrid
+            if (isGrid) {
+                // Editor更改为FigureGrid，滚动到目标位置
                 val figureState = sharedViewModel.figureState.value
-                rvFigure.scrollToPosition(figureState.currentPosition)
+                binding.rvFigure.scrollToPosition(figureState.currentPosition)
             }
-            .launchIn(viewLifecycleScope)
+
+            if (isGrid && selectJob == null) {
+                // Editor更改为FigureGrid，启动selectJob
+                selectJob = launchFigureSelectJob()
+            } else if (!isGrid && selectJob != null) {
+                selectJob?.cancel()
+                selectJob = null
+            }
+        }.launchIn(viewLifecycleScope)
+    }
+
+    private fun launchFigureSelectJob() = run {
+        sharedViewModel.currentFigureFlow().onEach {
+            if (it == null) {
+                figureSelection.clearSelected()
+            } else {
+                figureSelection.select(it)
+            }
+        }.launchIn(viewLifecycleScope)
     }
 }

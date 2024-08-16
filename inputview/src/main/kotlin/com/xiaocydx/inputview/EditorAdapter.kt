@@ -26,17 +26,17 @@ import androidx.annotation.CallSuper
  *
  * ```
  * enum class MessageEditor : Editor {
- *     IME, VOICE, EMOJI
+ *     Ime, Voice, Emoji
  * }
  *
  * class MessageEditorAdapter : EditorAdapter<MessageEditor>() {
- *     override val ime = MessageEditor.IME
+ *     override val ime = MessageEditor.Ime
  *
  *     override fun onCreateView(parent: ViewGroup, editor: MessageEditor): View? {
  *         return when(editor) {
- *             MessageEditor.IME -> null
- *             MessageEditor.VOICE -> VoiceView(parent.context)
- *             MessageEditor.EMOJI -> EmojiView(parent.context)
+ *             MessageEditor.Ime -> null
+ *             MessageEditor.Voice -> VoiceView(parent.context)
+ *             MessageEditor.Emoji -> EmojiView(parent.context)
  *         }
  *     }
  * }
@@ -121,7 +121,7 @@ internal typealias DispatchInvalidated = () -> Boolean
  * 推荐用`enum class`或`sealed class`实现[Editor]，例如：
  * ```
  * enum class MessageEditor : Editor {
- *     IME, VOICE, EMOJI
+ *     Ime, Voice, Emoji
  * }
  * ```
  *

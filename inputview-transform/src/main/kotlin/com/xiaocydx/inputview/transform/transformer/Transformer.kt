@@ -167,6 +167,18 @@ fun ImperfectState.isCurrent(content: Content?) = current?.content === content
 
 fun ImperfectState.isCurrent(editor: Editor?) = current?.editor === editor
 
+fun ImperfectState.isEnter(scene: Scene<*, *>?) = previous == null && isCurrent(scene)
+
+fun ImperfectState.isEnter(content: Content?) = previous == null && isCurrent(content)
+
+fun ImperfectState.isEnter(editor: Editor?) = previous == null && isCurrent(editor)
+
+fun ImperfectState.isReturn(scene: Scene<*, *>?) = isPrevious(scene) && current == null
+
+fun ImperfectState.isReturn(content: Content?) = isPrevious(content) && current == null
+
+fun ImperfectState.isReturn(editor: Editor?) = isPrevious(editor) && current == null
+
 fun ImperfectState.view(content: Content) = when {
     isPrevious(content) -> startViews.content
     isCurrent(content) -> endViews.content

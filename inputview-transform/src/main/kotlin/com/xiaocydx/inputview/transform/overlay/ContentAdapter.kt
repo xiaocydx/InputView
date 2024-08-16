@@ -23,6 +23,24 @@ import android.view.ViewGroup
 import androidx.annotation.CallSuper
 
 /**
+ * [Content]的适配器，负责创建和通知显示[Content]的视图
+ *
+ * ```
+ * enum class VideoContent : Content {
+ *     Text, Title
+ * }
+ *
+ * class VideoEditorAdapter : ContentAdapter<VideoContent>() {
+ *
+ *     override fun onCreateView(parent: ViewGroup, content: VideoContent): View {
+ *         return when(content) {
+ *             VideoContent.Text -> TextView()
+ *             VideoContent.Title -> TitleView()
+ *         }
+ *     }
+ * }
+ * ```
+ *
  * @author xcc
  * @date 2024/7/22
  */
@@ -30,6 +48,9 @@ abstract class ContentAdapter<T : Content> {
     internal var host: ContentHost? = null
         private set
 
+    /**
+     * 创建[content]的视图，返回`null`表示不需要视图
+     */
     abstract fun onCreateView(parent: ViewGroup, content: T): View?
 
     @CallSuper
@@ -44,6 +65,18 @@ abstract class ContentAdapter<T : Content> {
     }
 }
 
+/**
+ * [Overlay]内容区的内容
+ *
+ * 推荐用`enum class`或`sealed class`实现[Content]，例如：
+ * ```
+ * enum class VideoContent : Content {
+ *     Text, Title
+ * }
+ * ```
+ *
+ * 用`enum class`或`sealed class`能更好的进行模式匹配。
+ */
 interface Content
 
 @Suppress("UNCHECKED_CAST")
@@ -63,17 +96,11 @@ internal fun <T : Content> ContentAdapter<T>.notifyHideCurrent(): Boolean {
 }
 
 internal interface ContentHost {
-
     val current: Content?
-
     val container: ViewGroup?
-
     fun showChecked(content: Content): Boolean
-
     fun hideChecked(content: Content): Boolean
-
     fun addTransformer(transformer: Transformer)
-
     fun removeTransformer(transformer: Transformer)
 }
 

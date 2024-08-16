@@ -2,6 +2,7 @@
 
 package com.xiaocydx.inputview.sample.scene.figure.pager
 
+import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.core.view.doOnPreDraw
 import androidx.core.view.updatePadding
@@ -28,11 +29,8 @@ import com.xiaocydx.inputview.sample.common.launchRepeatOnLifecycle
 import com.xiaocydx.inputview.sample.common.registerOnPageChangeCallback
 import com.xiaocydx.inputview.sample.databinding.ItemFigureBinding
 import com.xiaocydx.inputview.sample.scene.figure.Figure
-import com.xiaocydx.inputview.sample.scene.figure.FigureSnapshot
+import com.xiaocydx.inputview.sample.scene.figure.FigureScene
 import com.xiaocydx.inputview.sample.scene.figure.FigureState
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.DUBBING
-import com.xiaocydx.inputview.sample.scene.figure.overlay.FigureEditor.GRID
 import kotlinx.coroutines.flow.Flow
 import java.lang.ref.WeakReference
 import kotlin.math.absoluteValue
@@ -45,7 +43,7 @@ class FigurePager(
     private val lifecycle: Lifecycle,
     private val viewPager2: ViewPager2,
     private val requestManager: RequestManager,
-    private val showEditor: (FigureEditor?) -> Unit,
+    private val go: (FigureScene?) -> Unit,
     private val removeFigure: (Figure) -> Unit,
     private val selectPosition: (Int) -> Unit,
     private val figureListFlow: Flow<ListData<Figure>>
@@ -62,10 +60,10 @@ class FigurePager(
         ) {
             onBindView { figureView.setFigure(requestManager, it) }
             doOnItemClick(target = { binding.figureView }) { holder, _ ->
-                showOrScroll(holder, GRID)
+                showOrScroll(holder, FigureScene.SelectFigure)
             }
             doOnItemClick(target = { binding.figureView.tvDubbing }) { holder, _ ->
-                showOrScroll(holder, DUBBING)
+                showOrScroll(holder, FigureScene.SelectDubbing)
             }
             doOnLongItemClick(target = { binding.figureView }) { holder, item ->
                 if (!isCurrent(holder)) return@doOnLongItemClick false
@@ -102,15 +100,14 @@ class FigurePager(
         }
     }
 
-    suspend fun awaitSnapshot(): FigureSnapshot {
+    suspend fun awaitFigureView(): WeakReference<View>? {
         if (viewPager2.isLayoutRequested
                 || rv.hasPendingAdapterUpdates()) {
             viewPager2.awaitPreDraw()
         }
         // 按当前位置重新计算一遍变换属性的值，确保位置正确
         viewPager2.requestTransform()
-        val figureView = getCurrentBinding()?.figureView
-        return FigureSnapshot(figureView = figureView?.let(::WeakReference))
+        return getCurrentBinding()?.figureView?.let(::WeakReference)
     }
 
     fun updateCurrentPage(state: FigureState) {
@@ -129,9 +126,9 @@ class FigurePager(
         return (holder as? BindingHolder<ItemFigureBinding>)?.binding
     }
 
-    private fun showOrScroll(holder: ViewHolder, editor: FigureEditor?) {
+    private fun showOrScroll(holder: ViewHolder, scene: FigureScene?) {
         if (isCurrent(holder)) {
-            showEditor(editor)
+            go(scene)
             return
         }
         // 超过3页的平滑滚动，ViewPager2会先非平滑到靠近的位置，再进行平滑滚动，

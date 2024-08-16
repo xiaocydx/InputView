@@ -49,6 +49,8 @@ import com.xiaocydx.inputview.notifyShow
 import com.xiaocydx.inputview.transform.Overlay.Companion.ROOT_PARENT_ID
 
 /**
+ * [Overlay]的实现类
+ *
  * @author xcc
  * @date 2024/7/23
  */
@@ -57,6 +59,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
     override val lifecycleOwner: LifecycleOwner,
     private val contentAdapter: ContentAdapter<C>,
     private val editorAdapter: EditorAdapter<E>,
+    private val editorAnimator: EditorAnimator,
 ) : Overlay<S> {
     private val transformState = TransformStateImpl()
     private val transformerDispatcher = TransformerDispatcher()
@@ -69,21 +72,16 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
     override var sceneChangedListener: SceneChangedListener<S>? = null
     override var sceneEditorConverter = SceneEditorConverter.default<S>()
 
-    override fun attach(
-        window: Window,
-        rootParent: ViewGroup?,
-        initializer: ((inputView: InputView) -> Unit)?
-    ): Boolean {
+    override fun attach(window: Window, rootParent: ViewGroup?): Boolean {
         if (isInitialized) return false
         isInitialized = true
 
         transformState.apply {
             initialize(window)
-            initializer?.invoke(inputView)
             rootView.setTransformerHost(this@OverlayImpl)
 
-            val editorAnimator = inputView.editorAnimator
             inputView.editorAdapter = editorAdapter
+            inputView.editorAnimator = editorAnimator
             inputView.editorMode = EditorMode.ADJUST_PAN
             inputView.disableGestureNavBarOffset()
             editorAdapter.addEditorChangedListener(SceneEditorConverterCaller())
@@ -135,17 +133,17 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
             editorSucceed && scene != null -> contentAdapter.notifyShow(scene.content)
         }
 
-        if (editorSucceed) {
-            val sceneChanged = current !== scene
+        val sceneChanged = current !== scene
+        if (editorSucceed && sceneChanged) {
             previous = current
             current = scene
-            backPressedCallback?.isEnabled = current != null
-            if (sceneChanged) transformState.invalidate()
-            if (sceneChanged) sceneChangedListener?.onChanged(previous, current)
+            transformState.invalidate()
+            sceneChangedListener?.onChanged(previous, current)
         }
+        backPressedCallback?.isEnabled = current != null
 
         isActiveGoing = false
-        return editorSucceed
+        return editorSucceed && sceneChanged
     }
 
     override fun addToOnBackPressedDispatcher(dispatcher: OnBackPressedDispatcher): Boolean {
@@ -291,7 +289,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
         override fun onAnimationPrepare(previous: Editor?, current: Editor?) {
             transformState.isDispatching = true
             transformState.prepare(previousScene, currentScene)
-            findMatchTransformers()
+            findMatchTransformers(checkState = false)
             dispatchMatchTransformers { onPrepare(transformState) }
         }
 
@@ -308,7 +306,8 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
         override fun onAnimationEnd(animation: AnimationState) {
             dispatchMatchTransformers { onEnd(transformState) }
             transformState.postEnd(animation)
-            if (transformState.current == null) clearMatchTransformers()
+            // 更改transformState后，再次查找matchTransformers
+            findMatchTransformers(checkState = true)
             transformState.isDispatching = false
         }
 
@@ -346,18 +345,16 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
             }
         }
 
-        private fun findMatchTransformers() {
-            clearMatchTransformers()
-            val tempTransformers = ArrayList<Transformer>(transformers)
-            tempTransformers.takeIf { it.size > 1 }?.sortWith(sequenceComparator)
-            for (i in tempTransformers.indices) {
-                if (!tempTransformers[i].match(transformState)) continue
-                matchTransformers.add(tempTransformers[i])
-            }
-        }
-
-        private fun clearMatchTransformers() {
+        private fun findMatchTransformers(checkState: Boolean) {
             matchTransformers.takeIf { it.isNotEmpty() }?.clear()
+            if (checkState && transformState.current == null) return
+            // 按add顺序匹配matchTransformers
+            for (i in transformers.indices) {
+                if (!transformers[i].match(transformState)) continue
+                matchTransformers.add(transformers[i])
+            }
+            // 按sequence顺序分发matchTransformers
+            matchTransformers.takeIf { it.size > 1 }?.sortWith(sequenceComparator)
         }
 
         private fun dispatchMatchTransformersOnPreDraw() {
@@ -476,7 +473,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
 
         fun preUpdate(animation: AnimationState) {
             setOffset(animation)
-            val animator = (inputView.editorAnimator as? FadeEditorAnimator) ?: candidateAnimator
+            val animator = (editorAnimator as? FadeEditorAnimator) ?: candidateAnimator
             startViews.alpha = animator.calculateAlpha(animation, matchNull = false, start = true)
             startViews.applyAlpha(alpha = 1f)
             endViews.alpha = animator.calculateAlpha(animation, matchNull = false, start = false)
