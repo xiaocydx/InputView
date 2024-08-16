@@ -59,6 +59,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
     override val lifecycleOwner: LifecycleOwner,
     private val contentAdapter: ContentAdapter<C>,
     private val editorAdapter: EditorAdapter<E>,
+    private val editorAnimator: EditorAnimator,
 ) : Overlay<S> {
     private val transformState = TransformStateImpl()
     private val transformerDispatcher = TransformerDispatcher()
@@ -71,21 +72,16 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
     override var sceneChangedListener: SceneChangedListener<S>? = null
     override var sceneEditorConverter = SceneEditorConverter.default<S>()
 
-    override fun attach(
-        window: Window,
-        rootParent: ViewGroup?,
-        initializer: ((inputView: InputView) -> Unit)?
-    ): Boolean {
+    override fun attach(window: Window, rootParent: ViewGroup?): Boolean {
         if (isInitialized) return false
         isInitialized = true
 
         transformState.apply {
             initialize(window)
-            initializer?.invoke(inputView)
             rootView.setTransformerHost(this@OverlayImpl)
 
-            val editorAnimator = inputView.editorAnimator
             inputView.editorAdapter = editorAdapter
+            inputView.editorAnimator = editorAnimator
             inputView.editorMode = EditorMode.ADJUST_PAN
             inputView.disableGestureNavBarOffset()
             editorAdapter.addEditorChangedListener(SceneEditorConverterCaller())
@@ -477,7 +473,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
 
         fun preUpdate(animation: AnimationState) {
             setOffset(animation)
-            val animator = (inputView.editorAnimator as? FadeEditorAnimator) ?: candidateAnimator
+            val animator = (editorAnimator as? FadeEditorAnimator) ?: candidateAnimator
             startViews.alpha = animator.calculateAlpha(animation, matchNull = false, start = true)
             startViews.applyAlpha(alpha = 1f)
             endViews.alpha = animator.calculateAlpha(animation, matchNull = false, start = false)

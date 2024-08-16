@@ -29,6 +29,7 @@ import androidx.lifecycle.Lifecycle.State.DESTROYED
 import androidx.lifecycle.LifecycleOwner
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.EditorAdapter
+import com.xiaocydx.inputview.EditorAnimator
 import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
 
@@ -36,15 +37,21 @@ import com.xiaocydx.inputview.InputView
  * 构建跟[lifecycleOwner]关联的[Overlay]
  *
  * @param contentAdapter 用于[Overlay.go]通知更改[Content]
- * @param editorAdapter  用于[Overlay.go]通知更改[Editor]
+ * @param editorAdapter  用于[Overlay.go]通知更改[Editor],
+ * @param editorAnimator [Overlay]的动画执行器，参与调度[Transformer]。
+ * 当类型为[FadeEditorAnimator]时，其计算值会赋值给[TransformViews.alpha]。
  */
 inline fun <S, C, E> InputView.Companion.createOverlay(
     lifecycleOwner: LifecycleOwner,
     contentAdapter: ContentAdapter<C>,
     editorAdapter: EditorAdapter<E>,
+    editorAnimator: EditorAnimator = FadeEditorAnimator(),
     initializer: Overlay<S>.() -> Unit = {}
 ): Overlay<S> where S : Scene<C, E>, C : Content, E : Editor {
-    val overlay: Overlay<S> = OverlayImpl(lifecycleOwner, contentAdapter, editorAdapter)
+    val overlay: Overlay<S> = OverlayImpl(
+        lifecycleOwner, contentAdapter,
+        editorAdapter, editorAnimator
+    )
     return overlay.apply(initializer)
 }
 
@@ -57,8 +64,8 @@ inline fun <S, C, E> InputView.Companion.createOverlay(
  * [Transformer]函数的`state`形参，其中View类型的属性即为`rootView`的child。
  *
  * ### [Transformer]
- * [Overlay]实现了[TransformerOwner]，能添加[Transformer]实现自定义变换操作。
- * [InputView.editorAnimator]是[Overlay]的动画执行器，参与调度[Transformer]。
+ * [Overlay]实现了[TransformerOwner]，能添加[Transformer]实现变换操作。
+ * 构建[Overlay]的`editorAnimator`是动画执行器，参与调度[Transformer]。
  * 调用[go]会更改[Scene]，进而调度执行[Transformer]。
  */
 interface Overlay<S : Scene<*, *>> : TransformerOwner {
@@ -99,18 +106,12 @@ interface Overlay<S : Scene<*, *>> : TransformerOwner {
     /**
      * 初始化[Overlay]，并将`rootView`添加到[rootParent]
      *
-     * @param window [Activity.getWindow]或[Dialog.getWindow]。
+     * @param window     [Activity.getWindow]或[Dialog.getWindow]。
      * @param rootParent `rootView`的父级，传入`null`会将id为[ROOT_PARENT_ID]的View作为父级。
-     * @param initializer [InputView]的初始化函数，当[InputView.editorAnimator]
-     * 的类型为[FadeEditorAnimator]时，其计算的值会赋值给[TransformViews.alpha]。
      *
      * @return `true`-初始化成功，`false`-已初始化
      */
-    fun attach(
-        window: Window,
-        rootParent: ViewGroup? = null,
-        initializer: ((inputView: InputView) -> Unit)? = null
-    ): Boolean
+    fun attach(window: Window, rootParent: ViewGroup? = null): Boolean
 
     /**
      * 将[current]更改为[scene]，若更改成功，则运行动画调度执行[Transformer]
