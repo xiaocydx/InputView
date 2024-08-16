@@ -20,7 +20,6 @@ package com.xiaocydx.inputview.transform
 
 import android.view.Gravity.BOTTOM
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-import androidx.transition.updateLayoutGravity
 import com.xiaocydx.inputview.Editor
 
 /**

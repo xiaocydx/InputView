@@ -106,6 +106,9 @@ class FigureViewModel : ViewModel() {
         it.copy(pendingScene = null, currentScene = current)
     }
 
+    /**
+     * 发起[PendingView.Request]，等待View结果返回
+     */
     suspend fun requestView(request: PendingView.Request): View? {
         _figureState.update { it.copy(pendingView = request) }
         val result = _figureState.map { it.pendingView }
@@ -114,6 +117,9 @@ class FigureViewModel : ViewModel() {
         return result.ref?.get()
     }
 
+    /**
+     * 消费[PendingView]，并设置[current]
+     */
     fun consumePendingView(current: PendingView?) {
         _figureState.update { it.copy(pendingView = current) }
     }

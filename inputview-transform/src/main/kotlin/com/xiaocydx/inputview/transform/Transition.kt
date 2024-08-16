@@ -14,41 +14,24 @@
  * limitations under the License.
  */
 
-@file:JvmName("TransitionInternalKt")
-@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "PackageDirectoryMismatch")
+@file:JvmName("TransformTransitionInternalKt")
+@file:Suppress("PackageDirectoryMismatch")
 
 package androidx.transition
 
 import android.graphics.Rect
 import android.view.View
-import android.widget.FrameLayout
-import com.xiaocydx.inputview.updatePadding
 
-inline fun View.getBounds(bounds: Rect, change: Rect.() -> Unit = {}) {
-    bounds.set(left, top, right, bottom)
-    bounds.change()
-}
-
-inline fun View.getPaddings(paddings: Rect, change: Rect.() -> Unit = {}) {
-    paddings.set(paddingLeft, paddingTop, paddingRight, paddingBottom)
-    paddings.change()
-}
-
+/**
+ * [View.setLeftTopRightBottom]的兼容函数
+ */
 fun View.setLeftTopRightBottomCompat(rect: Rect) {
     setLeftTopRightBottomCompat(rect.left, rect.top, rect.right, rect.bottom)
 }
 
+/**
+ * [View.setLeftTopRightBottom]的兼容函数
+ */
 fun View.setLeftTopRightBottomCompat(left: Int, top: Int, right: Int, bottom: Int) {
     ViewUtils.setLeftTopRightBottom(this, left, top, right, bottom)
-}
-
-fun View.updatePaddings(paddings: Rect) {
-    paddings.apply { updatePadding(left, top, right, bottom) }
-}
-
-fun View.updateLayoutGravity(gravity: Int) {
-    val lp = layoutParams as? FrameLayout.LayoutParams
-    if (lp == null || lp.gravity == gravity) return
-    lp.gravity = gravity
-    layoutParams = lp
 }

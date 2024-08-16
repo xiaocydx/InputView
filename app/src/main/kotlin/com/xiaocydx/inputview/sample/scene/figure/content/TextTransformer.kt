@@ -7,19 +7,19 @@ import android.view.ViewGroup
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.marginBottom
 import androidx.core.view.updatePadding
-import androidx.transition.updatePaddings
 import com.xiaocydx.inputview.sample.databinding.FragmentTextBinding
 import com.xiaocydx.inputview.sample.scene.figure.FigureContent.Text
 import com.xiaocydx.inputview.sample.scene.figure.FigureScene
-import com.xiaocydx.inputview.sample.scene.figure.ViewBounds
-import com.xiaocydx.inputview.sample.scene.figure.set
 import com.xiaocydx.inputview.transform.ImperfectState
 import com.xiaocydx.inputview.transform.TransformState
 import com.xiaocydx.inputview.transform.Transformer
+import com.xiaocydx.inputview.transform.ViewLocation
 import com.xiaocydx.inputview.transform.isCurrent
 import com.xiaocydx.inputview.transform.isEnter
 import com.xiaocydx.inputview.transform.isPrevious
 import com.xiaocydx.inputview.transform.isReturn
+import com.xiaocydx.inputview.transform.set
+import com.xiaocydx.inputview.transform.updatePaddings
 import com.xiaocydx.insets.isGestureNavigationBar
 import com.xiaocydx.insets.navigationBarHeight
 import com.xiaocydx.insets.statusBarHeight
@@ -48,12 +48,12 @@ class TextEnterReturn(
 
     override fun onPrepare(state: ImperfectState) = with(state) {
         val isEnter = isEnter(Text)
-        val textBounds = textTarget()?.get()?.let(ViewBounds::from) ?: ViewBounds()
+        val textLocation = textTarget()?.get()?.let(ViewLocation::from) ?: ViewLocation()
 
         // rootView还未测量完成，取rootParent的尺寸进行计算
         val rootParent = rootView.parent as ViewGroup
         val paddings = if (isEnter) startPaddings else endPaddings
-        paddings.set(textBounds)
+        paddings.set(textLocation)
         paddings.right = rootParent.width - paddings.right
         paddings.bottom = rootParent.height - paddings.bottom
 

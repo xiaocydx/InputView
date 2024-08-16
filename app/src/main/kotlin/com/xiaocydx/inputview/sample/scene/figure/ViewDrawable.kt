@@ -4,10 +4,10 @@ import android.graphics.Canvas
 import android.graphics.ColorFilter
 import android.graphics.Matrix
 import android.graphics.PixelFormat
-import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.view.View
 import androidx.core.graphics.withMatrix
+import com.xiaocydx.inputview.transform.ViewLocation
 import java.lang.ref.WeakReference
 import kotlin.math.min
 
@@ -23,7 +23,7 @@ class ViewDrawable<T : View> : Drawable() {
     private var marginBottom = 0
     private var marginHorizontal = 0
     private var targetRef: WeakReference<T>? = null
-    private var targetBounds: ViewBounds = ViewBounds()
+    private var targetLocation: ViewLocation = ViewLocation()
 
     /**
      * 用于绘制的目标View
@@ -48,7 +48,7 @@ class ViewDrawable<T : View> : Drawable() {
     fun setTarget(target: T?): T? {
         val previous = target
         this.targetRef = target?.let(::WeakReference)
-        targetBounds = targetRef?.get()?.let(ViewBounds::from) ?: ViewBounds()
+        targetLocation = targetRef?.get()?.let(ViewLocation::from) ?: ViewLocation()
         invalidateSelf()
         return previous
     }
@@ -92,22 +92,22 @@ class ViewDrawable<T : View> : Drawable() {
 
         val maxWidth = bounds.width() - marginHorizontal
         val maxHeight = bounds.height() - marginTop - marginBottom
-        val scaleX = maxWidth.toFloat() / targetBounds.width
-        val scaleY = maxHeight.toFloat() / targetBounds.height
+        val scaleX = maxWidth.toFloat() / targetLocation.width
+        val scaleY = maxHeight.toFloat() / targetLocation.height
         val minScale = min(scaleX, scaleY)
 
         val targetY = marginTop + (maxHeight.toFloat() / 2)
-        val initialY = targetBounds.top + (targetBounds.height.toFloat() / 2)
+        val initialY = targetLocation.top + (targetLocation.height.toFloat() / 2)
         val translationY = targetY - initialY
         return FitCenter(minScale, translationY)
     }
 
     override fun draw(canvas: Canvas) {
         val target = target ?: return
-        val targetW = targetBounds.width.toFloat()
-        val targetH = targetBounds.height.toFloat()
-        val targetCenterX = targetBounds.left.toFloat() + targetW / 2
-        val targetCenterY = targetBounds.top.toFloat() + targetH / 2
+        val targetW = targetLocation.width.toFloat()
+        val targetH = targetLocation.height.toFloat()
+        val targetCenterX = targetLocation.left.toFloat() + targetW / 2
+        val targetCenterY = targetLocation.top.toFloat() + targetH / 2
         // canvas的矩阵变换是右乘，为了让代码容易理解，用matrix编写左乘
         matrix.reset()
         // target默认绘制在左上角
@@ -123,30 +123,3 @@ class ViewDrawable<T : View> : Drawable() {
 }
 
 data class FitCenter(val scale: Float, val translationY: Float)
-
-data class ViewBounds(
-    val left: Int = 0,
-    val top: Int = 0,
-    val right: Int = 0,
-    val bottom: Int = 0
-) {
-    val width = right - left
-    val height = bottom - top
-
-    companion object {
-        fun from(view: View) = run {
-            val out = IntArray(2)
-            view.getLocationInWindow(out)
-            ViewBounds(
-                left = out[0],
-                top = out[1],
-                right = out[0] + view.width,
-                bottom = out[1] + view.height
-            )
-        }
-    }
-}
-
-fun Rect.set(bounds: ViewBounds) {
-    bounds.apply { set(left, top, right, bottom) }
-}

@@ -23,10 +23,17 @@ import android.graphics.Rect
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.view.View
+import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import androidx.annotation.ColorInt
-import androidx.transition.getBounds
 import com.xiaocydx.inputview.Editor
+import com.xiaocydx.inputview.InputView
 
+/**
+ * 添加[ContentBackground]和[EditorBackground]，配置统一的[color]
+ *
+ * @param contentMatch [ContentBackground]的匹配条件
+ * @param editorMatch  [EditorBackground]的匹配条件
+ */
 fun TransformerOwner.addSceneBackground(
     @ColorInt color: Int,
     contentMatch: ContentMatch? = null,
@@ -36,6 +43,19 @@ fun TransformerOwner.addSceneBackground(
     add(EditorBackground(color).apply { setMatch(editorMatch) })
 }
 
+/**
+ * [Content]的背景
+ *
+ * ### 匹配变换
+ * 当匹配的[Content]视图不为`null`时，才进行变换。可调用[setMatch]设置匹配条件。
+ *
+ * ### 变换效果
+ * 围绕匹配的[Content]视图绘制背景，变换期间更改背景高度。
+ *
+ * ### 适用场景
+ * 1. 匹配的[Content]，其视图高度为固定值或[WRAP_CONTENT]。
+ * 2. 可搭配[ContentChangeBounds]、[ContentChangeTranslation]使用。
+ */
 class ContentBackground(private val drawable: Drawable) : ContentTransformer() {
     private val startBounds = Rect()
     private val endBounds = Rect()
@@ -113,6 +133,18 @@ class ContentBackground(private val drawable: Drawable) : ContentTransformer() {
     }
 }
 
+/**
+ * [Editor]的背景
+ *
+ * ### 匹配变换
+ * 当匹配的[Editor]视图不为`null`时，才进行变换。可调用[setMatch]设置匹配条件。
+ *
+ * ### 变换效果
+ * 围绕匹配的[Editor]视图绘制背景，变换期间更改背景高度。
+ *
+ * ### 适用场景
+ * 用于代替[InputView.editorBackground]，跟[ContentBackground]统一使用方式。
+ */
 class EditorBackground(private val drawable: Drawable) : EditorTransformer() {
 
     constructor(

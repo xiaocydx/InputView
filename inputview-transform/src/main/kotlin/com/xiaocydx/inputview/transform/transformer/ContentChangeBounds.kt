@@ -21,7 +21,6 @@ package com.xiaocydx.inputview.transform
 import android.animation.RectEvaluator
 import android.graphics.Rect
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-import androidx.transition.getBounds
 import androidx.transition.setLeftTopRightBottomCompat
 
 /**

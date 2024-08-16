@@ -142,6 +142,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
         }
         backPressedCallback?.isEnabled = current != null
 
+        // TODO: Editor一致，Content不一致，运行SimpleAnimation
         isActiveGoing = false
         return editorSucceed && sceneChanged
     }

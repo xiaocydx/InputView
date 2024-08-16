@@ -18,6 +18,14 @@
 
 package com.xiaocydx.inputview.transform
 
+import com.xiaocydx.inputview.Editor
+
+/**
+ * 添加[ContentFadeChange]和[EditorFadeChange]
+ *
+ * @param contentMatch [ContentFadeChange]的匹配条件
+ * @param editorMatch  [EditorFadeChange]的匹配条件
+ */
 fun TransformerOwner.addSceneFadeChange(
     contentMatch: ContentMatch? = null,
     editorMatch: EditorMatch? = null,
@@ -26,6 +34,16 @@ fun TransformerOwner.addSceneFadeChange(
     add(EditorFadeChange().apply { setMatch(editorMatch) })
 }
 
+/**
+ * [Content]的透明度变换
+ *
+ * ### 匹配变换
+ * 当`state`的前后[Content]不同时，才进行变换。可调用[setMatch]设置匹配条件。
+ *
+ * ### 变换效果
+ * 1. `state.previous`和`state.current`其中一个为null（表示进入和退出），将匹配的[Content]视图透明度设为`1f`。
+ * 2. `state.previous`和`state.current`都不为null，将匹配的[Content]视图透明度设为[TransformViews.alpha]。
+ */
 class ContentFadeChange() : ContentTransformer() {
 
     constructor(match: ContentMatch) : this() {
@@ -52,6 +70,19 @@ class ContentFadeChange() : ContentTransformer() {
     }
 }
 
+/**
+ * [Editor]的透明度变换
+ *
+ * ### 匹配变换
+ * 当`state`的前后[Editor]不同时，才进行变换。可调用[setMatch]设置匹配条件。
+ *
+ * ### 变换效果
+ * 1. `state.previous`和`state.current`其中一个为null（表示进入和退出），将匹配的[Editor]视图透明度设为`1f`。
+ * 2. `state.previous`和`state.current`都不为null，将匹配的[Editor]视图透明度设为[TransformViews.alpha]。
+ * 3. `startView`和`endView`其中一个为`null`，根据`state.animatedFraction`计算透明度。
+ *
+ * 第3点是[EditorFadeChange]跟[ContentFadeChange]的区别，目的是实现更好的变换效果。
+ */
 class EditorFadeChange() : EditorTransformer() {
 
     constructor(match: EditorMatch) : this() {

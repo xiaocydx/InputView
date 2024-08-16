@@ -64,6 +64,7 @@ class CoverChangeFitCenter(private val drawable: ViewDrawable<FigureView>) : Tra
     }
 
     override fun onStart(state: TransformState) = with(state) {
+        drawable.target?.setAnimationAlpha(0f)
         start = drawable.calculateFitCenter(extraMarginBottom = startOffset)
         end = drawable.calculateFitCenter(extraMarginBottom = endOffset)
     }
@@ -71,7 +72,10 @@ class CoverChangeFitCenter(private val drawable: ViewDrawable<FigureView>) : Tra
     override fun onUpdate(state: TransformState) = with(state) {
         val scale = evaluator.evaluate(interpolatedFraction, start!!.scale, end!!.scale)
         val translationY = evaluator.evaluate(interpolatedFraction, start!!.translationY, end!!.translationY)
-        drawable.target?.setAnimationAlpha(0f)
         drawable.setValues(scale, translationY)
+    }
+
+    override fun onEnd(state: TransformState) = with(state) {
+        if (!isCurrent(Cover)) drawable.target?.setAnimationAlpha(1f)
     }
 }
