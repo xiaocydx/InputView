@@ -19,6 +19,7 @@
 package com.xiaocydx.inputview.transform
 
 import android.annotation.SuppressLint
+import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
@@ -32,6 +33,8 @@ import androidx.lifecycle.Lifecycle.State.CREATED
 import androidx.lifecycle.Lifecycle.State.DESTROYED
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.savedstate.SavedStateRegistry.SavedStateProvider
+import androidx.savedstate.SavedStateRegistryOwner
 import com.xiaocydx.inputview.AnimationCallback
 import com.xiaocydx.inputview.AnimationState
 import com.xiaocydx.inputview.Editor
@@ -56,13 +59,15 @@ import com.xiaocydx.inputview.transform.Overlay.Companion.ROOT_PARENT_ID
  */
 @PublishedApi
 internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
-    override val lifecycleOwner: LifecycleOwner,
+    override val lifecycleOwner: SavedStateRegistryOwner,
     private val contentAdapter: ContentAdapter<C>,
     private val editorAdapter: EditorAdapter<E>,
     private val editorAnimator: EditorAnimator,
+    private val statefulSceneList: List<S>,
 ) : Overlay<S> {
     private val transformState = TransformStateImpl()
     private val transformerDispatcher = TransformerDispatcher()
+    private val statefulSceneProvider = StatefulSceneProvider()
     private var backPressedCallback: OnBackPressedCallback? = null
     private var isInitialized = false
     private var isActiveGoing = false
@@ -106,16 +111,18 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
 
         // 移除rootView，通过detachedFromWindow移除transformerDispatcher
         lifecycleOwner.lifecycle.doOnDestroyed {
-            go(scene = null)
             val parent = transformState.rootView.parent as? ViewGroup
             parent?.removeView(transformState.rootView)
         }
+
+        statefulSceneProvider.initialize()
         return true
     }
 
     override fun go(scene: S?): Boolean {
         if (!isInitialized) return false
         isActiveGoing = true
+        statefulSceneProvider.clearPendingScene()
 
         // editor的显示和隐藏允许被拦截
         val isSameEditor = editorAdapter.current === scene?.editor
@@ -150,7 +157,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
 
     override fun addToOnBackPressedDispatcher(dispatcher: OnBackPressedDispatcher): Boolean {
         if (backPressedCallback != null) return false
-        backPressedCallback = object : OnBackPressedCallback(false) {
+        backPressedCallback = object : OnBackPressedCallback(current != null) {
             override fun handleOnBackPressed() {
                 go(scene = null)
             }
@@ -195,6 +202,43 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
                 if (source.lifecycle.currentState == DESTROYED) action()
             }
         })
+    }
+
+    private inner class StatefulSceneProvider : SavedStateProvider {
+        private var pendingScene: S? = null
+
+        fun initialize() {
+            val registry = lifecycleOwner.savedStateRegistry
+            registry.registerSavedStateProvider(KEY_SCENE, this)
+            lifecycleOwner.lifecycle.doOnDestroyed {
+                registry.unregisterSavedStateProvider(KEY_SCENE)
+                if (!canSaveSceneIndex()) go(scene = null)
+            }
+
+            val bundle = registry.consumeRestoredStateForKey(KEY_SCENE)
+            val index = bundle?.getInt(KEY_SCENE, NO_INDEX) ?: NO_INDEX
+            pendingScene = statefulSceneList.getOrNull(index) ?: return
+            // 在初始化阶段之后，InputView消费pendingSavedState之前，设置pendingScene
+            lifecycleOwner.lifecycle.doOnCreated { pendingScene?.let(::go) }
+        }
+
+        fun clearPendingScene() {
+            pendingScene = null
+        }
+
+        override fun saveState(): Bundle {
+            val bundle = Bundle(1)
+            bundle.putInt(KEY_SCENE, currentSceneIndex())
+            return bundle
+        }
+
+        private fun canSaveSceneIndex(): Boolean {
+            return currentSceneIndex() != NO_INDEX
+        }
+
+        private fun currentSceneIndex(): Int {
+            return statefulSceneList.indexOfFirst { it === current }
+        }
     }
 
     private inner class ContentHostImpl : ContentHost {
@@ -516,5 +560,10 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
             endOffset = offset
             currentOffset = offset
         }
+    }
+
+    private companion object {
+        const val NO_INDEX = -1
+        const val KEY_SCENE = "com.xiaocydx.inputview.transform.KEY_SCENE"
     }
 }

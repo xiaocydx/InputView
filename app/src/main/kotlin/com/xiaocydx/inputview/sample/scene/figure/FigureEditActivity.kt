@@ -71,7 +71,8 @@ class FigureEditActivity : AppCompatActivity() {
             lifecycleOwner = this@FigureEditActivity,
             contentAdapter = FigureContentAdapter(lifecycle, supportFragmentManager),
             editorAdapter = FigureEditAdapter(lifecycle, supportFragmentManager),
-            editorAnimator = FadeEditorAnimator(durationMillis = 300)
+            editorAnimator = FadeEditorAnimator(durationMillis = 300),
+            statefulSceneList = FigureScene.entries.toList()
         )
         overlay.attach(window)
     }

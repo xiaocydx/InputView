@@ -27,6 +27,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.OnBackPressedDispatcher
 import androidx.lifecycle.Lifecycle.State.DESTROYED
 import androidx.lifecycle.LifecycleOwner
+import androidx.savedstate.SavedStateRegistryOwner
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.EditorAnimator
@@ -40,17 +41,22 @@ import com.xiaocydx.inputview.InputView
  * @param editorAdapter  用于[Overlay.go]通知更改[Editor],
  * @param editorAnimator [Overlay]的动画执行器，参与调度[Transformer]。
  * 当类型为[FadeEditorAnimator]时，其计算值会赋值给[TransformViews.alpha]。
+ * @param statefulSceneList 用于保存和恢复[Overlay.current]的[Scene]集合。
+ * 恢复[Overlay.current]不会运行动画，仅记录动画状态，调度[Transformer]。
+ * 默认为空集合，表示不做保存和恢复处理。
  */
 inline fun <S, C, E> InputView.Companion.createOverlay(
-    lifecycleOwner: LifecycleOwner,
+    lifecycleOwner: SavedStateRegistryOwner,
     contentAdapter: ContentAdapter<C>,
     editorAdapter: EditorAdapter<E>,
     editorAnimator: EditorAnimator = FadeEditorAnimator(),
+    statefulSceneList: List<S> = emptyList(),
     initializer: Overlay<S>.() -> Unit = {}
 ): Overlay<S> where S : Scene<C, E>, C : Content, E : Editor {
     val overlay: Overlay<S> = OverlayImpl(
         lifecycleOwner, contentAdapter,
-        editorAdapter, editorAnimator
+        editorAdapter, editorAnimator,
+        statefulSceneList
     )
     return overlay.apply(initializer)
 }
@@ -84,8 +90,8 @@ interface Overlay<S : Scene<*, *>> : TransformerOwner {
      * 构建[Overlay]时关联的[lifecycleOwner]
      *
      * 当`Lifecycle.currentState`转换为[DESTROYED]时：
-     * 1. 将[current]更改为`null`。
-     * 2. 从`rootParent`移除`rootView`。
+     * 1. 从`rootParent`移除`rootView`。
+     * 2. 若无法保存[current]，则将[current]更改为`null`。
      */
     val lifecycleOwner: LifecycleOwner
 
