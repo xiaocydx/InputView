@@ -144,11 +144,27 @@ abstract class EditorAnimator(
         return animationCallbacks.contains(callback)
     }
 
+    internal fun requestSimpleAnimation() {
+        runSimpleAnimationOnPreDraw(fromRequest = true)
+    }
+
     private fun resetAnimationRecord(record: AnimationRecord) {
         endAnimation()
         assert(animationRecord == null) { "animationRecord未被置空" }
         animationRecord = record
         dispatchAnimationPrepare(record)
+    }
+
+    private fun runSimpleAnimationOnPreDraw(fromRequest: Boolean) {
+        if (host?.hasPendingChange() == true) return
+        val current = host?.current ?: return
+        val record = AnimationRecord(current, current, fromRequest = fromRequest)
+        resetAnimationRecord(record)
+        record.setAnimationStartOffset()
+        record.setPreDrawRunSimpleAnimation {
+            record.setAnimationEndOffset(calculateEndOffset())
+            runSimpleAnimationIfNecessary(record)
+        }
     }
 
     private fun runSimpleAnimationIfNecessary(record: AnimationRecord) {
@@ -305,7 +321,7 @@ abstract class EditorAnimator(
          * 然后调用[EditorHost.dispatchImeShown]更改[Editor]，这属于被动更改。
          */
         fun onPendingChanged(previous: Editor?, current: Editor?, immediately: Boolean) {
-            val record = AnimationRecord(previous, current, immediately)
+            val record = AnimationRecord(previous, current, immediately = immediately)
             resetAnimationRecord(record)
             record.setStartViewAndEndView()
             record.setAnimationStartOffset()
@@ -324,7 +340,7 @@ abstract class EditorAnimator(
                 // 若执行过程缺少第1、3步，则可能是没有运行insetsAnimation，
                 // 第4步判断没有insetsAnimation，运行simpleAnimation进行兼容。
                 if (record.insetsAnimation != null) return@action
-                record.setAnimationEndOffset()
+                record.setAnimationEndOffset(calculateEndOffset())
                 runSimpleAnimationIfNecessary(record)
             }
         }
@@ -344,7 +360,7 @@ abstract class EditorAnimator(
                     lastImeHeight > 0 && imeHeight == 0 -> dispatchImeShown(shown = false)
                     lastImeHeight > 0 && imeHeight > 0 && lastImeHeight != imeHeight && current === ime -> {
                         // 调整IME高度后，运行simpleAnimation修正editorOffset
-                        runSimpleAnimationFixEditorOffset(endOffset = insets.imeOffset)
+                        runSimpleAnimationOnPreDraw(fromRequest = false)
                     }
                 }
                 lastImeHeight = imeHeight
@@ -354,15 +370,6 @@ abstract class EditorAnimator(
             return insets
         }
 
-        private fun runSimpleAnimationFixEditorOffset(endOffset: Int) {
-            val current = host?.current ?: return
-            val record = AnimationRecord(current, current, immediately = false)
-            resetAnimationRecord(record)
-            record.setAnimationStartOffset()
-            record.setAnimationEndOffset(endOffset)
-            runSimpleAnimationIfNecessary(record)
-        }
-
         override fun onStart(
             animation: WindowInsetsAnimationCompat,
             bounds: WindowInsetsAnimationCompat.BoundsCompat
@@ -370,7 +377,7 @@ abstract class EditorAnimator(
             val record = animationRecord?.takeIf { it.simpleAnimation == null }
             if (record == null || !animation.contains(ime())) return bounds
             record.apply {
-                setAnimationEndOffset()
+                setAnimationEndOffset(calculateEndOffset())
                 setInsetsAnimation(animation)
                 removePreDrawRunSimpleAnimation()
             }
@@ -401,7 +408,8 @@ abstract class EditorAnimator(
     private inner class AnimationRecord(
         override val previous: Editor?,
         override val current: Editor?,
-        private val immediately: Boolean
+        private val immediately: Boolean = false,
+        private val fromRequest: Boolean = false
     ) : AnimationState {
         private var realStart = NO_VALUE
         private var realEnd = NO_VALUE
@@ -438,8 +446,8 @@ abstract class EditorAnimator(
         }
 
         fun isImmediately(): Boolean {
-            return !canRunAnimation || immediately
-                    || (previous === current && startOffset == endOffset)
+            if (!canRunAnimation || immediately) return true
+            return !fromRequest && previous === current && startOffset == endOffset
         }
 
         override fun isIme(editor: Editor?): Boolean {
@@ -491,7 +499,7 @@ abstract class EditorAnimator(
             setAnimationOffset(startOffset, endOffset, startOffset)
         }
 
-        fun setAnimationEndOffset(endOffset: Int = calculateEndOffset()) {
+        fun setAnimationEndOffset(endOffset: Int) {
             setAnimationOffset(endOffset = endOffset)
             val stableImeHeight = animationDispatcher.stableImeHeight
             realStart = if (isIme(previous) && endOffset == 0) stableImeHeight else startOffset

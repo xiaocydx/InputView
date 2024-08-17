@@ -186,6 +186,10 @@ class ImeAnimator internal constructor(
             if (view.isAttachedToWindow) current.attach()
         }
 
+        override fun hasPendingChange() = pendingChange != null
+
+        override fun removeEditorView(view: View) = Unit
+
         override fun updateEditorOffset(offset: Int) {
             editorOffset = offset
         }
@@ -239,7 +243,9 @@ class ImeAnimator internal constructor(
         }
 
         override fun addPreDrawAction(action: () -> Unit): OneShotPreDrawListener {
-            return OneShotPreDrawListener.add(view, action)
+            val listener = OneShotPreDrawListener.add(view, action)
+            view.invalidate()
+            return listener
         }
 
         override fun modifyImeAnimation(durationMillis: Long, interpolator: Interpolator) {
@@ -259,7 +265,5 @@ class ImeAnimator internal constructor(
             if (callback == null) window?.restoreImeAnimation()
             ReflectCompat { view.setWindowInsetsAnimationCallbackImmutable(callback) }
         }
-
-        override fun removeEditorView(view: View) = Unit
     }
 }

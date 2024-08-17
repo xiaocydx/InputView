@@ -86,6 +86,11 @@ internal interface EditorHost {
     val currentView: View?
 
     /**
+     * 是否有待处理的更改
+     */
+    fun hasPendingChange(): Boolean
+
+    /**
      * 移除[Editor]的视图
      */
     fun removeEditorView(view: View)

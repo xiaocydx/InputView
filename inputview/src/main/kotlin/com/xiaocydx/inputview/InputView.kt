@@ -540,6 +540,10 @@ class InputView @JvmOverloads constructor(
             isRestored = true
         }
 
+        override fun hasPendingChange(): Boolean {
+            return editorView.hasPendingChange()
+        }
+
         override fun removeEditorView(view: View) {
             view.takeIf { it.parent === editorView }?.let(editorView::removeView)
         }
@@ -587,7 +591,9 @@ class InputView @JvmOverloads constructor(
         }
 
         override fun addPreDrawAction(action: () -> Unit): OneShotPreDrawListener {
-            return OneShotPreDrawListener.add(editorView, action)
+            val listener = OneShotPreDrawListener.add(editorView, action)
+            editorView.invalidate()
+            return listener
         }
 
         override fun modifyImeAnimation(durationMillis: Long, interpolator: Interpolator) {

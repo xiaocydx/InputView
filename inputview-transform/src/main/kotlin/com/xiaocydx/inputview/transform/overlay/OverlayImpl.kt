@@ -139,10 +139,11 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
             current = scene
             transformState.invalidate()
             sceneChangedListener?.onChanged(previous, current)
+            // editor一致，content不同，忽略editor请求运行动画
+            if (isSameEditor) editorAnimator.requestSimpleAnimation()
         }
         backPressedCallback?.isEnabled = current != null
 
-        // TODO: Editor一致，Content不一致，运行SimpleAnimation
         isActiveGoing = false
         return editorSucceed && sceneChanged
     }

@@ -82,6 +82,8 @@ class TextEnterReturn(
 
     override fun onEnd(state: TransformState) {
         textTarget()?.get()?.alpha = 1f
+        binding.llTools.alpha = 1f
+        binding.llTools.updateLayoutSize(height = initialToolsHeight)
     }
 }
 
