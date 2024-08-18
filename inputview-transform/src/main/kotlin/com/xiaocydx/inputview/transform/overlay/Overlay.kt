@@ -28,6 +28,7 @@ import androidx.activity.OnBackPressedDispatcher
 import androidx.lifecycle.Lifecycle.State.DESTROYED
 import androidx.lifecycle.LifecycleOwner
 import androidx.savedstate.SavedStateRegistryOwner
+import com.xiaocydx.inputview.AnimationInterceptor
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.EditorAnimator
@@ -40,7 +41,7 @@ import com.xiaocydx.inputview.InputView
  * @param sceneList      跟[Overlay]关联的[Scene]集合
  * @param lifecycleOwner 跟[Overlay]关联的[LifecycleOwner]
  * @param contentAdapter 用于[Overlay.go]通知更改[Content]
- * @param editorAdapter  用于[Overlay.go]通知更改[Editor],
+ * @param editorAdapter  用于[Overlay.go]通知更改[Editor]
  * @param editorAnimator [Overlay]的动画执行器，参与调度[Transformer]。
  * 当类型为[FadeEditorAnimator]时，其计算值会赋值给[TransformViews.alpha]。
  * @param isStatefulSceneEnabled 是否启用保存和恢复[Overlay.current]。
@@ -148,6 +149,11 @@ interface Overlay<S : Scene<*, *>> : TransformerOwner {
      * @return `true`-添加成功，`false`-已添加
      */
     fun addToOnBackPressedDispatcher(dispatcher: OnBackPressedDispatcher): Boolean
+
+    /**
+     * 对构建[Overlay]时关联的[EditorAnimator]设置[AnimationInterceptor]
+     */
+    fun setAnimationInterceptor(interceptor: AnimationInterceptor)
 
     /**
      * 提供扩展函数[transform]

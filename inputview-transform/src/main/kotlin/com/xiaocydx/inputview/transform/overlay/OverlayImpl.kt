@@ -36,6 +36,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.savedstate.SavedStateRegistry.SavedStateProvider
 import androidx.savedstate.SavedStateRegistryOwner
 import com.xiaocydx.inputview.AnimationCallback
+import com.xiaocydx.inputview.AnimationInterceptor
 import com.xiaocydx.inputview.AnimationState
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.EditorAdapter
@@ -168,6 +169,10 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
         return true
     }
 
+    override fun setAnimationInterceptor(interceptor: AnimationInterceptor) {
+        editorAnimator.setAnimationInterceptor(interceptor)
+    }
+
     override fun has(transformer: Transformer): Boolean {
         return transformerDispatcher.has(transformer)
     }
@@ -291,7 +296,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
 
             require(matchCount <= 1 && currentScene !== nextScene) {
                 var matchError = ""
-                if (matchCount > 1)  {
+                if (matchCount > 1) {
                     val matchScene = sceneList.filter { it.editor === nextEditor }
                     matchError = "\n|    Overlay.sceneList中${matchScene}的Scene.editor都等于nextEditor，"
                 }
