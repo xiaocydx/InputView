@@ -46,9 +46,9 @@ class ViewDrawable<T : View> : Drawable() {
      * [target]当前尺寸和在Window的位置，将作为绘制参数。
      */
     fun setTarget(target: T?): T? {
-        val previous = target
-        this.targetRef = target?.let(::WeakReference)
-        targetLocation = targetRef?.get()?.let(ViewLocation::from) ?: ViewLocation()
+        val previous = this.target
+        targetRef = target?.let(::WeakReference)
+        targetLocation = target?.let(ViewLocation::from) ?: ViewLocation()
         invalidateSelf()
         return previous
     }

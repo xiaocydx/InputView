@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 
 /**
- * 通过选中编辑的交互案例，演示[InputView]的使用
+ * 通过选中编辑的交互案例，演示[createOverlay]的使用
  *
  * @author xcc
  * @date 2024/4/13
@@ -68,11 +68,11 @@ class FigureEditActivity : AppCompatActivity() {
         )
         // 覆盖层，包含内容区、编辑区、变换操作
         overlay = InputView.createOverlay(
+            sceneList = FigureScene.entries,
             lifecycleOwner = this@FigureEditActivity,
             contentAdapter = FigureContentAdapter(lifecycle, supportFragmentManager),
             editorAdapter = FigureEditAdapter(lifecycle, supportFragmentManager),
-            editorAnimator = FadeEditorAnimator(durationMillis = 300),
-            statefulSceneList = FigureScene.entries.toList()
+            editorAnimator = FadeEditorAnimator(durationMillis = 300)
         )
         overlay.attach(window)
     }
@@ -88,11 +88,8 @@ class FigureEditActivity : AppCompatActivity() {
             sharedViewModel.submitScene(current) // 同步当前FigureScene
         }
         sceneEditorConverter = SceneEditorConverter next@{ _, current, nextEditor ->
-            // 未调用overlay.go()，点击EditText显示Ime，转换为FigureScene.InputText
-            if (nextEditor == FigureEditor.Ime) return@next FigureScene.InputText
             // 处于FigureScene.InputText，点击或回退隐藏Ime，转换为FigureScene.InputIdle，表示不退出
-            if (current == FigureScene.InputText && nextEditor == null) return@next FigureScene.InputIdle
-            if (nextEditor == null) null else current
+            if (current == FigureScene.InputText && nextEditor == null) FigureScene.InputIdle else current
         }
 
         addToOnBackPressedDispatcher(onBackPressedDispatcher)

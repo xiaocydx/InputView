@@ -35,28 +35,30 @@ import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
 
 /**
- * 构建跟[lifecycleOwner]关联的[Overlay]
+ * 构建[Overlay]
  *
+ * @param sceneList      跟[Overlay]关联的[Scene]集合
+ * @param lifecycleOwner 跟[Overlay]关联的[LifecycleOwner]
  * @param contentAdapter 用于[Overlay.go]通知更改[Content]
  * @param editorAdapter  用于[Overlay.go]通知更改[Editor],
  * @param editorAnimator [Overlay]的动画执行器，参与调度[Transformer]。
  * 当类型为[FadeEditorAnimator]时，其计算值会赋值给[TransformViews.alpha]。
- * @param statefulSceneList 用于保存和恢复[Overlay.current]的[Scene]集合。
- * 恢复[Overlay.current]不会运行动画，仅记录动画状态，调度[Transformer]。
- * 默认为空集合，表示不做保存和恢复处理。
+ * @param isStatefulSceneEnabled 是否启用保存和恢复[Overlay.current]。
+ * 恢复[Overlay.current]不会运行动画，仅记录状态，调度[Transformer]。
  */
 inline fun <S, C, E> InputView.Companion.createOverlay(
+    sceneList: List<S>,
     lifecycleOwner: SavedStateRegistryOwner,
     contentAdapter: ContentAdapter<C>,
     editorAdapter: EditorAdapter<E>,
     editorAnimator: EditorAnimator = FadeEditorAnimator(),
-    statefulSceneList: List<S> = emptyList(),
+    isStatefulSceneEnabled: Boolean = true,
     initializer: Overlay<S>.() -> Unit = {}
 ): Overlay<S> where S : Scene<C, E>, C : Content, E : Editor {
     val overlay: Overlay<S> = OverlayImpl(
-        lifecycleOwner, contentAdapter,
-        editorAdapter, editorAnimator,
-        statefulSceneList
+        sceneList.toList(), lifecycleOwner,
+        contentAdapter, editorAdapter,
+        editorAnimator, isStatefulSceneEnabled
     )
     return overlay.apply(initializer)
 }
@@ -72,7 +74,7 @@ inline fun <S, C, E> InputView.Companion.createOverlay(
  * ### [Transformer]
  * [Overlay]实现了[TransformerOwner]，能添加[Transformer]实现变换操作。
  * 构建[Overlay]的`editorAnimator`是动画执行器，参与调度[Transformer]。
- * 调用[go]会更改[Scene]，进而调度执行[Transformer]。
+ * 调用[go]会更改[Scene]，进而调度[Transformer]。
  */
 interface Overlay<S : Scene<*, *>> : TransformerOwner {
 
@@ -96,6 +98,11 @@ interface Overlay<S : Scene<*, *>> : TransformerOwner {
     val lifecycleOwner: LifecycleOwner
 
     /**
+     * 构建[Overlay]时关联的[Scene]集合
+     */
+    val sceneList: List<S>
+
+    /**
      * [Scene]更改的监听，调用[go]更改成功，会触发该监听
      */
     var sceneChangedListener: SceneChangedListener<S>?
@@ -106,8 +113,12 @@ interface Overlay<S : Scene<*, *>> : TransformerOwner {
      * 当未调用[go]通知更改[Editor]时，会执行转换器将`nextEditor`转换为[Scene]。
      * 转换器主要用于未调用[go]通知显示和隐藏IME的情况，比如点击EditText显示IME、
      * 点击隐藏或手势回退IME。
+     *
+     * 当未设置转换器或[SceneEditorConverter.nextScene]返回[current]时，
+     * 从[sceneList]中查找[Scene.editor]等于`nextEditor`的[Scene]。
+     * 若查找到的[Scene]数量大于1，则抛出[IllegalStateException]。
      */
-    var sceneEditorConverter: SceneEditorConverter<S>
+    var sceneEditorConverter: SceneEditorConverter<S>?
 
     /**
      * 初始化[Overlay]，并将`rootView`添加到[rootParent]
@@ -120,9 +131,10 @@ interface Overlay<S : Scene<*, *>> : TransformerOwner {
     fun attach(window: Window, rootParent: ViewGroup? = null): Boolean
 
     /**
-     * 将[current]更改为[scene]，若更改成功，则运行动画调度执行[Transformer]
+     * 将[current]更改为[scene]，若更改成功，则运行动画调度[Transformer]。
+     * 当未调用[attach]或[sceneList]不包含[scene]时，抛出[IllegalStateException]。
      *
-     * @return `true`-更改成功，`false`-未调用[attach]或没有改变
+     * @return `true`-更改成功，`false`-没有改变
      */
     fun go(scene: S?): Boolean
 
@@ -175,6 +187,10 @@ fun interface SceneChangedListener<S : Scene<*, *>> {
  * 当未调用[Overlay.go]通知更改[Editor]时，会执行转换器将`nextEditor`转换为[Scene]。
  * 转换器主要用于未调用[Overlay.go]通知显示和隐藏IME的情况，比如点击EditText显示IME、
  * 点击隐藏或手势回退IME。
+ *
+ * 当未设置转换器或[SceneEditorConverter.nextScene]返回[Overlay.current]时，
+ * 从[Overlay.sceneList]中查找[Scene.editor]等于`nextEditor`的[Scene]。
+ * 若查找到的[Scene]数量大于1，则抛出[IllegalStateException]。
  */
 fun interface SceneEditorConverter<S : Scene<*, *>> {
 
@@ -186,11 +202,4 @@ fun interface SceneEditorConverter<S : Scene<*, *>> {
      * @param nextEditor 下一个[Editor]
      */
     fun nextScene(previous: S?, current: S?, nextEditor: Editor?): S?
-
-    companion object {
-        private val default = SceneEditorConverter<Scene<*, *>> { _, c, n -> if (n == null) null else c }
-
-        @Suppress("UNCHECKED_CAST")
-        internal fun <S : Scene<*, *>> default() = run { default as SceneEditorConverter<S> }
-    }
 }

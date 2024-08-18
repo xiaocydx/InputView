@@ -59,11 +59,12 @@ import com.xiaocydx.inputview.transform.Overlay.Companion.ROOT_PARENT_ID
  */
 @PublishedApi
 internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
+    override val sceneList: List<S>,
     override val lifecycleOwner: SavedStateRegistryOwner,
     private val contentAdapter: ContentAdapter<C>,
     private val editorAdapter: EditorAdapter<E>,
     private val editorAnimator: EditorAnimator,
-    private val statefulSceneList: List<S>,
+    private val isStatefulSceneEnabled: Boolean
 ) : Overlay<S> {
     private val transformState = TransformStateImpl()
     private val transformerDispatcher = TransformerDispatcher()
@@ -75,7 +76,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
     override var previous: S? = null; private set
     override var current: S? = null; private set
     override var sceneChangedListener: SceneChangedListener<S>? = null
-    override var sceneEditorConverter = SceneEditorConverter.default<S>()
+    override var sceneEditorConverter: SceneEditorConverter<S>? = null
 
     override fun attach(window: Window, rootParent: ViewGroup?): Boolean {
         if (isInitialized) return false
@@ -120,7 +121,8 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
     }
 
     override fun go(scene: S?): Boolean {
-        if (!isInitialized) return false
+        require(isInitialized) { "未调用Overlay.attach()" }
+        require(scene == null || sceneList.contains(scene)) { "Overlay.sceneList不包含${scene}" }
         isActiveGoing = true
         statefulSceneProvider.clearPendingScene()
 
@@ -212,12 +214,12 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
             registry.registerSavedStateProvider(KEY_SCENE, this)
             lifecycleOwner.lifecycle.doOnDestroyed {
                 registry.unregisterSavedStateProvider(KEY_SCENE)
-                if (!canSaveSceneIndex()) go(scene = null)
+                if (!canSaveScene()) go(scene = null)
             }
 
             val bundle = registry.consumeRestoredStateForKey(KEY_SCENE)
             val index = bundle?.getInt(KEY_SCENE, NO_INDEX) ?: NO_INDEX
-            pendingScene = statefulSceneList.getOrNull(index) ?: return
+            pendingScene = sceneList.getOrNull(index) ?: return
             // 在初始化阶段之后，InputView消费pendingSavedState之前，设置pendingScene
             lifecycleOwner.lifecycle.doOnCreated { pendingScene?.let(::go) }
         }
@@ -228,16 +230,17 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
 
         override fun saveState(): Bundle {
             val bundle = Bundle(1)
-            bundle.putInt(KEY_SCENE, currentSceneIndex())
+            bundle.putInt(KEY_SCENE, currentSaveIndex())
             return bundle
         }
 
-        private fun canSaveSceneIndex(): Boolean {
-            return currentSceneIndex() != NO_INDEX
+        private fun canSaveScene(): Boolean {
+            return currentSaveIndex() != NO_INDEX
         }
 
-        private fun currentSceneIndex(): Int {
-            return statefulSceneList.indexOfFirst { it === current }
+        private fun currentSaveIndex(): Int {
+            if (!isStatefulSceneEnabled) return NO_INDEX
+            return sceneList.indexOfFirst { it === current }
         }
     }
 
@@ -275,22 +278,30 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
             if (isActiveGoing) return
             if (consumeSkipChanged(previous, current)) return
             assert(currentScene?.editor === previous)
-            val nextScene = sceneEditorConverter.nextScene(previousScene, currentScene, current)
-            checkNextScene(previous, current, currentScene, nextScene)
+
+            var matchCount = 0
+            var nextScene = currentScene
+            val nextEditor = current
+            sceneEditorConverter?.let { nextScene = it.nextScene(previousScene, currentScene, nextEditor) }
+            if (nextScene === currentScene) {
+                // 当nextEditor = null时，nextScene = null
+                matchCount = sceneList.count { it.editor === nextEditor }
+                nextScene = sceneList.firstOrNull { it.editor === nextEditor }
+            }
+
+            require(matchCount <= 1 && currentScene !== nextScene) {
+                var matchError = ""
+                if (matchCount > 1)  {
+                    val matchScene = sceneList.filter { it.editor === nextEditor }
+                    matchError = "\n|    Overlay.sceneList中${matchScene}的Scene.editor都等于nextEditor，"
+                }
+                """没有通过Overlay.go()更改Editor${matchError}
+                |    请设置Overlay.sceneEditorConverter, 完成nextEditor = ${nextEditor}转换为Scene的逻辑
+                 """.trimMargin()
+            }
+
             prepareSkipChanged(current, nextScene?.editor)
             go(nextScene)
-        }
-
-        private fun checkNextScene(
-            previous: E?, current: E?,
-            currentScene: S?,
-            nextScene: S?
-        ) = check(currentScene !== nextScene) {
-            """没有通过Overlay.go()更改Editor
-               |    (previousEditor = ${previous}, currentEditor = $current)
-               |    请调用Overlay.setConverter()设置${SceneEditorConverter::class.java.simpleName}，
-               |    完成currentEditor = ${current}转换为Scene的逻辑
-            """.trimMargin()
         }
 
         private fun prepareSkipChanged(previous: E?, current: E?) {

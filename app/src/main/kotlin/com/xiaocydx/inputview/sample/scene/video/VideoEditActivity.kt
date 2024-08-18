@@ -10,7 +10,6 @@ import com.xiaocydx.inputview.transform.ChangeScale
 import com.xiaocydx.inputview.transform.ContentChangeBounds
 import com.xiaocydx.inputview.transform.ContentChangeTranslation
 import com.xiaocydx.inputview.transform.Overlay
-import com.xiaocydx.inputview.transform.SceneEditorConverter
 import com.xiaocydx.inputview.transform.addSceneBackground
 import com.xiaocydx.inputview.transform.addSceneFadeChange
 import com.xiaocydx.inputview.transform.createOverlay
@@ -38,6 +37,7 @@ class VideoEditActivity : AppCompatActivity() {
         preview.insets().margins(statusBars())
 
         overlay = InputView.createOverlay(
+            sceneList = VideoScene.entries,
             lifecycleOwner = this@VideoEditActivity,
             contentAdapter = VideoContentAdapter { overlay.go(it) },
             editorAdapter = VideoEditorAdapter(lifecycle, supportFragmentManager)
@@ -48,12 +48,6 @@ class VideoEditActivity : AppCompatActivity() {
             addSceneFadeChange()
             addSceneBackground(0xFF1D1D1D.toInt())
             addToOnBackPressedDispatcher(onBackPressedDispatcher)
-            sceneEditorConverter = SceneEditorConverter converter@{ previous, current, nextEditor ->
-                if (nextEditor == VideoEditor.Ime) return@converter VideoScene.InputText
-                // 在VideoScene.InputText下回退IME，将nextEditor转换为previous，即重定向意图
-                // if (current == VideoScene.InputText && nextEditor == null) return@converter previous
-                if (nextEditor == null) null else current
-            }
             attach(window)
         }
 
