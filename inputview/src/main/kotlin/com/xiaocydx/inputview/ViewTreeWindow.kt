@@ -20,14 +20,21 @@ package com.xiaocydx.inputview
 
 import android.app.Activity
 import android.app.Dialog
-import android.graphics.*
-import android.view.*
+import android.view.View
+import android.view.ViewGroup
+import android.view.Window
+import android.view.WindowInsets
 import android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
 import android.view.animation.Interpolator
 import android.widget.EditText
 import androidx.annotation.VisibleForTesting
-import androidx.core.view.*
-import com.xiaocydx.inputview.compat.*
+import androidx.core.view.OnApplyWindowInsetsListener
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import com.xiaocydx.inputview.Insets.Compat
+import com.xiaocydx.inputview.Insets.Decor
+import com.xiaocydx.inputview.compat.ReflectCompat
+import com.xiaocydx.inputview.compat.checkDispatchApplyInsetsCompatibility
 import com.xiaocydx.insets.DisableDecorFitsSystemWindowsReason
 import com.xiaocydx.insets.consumeInsets
 import com.xiaocydx.insets.decorInsets
@@ -36,7 +43,6 @@ import com.xiaocydx.insets.getImeOffset
 import com.xiaocydx.insets.getRootWindowInsetsCompat
 import com.xiaocydx.insets.getSystemBarHiddenConsumeTypeMask
 import com.xiaocydx.insets.ime
-import com.xiaocydx.insets.insets
 import com.xiaocydx.insets.isGestureNavigationBar
 import com.xiaocydx.insets.navigationBarHeight
 import com.xiaocydx.insets.navigationBars
@@ -51,52 +57,99 @@ import java.lang.ref.WeakReference
 /**
  * 初始化[InputView]所需的配置
  *
- * @param window [Activity.getWindow]或[Dialog.getWindow]。
- * @param statusBarEdgeToEdge 是否启用状态栏EdgeToEdge。
- * 若启用，则不消费[WindowInsets]的状态栏Insets，不设置状态栏高度的间距，不绘制背景色。
- * @param gestureNavBarEdgeToEdge 是否启用手势导航栏EdgeToEdge。
- * 若启用，则不消费[WindowInsets]的手势导航栏Insets，不设置手势导航栏高度的间距，不绘制背景色，
- * [InputView]增加`navBarOffset`区域，[AnimationState.navBarOffset]有值。
- *
- * 可以利用[View.insets]、[WindowInsetsCompat.isGestureNavigationBar]等扩展实现EdgeToEdge。
- *
- * @return 首次初始化返回`true`，再次初始化返回`false`。
+ * @param window [Activity.getWindow]或[Dialog.getWindow]
+ * @param insets [WindowInsets]的处理方案，默认使用内置实现
  */
+fun InputView.Companion.init(
+    window: Window,
+    insets: Insets = Decor()
+): Boolean {
+    if (ViewTreeWindow.isAttached(window)) return false
+    val vtWindow = ViewTreeWindow(window, insets.gestureNavBarEdgeToEdge).attach()
+    if (insets is Decor) vtWindow.setOnApplyWindowInsetsListener(insets.statusBarEdgeToEdge)
+    return true
+}
+
+/**
+ * [WindowInsets]的处理方案
+ */
+sealed class Insets(
+    internal open val statusBarEdgeToEdge: Boolean,
+    internal open val gestureNavBarEdgeToEdge: Boolean
+) {
+
+    /**
+     * 对`window.decorView`设置[OnApplyWindowInsetsListener]，使用内置实现
+     */
+    data class Decor(
+        /**
+         * 是否启用状态栏EdgeToEdge
+         *
+         * 若启用，则不消费[WindowInsets]的状态栏Insets，不设置状态栏高度的间距，不绘制背景色。
+         */
+        override val statusBarEdgeToEdge: Boolean = false,
+
+        /**
+         * 是否启用手势导航栏EdgeToEdge
+         *
+         * 若启用，则不消费[WindowInsets]的导航栏Insets，不设置导航栏高度的间距，不绘制背景色，
+         * [InputView]增加`navBarOffset`区域，[AnimationState.navBarOffset]为手势导航栏高度。
+         *
+         * **注意**：[InputView.disableGestureNavBarOffset]被调用，不会增加`navBarOffset`区域。
+         */
+        override val gestureNavBarEdgeToEdge: Boolean = false
+    ) : Insets(statusBarEdgeToEdge, gestureNavBarEdgeToEdge)
+
+    /**
+     * 不对`window.decorView`设置[OnApplyWindowInsetsListener]，用于兼容已有的[WindowInsets]处理方案
+     */
+    data class Compat(
+        /**
+         * 是否启用手势导航栏EdgeToEdge
+         *
+         * 若启用，[InputView]增加`navBarOffset`区域，[AnimationState.navBarOffset]为手势导航栏高度。
+         *
+         * **注意**：[InputView.disableGestureNavBarOffset]被调用，不会增加`navBarOffset`区域。
+         */
+        override val gestureNavBarEdgeToEdge: Boolean = false
+    ) : Insets(statusBarEdgeToEdge = false, gestureNavBarEdgeToEdge = gestureNavBarEdgeToEdge)
+}
+
+/**
+ * 初始化[InputView]所需的配置
+ */
+@Deprecated(
+    message = "不再区分初始化函数，通过Insets的子类区分WindowInsets的处理方案",
+    replaceWith = ReplaceWith(
+        expression = "InputView.init(window, Decor(statusBarEdgeToEdge, gestureNavBarEdgeToEdge))",
+        imports = ["com.xiaocydx.inputview.Insets.Decor"]
+    ),
+)
 fun InputView.Companion.init(
     window: Window,
     statusBarEdgeToEdge: Boolean = false,
     gestureNavBarEdgeToEdge: Boolean = false
-): Boolean {
-    if (ViewTreeWindow.isAttached(window)) return false
-    ViewTreeWindow(window, gestureNavBarEdgeToEdge).attach()
-        .setOnApplyWindowInsetsListener(statusBarEdgeToEdge)
-    return true
-}
+) = init(window, Decor(statusBarEdgeToEdge, gestureNavBarEdgeToEdge))
 
 /**
  * 初始化[InputView]所需的配置，该函数用于兼容已有的[WindowInsets]处理方案
- *
- * @param window [Activity.getWindow]或[Dialog.getWindow]。
- * @param gestureNavBarEdgeToEdge 是否启用手势导航栏EdgeToEdge。
- * 若启用，[InputView]增加`navBarOffset`区域，[AnimationState.navBarOffset]有值。
- *
- * 可以利用[View.insets]、[WindowInsetsCompat.isGestureNavigationBar]等扩展实现EdgeToEdge。
- *
- * @return 首次初始化返回`true`，再次初始化返回`false`。
  */
+@Deprecated(
+    message = "不再区分初始化函数，通过Insets的子类区分WindowInsets的处理方案",
+    replaceWith = ReplaceWith(
+        expression = "InputView.init(window, Compat(gestureNavBarEdgeToEdge))",
+        imports = ["com.xiaocydx.inputview.Insets.Compat"]
+    )
+)
 fun InputView.Companion.initCompat(
     window: Window,
     gestureNavBarEdgeToEdge: Boolean = false,
-): Boolean {
-    if (ViewTreeWindow.isAttached(window)) return false
-    ViewTreeWindow(window, gestureNavBarEdgeToEdge).attach()
-    return true
-}
+) = init(window, Compat(gestureNavBarEdgeToEdge))
 
 /**
  * 添加需要处理水滴状指示器的[editText]，再次添加[editText]返回`false`，
  * 内部实现通过弱引用的方式持有[editText]，因此不必担心会有内存泄漏问题，
- * 调用该函数之前，需要先调用[init]或[initCompat]完成初始化。
+ * 调用该函数之前，需要先调用[init]完成初始化。
  *
  * 跟[InputView]和[ImeAnimator]关联的`editText`，会自动调用该函数，
  * 水滴状指示器的处理逻辑，可以看[EditTextManager.EditTextHandle]。
@@ -110,7 +163,7 @@ fun InputView.Companion.addEditText(editText: EditText): Boolean {
 
 /**
  * 移除[addEditText]添加的[editText]，再次移除[editText]返回`false`，
- * 调用该函数之前，需要先调用[init]或[initCompat]完成初始化。
+ * 调用该函数之前，需要先调用[init]完成初始化。
  */
 fun InputView.Companion.removeEditText(editText: EditText): Boolean {
     if (editText.imeFocusHandler == null) return false
@@ -144,7 +197,7 @@ internal fun View.findViewTreeWindow() = when {
 internal fun View.requireViewTreeWindow() = requireNotNull(findViewTreeWindow()) {
     when {
         !isAttachedToWindow -> "${javaClass.simpleName}当前未附加到Window"
-        else -> "需要先调用InputView.init()或InputView.initCompat()完成初始化"
+        else -> "需要先调用InputView.init()完成初始化"
     }
 }
 
@@ -258,7 +311,7 @@ internal class ViewTreeWindow(
 
         override fun run() {
             throw UnsupportedOperationException("$currentValue，" +
-                    "请调用InputView.initCompat()兼容已有的WindowInsets处理方案")
+                    "请调用InputView.init(window, compat)兼容已有的WindowInsets处理方案")
         }
 
         fun checkExisted() = apply {

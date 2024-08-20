@@ -13,6 +13,7 @@ import com.xiaocydx.inputview.AnimationInterceptor
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.EditorAnimator
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.Insets.Decor
 import com.xiaocydx.inputview.addAnimationCallback
 import com.xiaocydx.inputview.addEditText
 import com.xiaocydx.inputview.init
@@ -33,7 +34,7 @@ class AnimationInterceptorActivity1 : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        InputView.init(window, gestureNavBarEdgeToEdge = true)
+        InputView.init(window, Decor(gestureNavBarEdgeToEdge = true))
         setContentView(ActivityAnimationInterceptorBinding.inflate(layoutInflater).init().root)
     }
 

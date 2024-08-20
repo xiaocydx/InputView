@@ -3,6 +3,7 @@ package com.xiaocydx.inputview.sample.scene.video
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.Insets.Decor
 import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.ActivityVideoEditBinding
@@ -28,7 +29,7 @@ class VideoEditActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        InputView.init(window, statusBarEdgeToEdge = true, gestureNavBarEdgeToEdge = true)
+        InputView.init(window, Decor(statusBarEdgeToEdge = true, gestureNavBarEdgeToEdge = true))
         setContentView(ActivityVideoEditBinding.inflate(layoutInflater).init().root)
     }
 

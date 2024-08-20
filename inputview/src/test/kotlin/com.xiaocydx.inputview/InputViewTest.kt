@@ -22,6 +22,7 @@ import androidx.lifecycle.Lifecycle.State.RESUMED
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ActivityScenario.launch
 import com.google.common.truth.Truth.assertThat
+import com.xiaocydx.inputview.Insets.Compat
 import io.mockk.spyk
 import io.mockk.verify
 import org.junit.After
@@ -56,7 +57,7 @@ internal class InputViewTest {
     fun initViewTreeWindow() {
         scenario.onActivity {
             assertThat(InputView.init(it.window)).isFalse()
-            assertThat(InputView.initCompat(it.window)).isFalse()
+            assertThat(InputView.init(it.window, Compat())).isFalse()
             assertThat(it.inputView.findViewTreeWindow()).isNotNull()
             val result = runCatching { it.inputView.findViewTreeWindow()?.attach() }
             assertThat(result.exceptionOrNull()).isNotNull()

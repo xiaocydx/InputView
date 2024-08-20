@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatDialog
 import androidx.core.view.WindowInsetsControllerCompat
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.Insets.Decor
 import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.R
 import com.xiaocydx.inputview.sample.basic.message.init
@@ -35,7 +36,7 @@ class MessageListDialog(
         super.onCreate(savedInstanceState)
         val window = window!!
         val binding = MessageListBinding.inflate(layoutInflater)
-        InputView.init(window, statusBarEdgeToEdge, gestureNavBarEdgeToEdge)
+        InputView.init(window, Decor(statusBarEdgeToEdge, gestureNavBarEdgeToEdge))
         setContentView(binding.init(window).initView(window).root)
     }
 

@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.EditorMode
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.Insets.Decor
 import com.xiaocydx.inputview.addAnimationCallback
 import com.xiaocydx.inputview.current
 import com.xiaocydx.inputview.init
@@ -38,7 +39,7 @@ class MessageListActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        InputView.init(window, gestureNavBarEdgeToEdge = true)
+        InputView.init(window, Decor(gestureNavBarEdgeToEdge = true))
         setContentView(MessageListBinding.inflate(layoutInflater).init(window).root)
     }
 }

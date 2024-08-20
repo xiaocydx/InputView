@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.xiaocydx.inputview.AnimationInterceptor
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.Insets.Decor
 import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.basic.message.MessageEditor.Emoji
 import com.xiaocydx.inputview.sample.basic.message.MessageEditor.Ime
@@ -25,7 +26,7 @@ class AnimationInterceptorActivity2 : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        InputView.init(window, gestureNavBarEdgeToEdge = true)
+        InputView.init(window, Decor(gestureNavBarEdgeToEdge = true))
         setContentView(MessageListBinding.inflate(layoutInflater).init(window).intercept().root)
     }
 

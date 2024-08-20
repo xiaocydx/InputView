@@ -3,7 +3,6 @@ package com.xiaocydx.inputview.sample.scene.figure.content
 import android.animation.RectEvaluator
 import android.graphics.Rect
 import android.view.View
-import android.view.ViewGroup
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.marginBottom
 import androidx.core.view.updatePadding
