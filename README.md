@@ -28,9 +28,10 @@ dependencyResolutionManagement {
 ```
 dependencies {
     // 修改IME动画的属性、调用FLAG_FULLSCREEN的兼容方案，需要依赖inputview-compat
-    def version = "1.2.7"
+    def version = "1.3.0"
     implementation "com.github.xiaocydx.InputView:inputview:${version}"
     implementation "com.github.xiaocydx.InputView:inputview-compat:${version}"
+    implementation "com.github.xiaocydx.InputView:inputview-transform:${version}"
 }
 ```
 
@@ -46,7 +47,7 @@ https://user-images.githubusercontent.com/43429149/213995177-2b7cc060-d44a-463c-
 
 &nbsp;
 #### 复杂的切换场景
-InputView可用于选中编辑这类复杂的切换场景。
+InputView可用于编辑类页面的复杂切换。
 
 https://github.com/xiaocydx/InputView/assets/43429149/bb74c0ba-b1bc-4a4d-9c3a-d6c67c7752c9
 
