@@ -51,9 +51,11 @@ internal class TestActivity : AppCompatActivity() {
         contentAdapter = TestContentAdapter(this)
         editorAdapter = TestEditorAdapter()
         overlay = InputView.createOverlay(
+            sceneList = TestScene.entries,
             lifecycleOwner = this,
             contentAdapter = contentAdapter,
-            editorAdapter = editorAdapter
+            editorAdapter = editorAdapter,
+            isStatefulSceneEnabled = false
         )
         viewModel = ViewModelProvider(this, TestViewModel)[TestViewModel::class.java]
         overlay.attach(window)
