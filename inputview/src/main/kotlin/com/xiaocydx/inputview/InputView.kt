@@ -75,6 +75,7 @@ class InputView @JvmOverloads constructor(
     private var window: ViewTreeWindow? = null
     private var navBarOffset = 0
     private var disableNavBarOffset = false
+    private var isApplyInsetsRequested = false
 
     /**
      * 设置需要处理的[EditText]
@@ -237,10 +238,18 @@ class InputView @JvmOverloads constructor(
         window?.let(host::onDetachedFromWindow)
     }
 
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+    override fun requestFitSystemWindows() {
+        // requestApplyInsets()调用至requestFitSystemWindows()
+        isApplyInsetsRequested = true
+        super.requestFitSystemWindows()
+    }
+
     override fun dispatchApplyWindowInsets(insets: WindowInsets?): WindowInsets {
         val applyInsets = super.dispatchApplyWindowInsets(insets)
         // 尝试消费PendingChange，在处理完WindowInsets后，创建、添加、移除子View
         consumePendingChange()
+        isApplyInsetsRequested = false
         return applyInsets
     }
 
@@ -475,7 +484,7 @@ class InputView @JvmOverloads constructor(
         override fun run() {
             checkViewTreeWindow()
             // 尝试消费PendingChange，在animation阶段创建、添加、移除子View
-            consumePendingChange()
+            if (!isApplyInsetsRequested) consumePendingChange()
         }
     }
 
