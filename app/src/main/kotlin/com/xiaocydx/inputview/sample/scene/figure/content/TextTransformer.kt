@@ -35,6 +35,7 @@ class TextEnterReturn(
     private val textTarget: () -> WeakReference<View>?,
     private val lastInsets: () -> WindowInsetsCompat
 ) : Transformer() {
+    private val point = IntArray(2)
     private val startPaddings = Rect()
     private val endPaddings = Rect()
     private val currentPaddings = Rect()
@@ -48,14 +49,14 @@ class TextEnterReturn(
 
     override fun onPrepare(state: ImperfectState) = with(state) {
         val isEnter = isEnter(Text)
-        val textLocation = textTarget()?.get()?.let(ViewLocation::from) ?: ViewLocation()
+        // contentView布局完成过，取contentView的位置进行计算
+        contentView.getLocationInWindow(point)
 
-        // rootView还未测量完成，取rootParent的尺寸进行计算
-        val rootParent = rootView.parent as ViewGroup
+        val textLocation = textTarget()?.get()?.let(ViewLocation::from) ?: ViewLocation()
         val paddings = if (isEnter) startPaddings else endPaddings
         paddings.set(textLocation)
-        paddings.right = rootParent.width - paddings.right
-        paddings.bottom = rootParent.height - paddings.bottom
+        paddings.right = rootView.width - paddings.right
+        paddings.bottom = point[1] + rootView.height - paddings.bottom
 
         // 在下一帧布局之前设置startPaddings和toolsHeight
         if (isEnter) binding.root.updatePaddings(startPaddings)

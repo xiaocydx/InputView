@@ -206,7 +206,7 @@ internal class ViewTreeWindow(
         }
     }
 
-    private val WindowInsetsCompat.supportGestureNavBarEdgeToEdge: Boolean
+    val WindowInsetsCompat.supportGestureNavBarEdgeToEdge: Boolean
         get() = gestureNavBarEdgeToEdge && isGestureNavigationBar(decorView)
 
     val WindowInsetsCompat.navBarOffset: Int

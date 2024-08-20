@@ -45,12 +45,18 @@ import com.xiaocydx.inputview.EditorChangedListener
 import com.xiaocydx.inputview.EditorMode
 import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.ViewTreeWindow
 import com.xiaocydx.inputview.current
 import com.xiaocydx.inputview.disableGestureNavBarOffset
-import com.xiaocydx.inputview.isVisible
 import com.xiaocydx.inputview.notifyHideCurrent
 import com.xiaocydx.inputview.notifyShow
+import com.xiaocydx.inputview.requireViewTreeWindow
 import com.xiaocydx.inputview.transform.Overlay.Companion.ROOT_PARENT_ID
+import com.xiaocydx.insets.consumeInsets
+import com.xiaocydx.insets.navigationBarHeight
+import com.xiaocydx.insets.navigationBars
+import com.xiaocydx.insets.setOnApplyWindowInsetsListenerCompat
+import com.xiaocydx.insets.updateMargins
 
 /**
  * [Overlay]的实现类
@@ -100,6 +106,15 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
             // attachedToWindow -> add transformerDispatcher
             // detachedFromWindow -> remove transformerDispatcher
             transformerDispatcher.initialize(rootView, editorAnimator)
+        }
+
+        // 兼容insets-systembar的层级关系，补充未消费的导航栏间距
+        var viewTreeWindow: ViewTreeWindow? = null
+        transformState.rootView.setOnApplyWindowInsetsListenerCompat { v, insets ->
+            viewTreeWindow = viewTreeWindow ?: v.requireViewTreeWindow()
+            val isSupport = viewTreeWindow!!.run { insets.supportGestureNavBarEdgeToEdge }
+            v.updateMargins(bottom = if (isSupport) 0 else insets.navigationBarHeight)
+            if (isSupport) insets else insets.consumeInsets(navigationBars())
         }
 
         if (rootParent != null && rootParent.id != ROOT_PARENT_ID) {
@@ -486,10 +501,18 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
             backgroundView = View(context)
             contentView = ContentContainer(context)
             inputView = InputView(context)
-            rootView.isVisible = false
             rootView.addView(backgroundView, MATCH_PARENT, MATCH_PARENT)
             rootView.addView(contentView, MATCH_PARENT, MATCH_PARENT)
             rootView.addView(inputView, MATCH_PARENT, MATCH_PARENT)
+            setVisible(isVisible = false)
+        }
+
+        fun setVisible(isVisible: Boolean) {
+            rootView.isEnabled = isVisible
+            // 设置View.INVISIBLE是为了让rootView能布局，在执行变换操作之前rootView有尺寸。
+            // 当current = null时，Content和Editor的视图都会被移除，布局流程不会有性能问题。
+            val visibility = if (isVisible) View.VISIBLE else View.INVISIBLE
+            if (visibility != rootView.visibility) rootView.visibility = visibility
         }
 
         fun invalidate() {
@@ -497,7 +520,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
         }
 
         fun prepare(previous: S?, current: S?) {
-            rootView.isVisible = true
+            setVisible(true)
             if (!isInvalidated) return
             isInvalidated = false
 
@@ -545,7 +568,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
         }
 
         fun postEnd(animation: AnimationState) {
-            rootView.isVisible = current != null
+            setVisible(current != null)
             contentView.removeChangeRecordPrevious()
             previous = current
             setOffset(animation.endOffset)
