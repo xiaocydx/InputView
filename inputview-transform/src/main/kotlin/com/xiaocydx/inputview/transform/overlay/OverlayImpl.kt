@@ -331,7 +331,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
         }
 
         private fun consumeSkipChanged(previous: E?, current: E?): Boolean {
-            if (isSkipChanged && skipPrevious == previous && skipCurrent == current) {
+            if (isSkipChanged && skipPrevious === previous && skipCurrent === current) {
                 isSkipChanged = false
                 return true
             }
