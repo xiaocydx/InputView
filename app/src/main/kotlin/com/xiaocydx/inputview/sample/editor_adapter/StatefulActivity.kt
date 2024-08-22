@@ -9,6 +9,7 @@ import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.EditorChangedListener
 import com.xiaocydx.inputview.FragmentEditorAdapter
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.Insets.Decor
 import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.basic.message.MessageEditor
 import com.xiaocydx.inputview.sample.basic.message.MessageEditorAdapter
@@ -25,7 +26,7 @@ class StatefulActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        InputView.init(window, gestureNavBarEdgeToEdge = true)
+        InputView.init(window, Decor(gestureNavBarEdgeToEdge = true))
         val adapter = StatefulMessageEditorAdapter()
         setContentView(MessageListBinding.inflate(layoutInflater).init(window, adapter).root)
         // 即使不重写getStatefulEditorList()，在页面重建期间通知显示Editor，也不会运行动画

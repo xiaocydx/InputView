@@ -9,6 +9,7 @@ import androidx.fragment.app.FragmentActivity
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.FragmentEditorAdapter
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.Insets.Decor
 import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.basic.message.MessageEditor
 import com.xiaocydx.inputview.sample.basic.message.init
@@ -27,7 +28,7 @@ class FragmentEditorAdapterActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        InputView.init(window, gestureNavBarEdgeToEdge = true)
+        InputView.init(window, Decor(gestureNavBarEdgeToEdge = true))
         val binding = MessageListBinding.inflate(layoutInflater)
         binding.tvTitle.setBackgroundColor(0xFF79AA91.toInt())
         val editorAdapter = MessageFragmentEditorAdapter(this)

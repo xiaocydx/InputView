@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.updatePadding
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.Insets.Decor
 import com.xiaocydx.inputview.addAnimationCallback
 import com.xiaocydx.inputview.addEditText
 import com.xiaocydx.inputview.animator
@@ -25,7 +26,7 @@ class ImeAnimatorActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        InputView.init(window, gestureNavBarEdgeToEdge = true)
+        InputView.init(window, Decor(gestureNavBarEdgeToEdge = true))
         setContentView(ActivityImeAnimatorBinding.inflate(layoutInflater).init().root)
     }
 

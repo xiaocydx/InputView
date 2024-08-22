@@ -32,7 +32,7 @@ import com.xiaocydx.inputview.compat.ReflectCompat
 import com.xiaocydx.insets.requestApplyInsetsCompat
 
 /**
- * 复用[InputView]的动画实现，需要先调用[init]或[initCompat]完成初始化，
+ * 复用[InputView]的动画实现，需要先调用[init]完成初始化。
  * 该函数不能跟[InputView]一起使用，两者不是共存关系，只能使用其中一个。
  *
  * 若[view]的类型是[EditText]，则直接设置为[ImeAnimator.editText]，

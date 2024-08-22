@@ -49,7 +49,7 @@ import com.xiaocydx.insets.toWindowInsetsCompat
 /**
  * 输入控件
  *
- * 1. 调用[init]或[initCompat]初始化[InputView]所需的配置。
+ * 1. 调用[init]初始化[InputView]所需的配置。
  * 2. [InputView]初始化时只能有一个子View，该子View作为[contentView]。
  * 3. [editText]用于兼容Android各版本显示和隐藏IME。
  * 4. [editorAdapter]支持[Editor]的视图创建和显示。

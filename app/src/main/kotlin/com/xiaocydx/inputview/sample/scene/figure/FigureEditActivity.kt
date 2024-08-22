@@ -7,6 +7,7 @@ import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.Insets.Decor
 import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.common.launchRepeatOnLifecycle
 import com.xiaocydx.inputview.sample.common.snackbar
@@ -44,7 +45,7 @@ class FigureEditActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        InputView.init(window, statusBarEdgeToEdge = true, gestureNavBarEdgeToEdge = true)
+        InputView.init(window, Decor(statusBarEdgeToEdge = true, gestureNavBarEdgeToEdge = true))
         setContentView(ActivityFigureEditBinding.inflate(layoutInflater).init().root)
         configureOverlay()
         launchUpdatePageJob()

@@ -7,6 +7,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.xiaocydx.inputview.InputView
+import com.xiaocydx.inputview.Insets.Decor
 import com.xiaocydx.inputview.init
 import com.xiaocydx.insets.doOnApplyWindowInsets
 import com.xiaocydx.insets.ime
@@ -21,7 +22,7 @@ class ViewPager2Activity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        InputView.init(window, gestureNavBarEdgeToEdge = true)
+        InputView.init(window, Decor(gestureNavBarEdgeToEdge = true))
         val viewPager2 = ViewPager2(this)
         viewPager2.offscreenPageLimit = 1
         viewPager2.adapter = MessageListPageAdapter(this)
