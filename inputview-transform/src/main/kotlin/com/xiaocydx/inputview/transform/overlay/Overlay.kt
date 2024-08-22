@@ -116,8 +116,7 @@ interface Overlay<S : Scene<*, *>> : TransformerOwner {
      * 点击隐藏或手势回退IME。
      *
      * 当未设置转换器或[SceneEditorConverter.nextScene]返回[current]时，
-     * 从[sceneList]中查找[Scene.editor]等于`nextEditor`的[Scene]。
-     * 若查找到的[Scene]数量大于1，则抛出[IllegalStateException]。
+     * 匹配[sceneList]的[Scene]，若匹配不到，则抛出[IllegalStateException]。
      */
     var sceneEditorConverter: SceneEditorConverter<S>?
 
@@ -195,8 +194,7 @@ fun interface SceneChangedListener<S : Scene<*, *>> {
  * 点击隐藏或手势回退IME。
  *
  * 当未设置转换器或[SceneEditorConverter.nextScene]返回[Overlay.current]时，
- * 从[Overlay.sceneList]中查找[Scene.editor]等于`nextEditor`的[Scene]。
- * 若查找到的[Scene]数量大于1，则抛出[IllegalStateException]。
+ * 匹配[Overlay.sceneList]的[Scene]，若匹配不到，则抛出[IllegalStateException]。
  */
 fun interface SceneEditorConverter<S : Scene<*, *>> {
 

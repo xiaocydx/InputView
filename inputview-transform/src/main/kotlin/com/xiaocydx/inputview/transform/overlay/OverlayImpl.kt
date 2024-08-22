@@ -299,17 +299,31 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
             if (consumeSkipChanged(previous, current)) return
             assert(currentScene?.editor === previous)
 
-            var matchCount = 0
-            var nextScene = currentScene
             val nextEditor = current
-            sceneEditorConverter?.let { nextScene = it.nextScene(previousScene, currentScene, nextEditor) }
-            if (nextScene === currentScene) {
-                // 当nextEditor = null时，nextScene = null
-                matchCount = sceneList.count { it.editor === nextEditor }
-                nextScene = sceneList.firstOrNull { it.editor === nextEditor }
+            var nextScene = currentScene
+            sceneEditorConverter?.let {
+                nextScene = it.nextScene(previousScene, currentScene, nextEditor)
             }
 
-            require(matchCount <= 1 && currentScene !== nextScene) {
+            var matchCount = 0
+            if (nextScene === currentScene) {
+                if (nextEditor == null) {
+                    nextScene = null
+                } else {
+                    for (i in sceneList.indices) {
+                        val scene = sceneList[i]
+                        if (scene.editor !== nextEditor) continue
+                        matchCount++
+                        nextScene = scene
+                        if (scene.content === currentScene?.content) {
+                            matchCount = 1
+                            break
+                        }
+                    }
+                }
+            }
+
+            require(matchCount <= 1 && nextScene !== currentScene) {
                 var matchError = ""
                 if (matchCount > 1) {
                     val matchScene = sceneList.filter { it.editor === nextEditor }
