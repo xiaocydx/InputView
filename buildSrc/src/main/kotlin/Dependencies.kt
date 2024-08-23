@@ -24,11 +24,12 @@ object CommonLibs {
     const val `cxrv-animatable` = "com.github.xiaocydx.CXRV:cxrv-animatable:${cxrvVersion}"
     const val `cxrv-viewpager2` = "com.github.xiaocydx.CXRV:cxrv-viewpager2:${cxrvVersion}"
 
-    private const val inputViewVersion = "1.2.7"
+    private const val inputViewVersion = "1.3.1"
     const val inputview = "com.github.xiaocydx.InputView:inputview:${inputViewVersion}"
     const val `inputview-compat` = "com.github.xiaocydx.InputView:inputview-compat:${inputViewVersion}"
+    const val `inputview-transform` = "com.github.xiaocydx.InputView:inputview-transform:${inputViewVersion}"
 
-    private const val insetsVersion = "1.2.4"
+    private const val insetsVersion = "1.2.5"
     const val insets = "com.github.xiaocydx.Insets:insets:${insetsVersion}"
     const val `insets-compat` = "com.github.xiaocydx.Insets:insets-compat:${insetsVersion}"
     const val `insets-systembar` = "com.github.xiaocydx.Insets:insets-systembar:${insetsVersion}"

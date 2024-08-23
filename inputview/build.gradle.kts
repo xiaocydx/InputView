@@ -20,6 +20,7 @@ android {
 
 dependencies {
     api(CommonLibs.insets)
+    compileOnly(CommonLibs.`insets-systembar`)
     implementation(PublishLibs.`androidx-fragment-old`)
     testImplementation(PublishLibs.`androidx-appcompat`)
     testImplementation(PublishLibs.`androidx-viewpager2`)

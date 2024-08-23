@@ -20,6 +20,7 @@ android {
 
 dependencies {
     compileOnly(project(":inputview"))
+    compileOnly(CommonLibs.`insets-systembar`)
     implementation(PublishLibs.`androidx-fragment-old`)
     implementation(PublishLibs.`androidx-transition`)
     testImplementation(PublishLibs.`androidx-appcompat`)
