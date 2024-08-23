@@ -12,7 +12,7 @@ import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.Emoji
 import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.FigureDubbing
 import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.FigureGrid
 import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.Ime
-import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.ImeIdle
+import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.Empty
 import com.xiaocydx.inputview.sample.scene.figure.content.CoverFragment
 import com.xiaocydx.inputview.sample.scene.figure.content.TextFragment
 import com.xiaocydx.inputview.sample.scene.figure.editor.DubbingFragment
@@ -30,7 +30,7 @@ enum class FigureScene(
     override val editor: FigureEditor
 ) : Scene<FigureContent, FigureEditor> {
     InputText(Text, Ime),
-    InputIdle(Text, ImeIdle),
+    InputIdle(Text, Empty),
     InputEmoji(Text, Emoji),
     SelectFigure(Cover, FigureGrid),
     SelectDubbing(Cover, FigureDubbing)
@@ -41,7 +41,7 @@ enum class FigureContent : Content {
 }
 
 enum class FigureEditor : Editor {
-    Ime, ImeIdle, Emoji, FigureGrid, FigureDubbing
+    Ime, Empty, Emoji, FigureGrid, FigureDubbing
 }
 
 class FigureContentAdapter(
@@ -66,7 +66,7 @@ class FigureEditAdapter(
     override fun getEditorKey(editor: FigureEditor) = editor.name
 
     override fun onCreateFragment(editor: FigureEditor) = when (editor) {
-        Ime, ImeIdle -> null
+        Ime, Empty -> null
         Emoji -> EmojiFragment()
         FigureGrid -> FigureGridFragment()
         FigureDubbing -> DubbingFragment()
