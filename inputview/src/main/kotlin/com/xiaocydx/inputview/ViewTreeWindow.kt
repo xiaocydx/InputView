@@ -121,7 +121,7 @@ sealed class Insets(
 @Deprecated(
     message = "不再区分初始化函数，通过Insets的子类区分WindowInsets的处理方案",
     replaceWith = ReplaceWith(
-        expression = "InputView.init(window, Decor(statusBarEdgeToEdge, gestureNavBarEdgeToEdge))",
+        expression = "init(window, Decor(statusBarEdgeToEdge, gestureNavBarEdgeToEdge))",
         imports = ["com.xiaocydx.inputview.Insets.Decor"]
     ),
 )
@@ -137,7 +137,7 @@ fun InputView.Companion.init(
 @Deprecated(
     message = "不再区分初始化函数，通过Insets的子类区分WindowInsets的处理方案",
     replaceWith = ReplaceWith(
-        expression = "InputView.init(window, Compat(gestureNavBarEdgeToEdge))",
+        expression = "init(window, Compat(gestureNavBarEdgeToEdge))",
         imports = ["com.xiaocydx.inputview.Insets.Compat"]
     )
 )
