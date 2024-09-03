@@ -25,11 +25,9 @@ import com.xiaocydx.inputview.transform.createOverlay
 import com.xiaocydx.insets.insets
 import com.xiaocydx.insets.navigationBars
 import com.xiaocydx.insets.statusBars
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.mapLatest
-import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 /**
  * 通过选中编辑的交互案例，演示[createOverlay]的使用
@@ -49,7 +47,6 @@ class FigureEditActivity : AppCompatActivity() {
         setContentView(ActivityFigureEditBinding.inflate(layoutInflater).init().root)
         configureOverlay()
         launchUpdatePageJob()
-        launchPendingViewJob()
     }
 
     private fun ActivityFigureEditBinding.init() = apply {
@@ -97,7 +94,10 @@ class FigureEditActivity : AppCompatActivity() {
     }
 
     private fun launchUpdatePageJob() {
+        var requestJob: Job? = null
         sharedViewModel.figureState.onEach {
+            figurePager.updateCurrentPage(it)
+            textPager.updateCurrentPage(it)
             if (it.pendingRemove != null) {
                 window.snackbar().setText("已删除").show()
                 sharedViewModel.consumePendingRemove()
@@ -106,23 +106,16 @@ class FigureEditActivity : AppCompatActivity() {
                 overlay.go(it.pendingScene.scene)
                 sharedViewModel.consumePendingScene(overlay.current)
             }
-            figurePager.updateCurrentPage(it)
-            textPager.updateCurrentPage(it)
-        }.launchRepeatOnLifecycle(lifecycle)
-    }
-
-    private fun launchPendingViewJob() {
-        // pendingView不结合repeatOnLifecycle收集
-        sharedViewModel.figureState
-            .mapNotNull { it.pendingView }
-            .filterIsInstance<Request>()
-            .mapLatest {
-                val ref = when (it) {
-                    Request.Figure -> figurePager.awaitFigureView()
-                    Request.Text -> textPager.textView()
+            if (it.pendingView is Request) {
+                requestJob?.cancel()
+                requestJob = lifecycleScope.launch {
+                    val ref = when (it.pendingView) {
+                        Request.Figure -> figurePager.awaitFigureView()
+                        Request.Text -> textPager.textView()
+                    }
+                    sharedViewModel.consumePendingView(Result(ref))
                 }
-                sharedViewModel.consumePendingView(Result(ref))
             }
-            .launchIn(lifecycleScope)
+        }.launchRepeatOnLifecycle(lifecycle)
     }
 }
