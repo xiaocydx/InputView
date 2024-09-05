@@ -63,6 +63,7 @@ internal class EditTextHolder(editText: EditText) : ImeFocusHandler(editText) {
         var saved: EditText? = null
         if (window?.currentFocus == null) {
             saved = savedCurrentFocus?.get()
+                ?.takeIf { it.isAttachedToWindow }
         }
         savedCurrentFocus = null
         saved?.requestFocusCompat()
