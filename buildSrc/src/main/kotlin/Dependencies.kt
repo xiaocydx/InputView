@@ -29,7 +29,7 @@ object CommonLibs {
     const val `inputview-compat` = "com.github.xiaocydx.InputView:inputview-compat:${inputViewVersion}"
     const val `inputview-transform` = "com.github.xiaocydx.InputView:inputview-transform:${inputViewVersion}"
 
-    private const val insetsVersion = "1.2.5"
+    private const val insetsVersion = "1.2.6"
     const val insets = "com.github.xiaocydx.Insets:insets:${insetsVersion}"
     const val `insets-compat` = "com.github.xiaocydx.Insets:insets-compat:${insetsVersion}"
     const val `insets-systembar` = "com.github.xiaocydx.Insets:insets-systembar:${insetsVersion}"
