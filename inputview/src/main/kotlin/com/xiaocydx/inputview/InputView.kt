@@ -600,8 +600,8 @@ class InputView @JvmOverloads constructor(
         }
 
         override fun addPreDrawAction(action: () -> Unit): OneShotPreDrawListener {
-            val listener = OneShotPreDrawListener.add(editorView, action)
-            editorView.invalidate()
+            val listener = OneShotPreDrawListener.add(this@InputView, action)
+            this@InputView.invalidate()
             return listener
         }
 
