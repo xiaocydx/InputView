@@ -144,13 +144,13 @@ internal class EditTextManager(
     }
 
     /**
-     * 在实际场景中，交互可能是先选中[EditText]的文本内容，再点击其它地方切换[Editor]，
-     * 当动画开始时，隐藏左右水滴状指示器，避免动画运行时不断跨进程通信，进而造成卡顿。
+     * 当动画开始时，隐藏水滴状指示器，避免动画运行时不断跨进程通信，进而造成卡顿。
+     * 在实际场景中，交互可能是先选中[EditText]的内容，再点击其它地方切换[Editor]，
+     * 或者调用[EditorAnimator.requestSimpleAnimation]请求运行动画。
      */
     private inner class HideTextSelectHandleOnStart : ReplicableAnimationCallback {
-        override fun onAnimationStart(state: AnimationState) = forEach { handle ->
-            handle.takeIf { it.hasTextSelectHandleLeftRight() }
-                ?.hideTextSelectHandle(keepFocus = state.isIme(state.current))
+        override fun onAnimationStart(state: AnimationState) = forEach {
+            it.hideTextSelectHandle(keepFocus = state.isIme(state.current))
         }
     }
 

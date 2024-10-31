@@ -145,6 +145,7 @@ abstract class EditorAnimator(
     }
 
     internal fun requestSimpleAnimation() {
+        // 构建的record缺少startView和endView，不开放此函数
         runSimpleAnimationOnPreDraw(fromRequest = true)
     }
 
@@ -156,9 +157,10 @@ abstract class EditorAnimator(
     }
 
     private fun runSimpleAnimationOnPreDraw(fromRequest: Boolean) {
-        if (host?.hasPendingChange() == true) return
-        val current = host?.current ?: return
-        val record = AnimationRecord(current, current, fromRequest = fromRequest)
+        val host = host
+        if (host == null || host.hasPendingChange()) return
+        // host.current = null仍然运行动画，支持需要动画调度的场景
+        val record = AnimationRecord(host.current, host.current, fromRequest = fromRequest)
         resetAnimationRecord(record)
         record.setAnimationStartOffset()
         record.setPreDrawRunSimpleAnimation {
