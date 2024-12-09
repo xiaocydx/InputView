@@ -144,13 +144,13 @@ internal class EditTextManager(
     }
 
     /**
-     * 当动画开始时，隐藏水滴状指示器，避免动画运行时不断跨进程通信，进而造成卡顿。
-     * 在实际场景中，交互可能是先选中[EditText]的内容，再点击其它地方切换[Editor]，
-     * 或者调用[EditorAnimator.requestSimpleAnimation]请求运行动画。
+     * 在实际场景中，交互可能是先选中[EditText]的文本内容，再点击其它地方切换[Editor]，
+     * 当动画开始时，隐藏左右水滴状指示器，避免动画运行时不断跨进程通信，进而造成卡顿。
      */
     private inner class HideTextSelectHandleOnStart : ReplicableAnimationCallback {
-        override fun onAnimationStart(state: AnimationState) = forEach {
-            it.hideTextSelectHandle(keepFocus = state.isIme(state.current))
+        override fun onAnimationStart(state: AnimationState) = forEach { handle ->
+            handle.takeIf { it.hasTextSelectHandleLeftRight() }
+                ?.hideTextSelectHandle(keepFocus = state.isIme(state.current))
         }
     }
 
@@ -179,7 +179,7 @@ internal class EditTextManager(
             if (ev.action == MotionEvent.ACTION_UP && editText.showSoftInputOnFocus) {
                 // 点击EditText显示IME，手指抬起时隐藏水滴状指示器，
                 // 注意：此时隐藏，能确保手指抬起后完全看不到指示器。
-                if (!imeShown()) hideTextSelectHandle()
+                if (!imeShown()) hideTextSelectHandle(keepFocus = true)
             }
             if (ev.action != MotionEvent.ACTION_DOWN) {
                 // 若EditText有左右水滴状指示器，则表示文本被选中，此时不显示IME
@@ -191,11 +191,17 @@ internal class EditTextManager(
          * 由于`textSelectHandleXXX`是Android 10才有的属性，即[EditText]的水滴状指示器，
          * 因此通过`clearFocus`隐藏水滴状指示器，若[keepFocus]为`true`，则重新获得焦点。
          */
-        fun hideTextSelectHandle(keepFocus: Boolean = true) {
+        fun hideTextSelectHandle(keepFocus: Boolean) {
             val editText = get() ?: return
             if (!editText.hasFocus()) return
-            editText.clearFocus()
-            if (keepFocus) editText.requestFocus()
+            if (keepFocus) {
+                editText.withoutFocusChange {
+                    editText.clearFocus()
+                    editText.requestFocus()
+                }
+            } else {
+                editText.clearFocus()
+            }
         }
 
         /**
@@ -205,6 +211,13 @@ internal class EditTextManager(
         fun hasTextSelectHandleLeftRight(): Boolean {
             val editText = get() ?: return false
             return editText.selectionStart != editText.selectionEnd
+        }
+
+        private inline fun EditText.withoutFocusChange(action: () -> Unit) {
+            val listener = onFocusChangeListener
+            onFocusChangeListener = null
+            action()
+            onFocusChangeListener = listener
         }
     }
 }
