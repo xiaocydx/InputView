@@ -8,11 +8,11 @@ InputView是一个通用的输入控件
 * 修改Android 11及以上IME动画的时长和插值器。
 > IME的全称是Input Method Editors（输入法编辑器），因此将IME和底部视图统一称为Editor（编辑器）。
 
-[InputView（一）使用文档](https://www.yuque.com/u12192380/khwdgb/pi0b7rdhvr16z7gm)
+[InputView - 使用文档](https://www.yuque.com/u12192380/khwdgb/pi0b7rdhvr16z7gm)
 
-[InputView（二）transform](https://www.yuque.com/u12192380/zl0316/aviy1ird40pcc0u5)
+[InputView - transform](https://www.yuque.com/u12192380/zl0316/aviy1ird40pcc0u5)
 
-[InputView（三）常见问题](https://www.yuque.com/u12192380/zl0316/ggq72wvpocdempds)
+[InputView - 常见问题](https://www.yuque.com/u12192380/zl0316/ggq72wvpocdempds)
 <br/> <br/> 
 
 1. 在根目录的settings.gradle添加
