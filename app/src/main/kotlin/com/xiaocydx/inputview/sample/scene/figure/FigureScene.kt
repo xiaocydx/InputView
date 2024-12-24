@@ -9,10 +9,10 @@ import com.xiaocydx.inputview.sample.editor_adapter.fragment.EmojiFragment
 import com.xiaocydx.inputview.sample.scene.figure.FigureContent.Cover
 import com.xiaocydx.inputview.sample.scene.figure.FigureContent.Text
 import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.Emoji
+import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.Empty
 import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.FigureDubbing
 import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.FigureGrid
 import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.Ime
-import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.Empty
 import com.xiaocydx.inputview.sample.scene.figure.content.CoverFragment
 import com.xiaocydx.inputview.sample.scene.figure.content.TextFragment
 import com.xiaocydx.inputview.sample.scene.figure.editor.DubbingFragment

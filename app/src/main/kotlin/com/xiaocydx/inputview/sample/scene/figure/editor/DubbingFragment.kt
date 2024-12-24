@@ -14,10 +14,11 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.HORIZONTAL
 import androidx.recyclerview.widget.optimizeNextFrameScroll
 import com.xiaocydx.cxrv.binding.bindingAdapter
+import com.xiaocydx.cxrv.binding.loading
 import com.xiaocydx.cxrv.concat.Concat
 import com.xiaocydx.cxrv.divider.Edge
 import com.xiaocydx.cxrv.divider.divider
-import com.xiaocydx.cxrv.itemclick.doOnSimpleItemClick
+import com.xiaocydx.cxrv.itemclick.reduce.doOnItemClick
 import com.xiaocydx.cxrv.itemselect.SingleSelection
 import com.xiaocydx.cxrv.itemselect.select
 import com.xiaocydx.cxrv.itemselect.singleSelection
@@ -77,7 +78,7 @@ class DubbingFragment : Fragment() {
         dubbingAdapter = createDubbingAdapter()
         dubbingSelection = dubbingAdapter.singleSelection(itemKey = Dubbing::id)
         val header = LoadHeaderAdapter(dubbingAdapter) {
-            loadingView { HeaderDubbingLoadingBinding.inflate(layoutInflater).root }
+            loading(HeaderDubbingLoadingBinding::inflate)
         }
         rvDubbing.linear(HORIZONTAL).disableItemAnimator()
             .divider { width(6.dp).height(6.dp).edge(Edge.all()) }
@@ -105,7 +106,7 @@ class DubbingFragment : Fragment() {
             bgSelected.isVisible = dubbingSelection.isSelected(holder)
         }
 
-        doOnSimpleItemClick { dubbingSelection.select(it) }
+        doOnItemClick { dubbingSelection.select(it) }
     }
 
     private fun launchDubbingPagingJob() {

@@ -10,7 +10,7 @@ import com.xiaocydx.cxrv.binding.bindingDelegate
 import com.xiaocydx.cxrv.concat.Concat
 import com.xiaocydx.cxrv.concat.toAdapter
 import com.xiaocydx.cxrv.divider.divider
-import com.xiaocydx.cxrv.itemclick.doOnSimpleItemClick
+import com.xiaocydx.cxrv.itemclick.reduce.doOnItemClick
 import com.xiaocydx.cxrv.list.adapter
 import com.xiaocydx.cxrv.list.linear
 import com.xiaocydx.cxrv.list.submitList
@@ -52,10 +52,10 @@ class MainActivity : AppCompatActivity() {
             ) {
                 onBindView {
                     tvTitle.text = it.title
-                    ivSelected.setImageResource(it.selectedResId)
+                    ivSelected.setImageResource(it.resId)
                 }
                 getChangePayload(sampleList::categoryPayload)
-                doOnSimpleItemClick { submitList(sampleList.toggle(it)) }
+                doOnItemClick { submitList(sampleList.toggle(it)) }
             })
 
             register(bindingDelegate(
@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
                     tvTitle.text = it.title
                     tvDesc.text = it.desc
                 }
-                doOnSimpleItemClick { it.perform(this@MainActivity) }
+                doOnItemClick { it.perform(this@MainActivity) }
             })
         }
 

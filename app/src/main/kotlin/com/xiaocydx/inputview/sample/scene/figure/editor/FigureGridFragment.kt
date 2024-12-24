@@ -15,8 +15,8 @@ import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.xiaocydx.cxrv.binding.bindingAdapter
 import com.xiaocydx.cxrv.divider.Edge
 import com.xiaocydx.cxrv.divider.divider
-import com.xiaocydx.cxrv.itemclick.doOnSimpleItemClick
-import com.xiaocydx.cxrv.itemclick.doOnSimpleLongItemClick
+import com.xiaocydx.cxrv.itemclick.reduce.doOnItemClick
+import com.xiaocydx.cxrv.itemclick.reduce.doOnLongItemClick
 import com.xiaocydx.cxrv.itemselect.SingleSelection
 import com.xiaocydx.cxrv.itemselect.select
 import com.xiaocydx.cxrv.itemselect.singleSelection
@@ -96,11 +96,11 @@ class FigureGridFragment : Fragment() {
             bgSelected.isVisible = figureSelection.isSelected(holder)
         }
 
-        doOnSimpleLongItemClick {
+        doOnLongItemClick {
             sharedViewModel.submitRemove(it)
             true
         }
-        doOnSimpleItemClick(sharedViewModel::selectFigure)
+        doOnItemClick { sharedViewModel.selectFigure(it) }
     }
 
     private fun launchFigureListJob() {

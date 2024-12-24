@@ -1,4 +1,4 @@
-@file:Suppress("MayBeConstant")
+@file:Suppress("MayBeConstant", "FunctionName")
 
 package com.xiaocydx.inputview.sample
 
@@ -31,8 +31,8 @@ class SampleList {
     private val selectedId = R.drawable.ic_sample_selected
     private val unselectedId = R.drawable.ic_sample_unselected
     private val source = listOf(
-        basicList(), animatorList(),
-        adapterList(), sceneList()
+        Basic(), EditorAnimator(),
+        EditorAdapter(), Scene()
     ).flatten().toMutableList()
 
     @CheckResult
@@ -40,7 +40,7 @@ class SampleList {
         val position = source.indexOf(category)
         val isSelected = !category.isSelected()
         val selectedResId = if (isSelected) selectedId else unselectedId
-        source[position] = category.copy(selectedResId = selectedResId)
+        source[position] = category.copy(resId = selectedResId)
         return filter()
     }
 
@@ -66,117 +66,70 @@ class SampleList {
     }
 
     private fun Category.isSelected(): Boolean {
-        return selectedResId == selectedId
+        return resId == selectedId
     }
 
-    private fun basicList() = listOf(
-        Category(title = "Basic", selectedResId = unselectedId),
-        StartActivity(
-            title = "Activity",
-            desc = "消息列表Activity",
-            clazz = MessageListActivity::class
-        ),
-        ShowDialog(
-            title = "Dialog",
-            desc = "消息列表Dialog，主题包含windowIsFloating = false",
-            create = ::MessageListDialog
-        ),
-        ShowDialog(
-            title = "BottomSheetDialog",
-            desc = "消息列表BottomSheetDialog，实现状态栏Edge-to-Edge",
-            create = ::MessageListBottomSheetDialog
-        ),
-        StartActivity(
-            title = "InitCompat",
-            desc = "初始化Window，兼容已有的WindowInsets处理方案",
-            clazz = InitCompatActivity::class
-        )
+    private fun Basic() = listOf(
+        "Basic" and unselectedId,
+        "Activity" and "消息列表Activity" to MessageListActivity::class,
+        "Dialog" and "消息列表Dialog，主题包含windowIsFloating = false" show ::MessageListDialog,
+        "BottomSheetDialog" and "消息列表BottomSheetDialog，实现状态栏Edge-to-Edge" show ::MessageListBottomSheetDialog,
+        "InitCompat" and "初始化Window，兼容已有的WindowInsets处理方案" to InitCompatActivity::class
     )
 
-    private fun animatorList() = listOf(
-        Category(title = "EditorAnimator", selectedResId = unselectedId),
-        StartActivity(
-            title = "AnimationInterceptor",
-            desc = "处理多Window的交互冲突问题",
-            clazz = AnimationInterceptorActivity1::class
-        ),
-        StartActivity(
-            title = "AnimationInterceptor",
-            desc = "实现动画时长和插值器的差异化",
-            clazz = AnimationInterceptorActivity2::class
-        ),
-        StartActivity(
-            title = "ImeAnimator",
-            desc = "脱离InputView使用EditorAnimator",
-            clazz = ImeAnimatorActivity::class
-        )
+    private fun EditorAnimator() = listOf(
+        "EditorAnimator" and unselectedId,
+        "AnimationInterceptor" and "处理多Window的交互冲突问题" to AnimationInterceptorActivity1::class,
+        "AnimationInterceptor" and "实现动画时长和插值器的差异化" to AnimationInterceptorActivity2::class,
+        "ImeAnimator" and "脱离InputView使用EditorAnimator" to ImeAnimatorActivity::class
     )
 
-    private fun adapterList() = listOf(
-        Category(title = "EditorAdapter", selectedResId = unselectedId),
-        StartActivity(
-            title = "EditorAdapter-Stateful",
-            desc = """
+    private fun EditorAdapter() = listOf(
+        "EditorAdapter" and unselectedId,
+        "EditorAdapter-Stateful" and """
                 |页面重建时（因Activity配置更改或进程被杀掉）：
                 |1. 不运行动画（IME除外），恢复之前显示的Editor。
                 |2. 不恢复Editor视图的状态，该功能由FragmentEditorAdapter完成。
-            """.trimMargin(),
-            clazz = StatefulActivity::class
-        ),
-        StartActivity(
-            title = "FragmentEditorAdapter",
-            desc = """
+            """.trimMargin() to StatefulActivity::class,
+        "FragmentEditorAdapter"
+                and """
                 |1. 动画结束时，Lifecycle的状态才会转换为RESUMED。
                 |2. 页面重建时，使用可恢复状态的Fragment，不会调用函数再次创建Fragment。
                 |3. 页面重建时，Stateful恢复之前显示的Editor，Fragment恢复Editor视图的状态。
-            """.trimMargin(),
-            clazz = FragmentEditorAdapterActivity::class
-        )
+            """.trimMargin()
+                to FragmentEditorAdapterActivity::class
     )
 
-    private fun sceneList() = listOf(
-        Category(title = "Scene", selectedResId = unselectedId),
-        StartActivity(
-            title = "ViewPager2",
-            desc = "ViewPager2的交互案例",
-            clazz = ViewPager2Activity::class
-        ),
-        StartActivity(
-            title = "PreviewEdit",
-            desc = "预览编辑的交互案例",
-            clazz = VideoEditActivity::class
-        ),
-        StartActivity(
-            title = "SelectEdit",
-            desc = "选中编辑的交互案例",
-            clazz = FigureEditActivity::class
-        )
+    private fun Scene() = listOf(
+        "Scene" and unselectedId,
+        "ViewPager2" and "ViewPager2的交互案例" to ViewPager2Activity::class,
+        "PreviewEdit" and "预览编辑的交互案例" to VideoEditActivity::class,
+        "SelectEdit" and "选中编辑的交互案例" to FigureEditActivity::class
     )
 }
 
 sealed class SampleItem {
-    data class Category(val title: String, val selectedResId: Int) : SampleItem()
-    sealed class Element(open val title: String, open val desc: String) : SampleItem() {
-        abstract fun perform(context: Context)
+    data class Category(val title: String, val resId: Int) : SampleItem()
+
+    data class Element(
+        val title: String,
+        val desc: String,
+        private val createDialog: ((Context) -> Dialog)? = null,
+        private val activityClass: KClass<out Activity>? = null
+    ) : SampleItem() {
+        fun perform(context: Context) {
+            when {
+                createDialog != null -> createDialog.invoke(context).show()
+                activityClass != null -> context.startActivity(Intent(context, activityClass.java))
+            }
+        }
     }
 }
 
-private data class StartActivity(
-    override val title: String,
-    override val desc: String,
-    val clazz: KClass<out Activity>
-) : Element(title, desc) {
-    override fun perform(context: Context) {
-        context.startActivity(Intent(context, clazz.java))
-    }
-}
+private infix fun String.and(resId: Int) = Category(title = this, resId = resId)
 
-private data class ShowDialog(
-    override val title: String,
-    override val desc: String,
-    val create: (context: Context) -> Dialog
-) : Element(title, desc) {
-    override fun perform(context: Context) {
-        create(context).show()
-    }
-}
+private infix fun String.and(desc: String) = Element(title = this, desc = desc)
+
+private infix fun Element.show(crate: (Context) -> Dialog) = copy(createDialog = crate)
+
+private infix fun Element.to(clazz: KClass<out Activity>) = copy(activityClass = clazz)
