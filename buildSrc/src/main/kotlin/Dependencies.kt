@@ -17,7 +17,7 @@ object CommonLibs {
     const val `androidx-swiperefreshlayout` = "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
     const val material = "com.google.android.material:material:1.7.0"
 
-    private const val cxrvVersion = "1.5.4"
+    private const val cxrvVersion = "1.5.8"
     const val cxrv = "com.github.xiaocydx.CXRV:cxrv:${cxrvVersion}"
     const val `cxrv-binding` = "com.github.xiaocydx.CXRV:cxrv-binding:${cxrvVersion}"
     const val `cxrv-paging` = "com.github.xiaocydx.CXRV:cxrv-paging:${cxrvVersion}"
