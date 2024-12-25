@@ -42,8 +42,8 @@ class MainActivity : AppCompatActivity() {
         ),
 
         "EditorAnimator".elements(
-            "AnimationInterceptor" desc "处理多Window的交互冲突问题" start AnimationInterceptorActivity1::class,
-            "AnimationInterceptor" desc "实现动画时长和插值器的差异化" start AnimationInterceptorActivity2::class,
+            "AnimationInterceptor1" desc "处理多Window的交互冲突问题" start AnimationInterceptorActivity1::class,
+            "AnimationInterceptor2" desc "实现动画时长和插值器的差异化" start AnimationInterceptorActivity2::class,
             "ImeAnimator" desc "脱离InputView使用EditorAnimator" start ImeAnimatorActivity::class
         ),
 
