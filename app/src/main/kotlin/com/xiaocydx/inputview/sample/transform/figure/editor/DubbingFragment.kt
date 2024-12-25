@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.figure.editor
+package com.xiaocydx.inputview.sample.transform.figure.editor
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -41,10 +41,10 @@ import com.xiaocydx.inputview.sample.common.viewLifecycleScope
 import com.xiaocydx.inputview.sample.databinding.FragmentDubbingBinding
 import com.xiaocydx.inputview.sample.databinding.HeaderDubbingLoadingBinding
 import com.xiaocydx.inputview.sample.databinding.ItemDubbingBinding
-import com.xiaocydx.inputview.sample.scene.figure.Dubbing
-import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.FigureDubbing
-import com.xiaocydx.inputview.sample.scene.figure.FigureScene
-import com.xiaocydx.inputview.sample.scene.figure.FigureViewModel
+import com.xiaocydx.inputview.sample.transform.figure.Dubbing
+import com.xiaocydx.inputview.sample.transform.figure.FigureEditor.FigureDubbing
+import com.xiaocydx.inputview.sample.transform.figure.FigureScene
+import com.xiaocydx.inputview.sample.transform.figure.FigureViewModel
 import com.xiaocydx.insets.insets
 import com.xiaocydx.insets.navigationBars
 import kotlinx.coroutines.flow.filter

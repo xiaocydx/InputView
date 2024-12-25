@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.figure
+package com.xiaocydx.inputview.sample.transform.figure
 
 import android.graphics.drawable.ColorDrawable
 import android.view.Window

@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.figure
+package com.xiaocydx.inputview.sample.transform.figure
 
 data class Figure(
     val id: String,

@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.figure
+package com.xiaocydx.inputview.sample.transform.figure
 
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -6,17 +6,17 @@ import androidx.lifecycle.Lifecycle
 import com.xiaocydx.inputview.Editor
 import com.xiaocydx.inputview.FragmentEditorAdapter
 import com.xiaocydx.inputview.sample.editor_adapter.fragment.EmojiFragment
-import com.xiaocydx.inputview.sample.scene.figure.FigureContent.Cover
-import com.xiaocydx.inputview.sample.scene.figure.FigureContent.Text
-import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.Emoji
-import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.Empty
-import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.FigureDubbing
-import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.FigureGrid
-import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.Ime
-import com.xiaocydx.inputview.sample.scene.figure.content.CoverFragment
-import com.xiaocydx.inputview.sample.scene.figure.content.TextFragment
-import com.xiaocydx.inputview.sample.scene.figure.editor.DubbingFragment
-import com.xiaocydx.inputview.sample.scene.figure.editor.FigureGridFragment
+import com.xiaocydx.inputview.sample.transform.figure.FigureContent.Cover
+import com.xiaocydx.inputview.sample.transform.figure.FigureContent.Text
+import com.xiaocydx.inputview.sample.transform.figure.FigureEditor.Emoji
+import com.xiaocydx.inputview.sample.transform.figure.FigureEditor.Empty
+import com.xiaocydx.inputview.sample.transform.figure.FigureEditor.FigureDubbing
+import com.xiaocydx.inputview.sample.transform.figure.FigureEditor.FigureGrid
+import com.xiaocydx.inputview.sample.transform.figure.FigureEditor.Ime
+import com.xiaocydx.inputview.sample.transform.figure.content.CoverFragment
+import com.xiaocydx.inputview.sample.transform.figure.content.TextFragment
+import com.xiaocydx.inputview.sample.transform.figure.editor.DubbingFragment
+import com.xiaocydx.inputview.sample.transform.figure.editor.FigureGridFragment
 import com.xiaocydx.inputview.transform.Content
 import com.xiaocydx.inputview.transform.FragmentContentAdapter
 import com.xiaocydx.inputview.transform.Scene

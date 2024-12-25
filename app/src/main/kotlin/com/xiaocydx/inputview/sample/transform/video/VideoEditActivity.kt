@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.video
+package com.xiaocydx.inputview.sample.transform.video
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity

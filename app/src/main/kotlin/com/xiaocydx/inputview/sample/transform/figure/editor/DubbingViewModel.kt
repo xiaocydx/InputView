@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.figure.editor
+package com.xiaocydx.inputview.sample.transform.figure.editor
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,7 +9,7 @@ import com.xiaocydx.cxrv.paging.PagingConfig
 import com.xiaocydx.cxrv.paging.PagingPrefetch
 import com.xiaocydx.cxrv.paging.appendPrefetch
 import com.xiaocydx.cxrv.paging.storeIn
-import com.xiaocydx.inputview.sample.scene.figure.Dubbing
+import com.xiaocydx.inputview.sample.transform.figure.Dubbing
 import kotlinx.coroutines.delay
 
 /**

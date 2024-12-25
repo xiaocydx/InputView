@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.figure.pager
+package com.xiaocydx.inputview.sample.transform.figure.pager
 
 import android.content.Context
 import android.graphics.Color
@@ -18,7 +18,7 @@ import com.bumptech.glide.request.target.DrawableImageViewTarget
 import com.xiaocydx.inputview.sample.common.CustomLayout
 import com.xiaocydx.inputview.sample.common.layoutParams
 import com.xiaocydx.inputview.sample.common.setRoundRectOutlineProvider
-import com.xiaocydx.inputview.sample.scene.figure.Figure
+import com.xiaocydx.inputview.sample.transform.figure.Figure
 
 /**
  * @author xcc

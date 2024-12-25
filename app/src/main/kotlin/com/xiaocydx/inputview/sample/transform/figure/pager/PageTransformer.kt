@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.figure.pager
+package com.xiaocydx.inputview.sample.transform.figure.pager
 
 import android.view.View
 import androidx.annotation.FloatRange

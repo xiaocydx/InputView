@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.video
+package com.xiaocydx.inputview.sample.transform.video
 
 import android.view.LayoutInflater
 import android.view.View
@@ -14,14 +14,14 @@ import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.VideoTextBinding
 import com.xiaocydx.inputview.sample.databinding.VideoTitleBinding
 import com.xiaocydx.inputview.sample.editor_adapter.fragment.EmojiFragment
-import com.xiaocydx.inputview.sample.scene.video.VideoContent.Text
-import com.xiaocydx.inputview.sample.scene.video.VideoContent.Title
-import com.xiaocydx.inputview.sample.scene.video.VideoEditor.Audio
-import com.xiaocydx.inputview.sample.scene.video.VideoEditor.Emoji
-import com.xiaocydx.inputview.sample.scene.video.VideoEditor.Image
-import com.xiaocydx.inputview.sample.scene.video.VideoEditor.Ime
-import com.xiaocydx.inputview.sample.scene.video.VideoEditor.Style
-import com.xiaocydx.inputview.sample.scene.video.VideoEditor.Video
+import com.xiaocydx.inputview.sample.transform.video.VideoContent.Text
+import com.xiaocydx.inputview.sample.transform.video.VideoContent.Title
+import com.xiaocydx.inputview.sample.transform.video.VideoEditor.Audio
+import com.xiaocydx.inputview.sample.transform.video.VideoEditor.Emoji
+import com.xiaocydx.inputview.sample.transform.video.VideoEditor.Image
+import com.xiaocydx.inputview.sample.transform.video.VideoEditor.Ime
+import com.xiaocydx.inputview.sample.transform.video.VideoEditor.Style
+import com.xiaocydx.inputview.sample.transform.video.VideoEditor.Video
 import com.xiaocydx.inputview.transform.Content
 import com.xiaocydx.inputview.transform.ContentAdapter
 import com.xiaocydx.inputview.transform.ContentChangeEditText

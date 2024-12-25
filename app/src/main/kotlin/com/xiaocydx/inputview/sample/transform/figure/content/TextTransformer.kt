@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.figure.content
+package com.xiaocydx.inputview.sample.transform.figure.content
 
 import android.animation.RectEvaluator
 import android.graphics.Rect
@@ -7,8 +7,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.marginBottom
 import androidx.core.view.updatePadding
 import com.xiaocydx.inputview.sample.databinding.FragmentTextBinding
-import com.xiaocydx.inputview.sample.scene.figure.FigureContent.Text
-import com.xiaocydx.inputview.sample.scene.figure.FigureScene
+import com.xiaocydx.inputview.sample.transform.figure.FigureContent.Text
+import com.xiaocydx.inputview.sample.transform.figure.FigureScene
 import com.xiaocydx.inputview.transform.ImperfectState
 import com.xiaocydx.inputview.transform.TransformState
 import com.xiaocydx.inputview.transform.Transformer

@@ -1,11 +1,11 @@
-package com.xiaocydx.inputview.sample.scene.figure.content
+package com.xiaocydx.inputview.sample.transform.figure.content
 
 import android.animation.FloatEvaluator
-import com.xiaocydx.inputview.sample.scene.figure.FigureContent.Cover
-import com.xiaocydx.inputview.sample.scene.figure.FigureScene
-import com.xiaocydx.inputview.sample.scene.figure.FitCenter
-import com.xiaocydx.inputview.sample.scene.figure.ViewDrawable
-import com.xiaocydx.inputview.sample.scene.figure.pager.FigureView
+import com.xiaocydx.inputview.sample.transform.figure.FigureContent.Cover
+import com.xiaocydx.inputview.sample.transform.figure.FigureScene
+import com.xiaocydx.inputview.sample.transform.figure.FitCenter
+import com.xiaocydx.inputview.sample.transform.figure.ViewDrawable
+import com.xiaocydx.inputview.sample.transform.figure.pager.FigureView
 import com.xiaocydx.inputview.transform.ImperfectState
 import com.xiaocydx.inputview.transform.TransformState
 import com.xiaocydx.inputview.transform.Transformer

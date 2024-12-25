@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.video
+package com.xiaocydx.inputview.sample.transform.video
 
 import android.annotation.SuppressLint
 import android.graphics.Color

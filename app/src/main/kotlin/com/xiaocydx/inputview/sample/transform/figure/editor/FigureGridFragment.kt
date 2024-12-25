@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.figure.editor
+package com.xiaocydx.inputview.sample.transform.figure.editor
 
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
@@ -34,10 +34,10 @@ import com.xiaocydx.inputview.sample.common.viewLifecycle
 import com.xiaocydx.inputview.sample.common.viewLifecycleScope
 import com.xiaocydx.inputview.sample.databinding.FragmentFigureGridBinding
 import com.xiaocydx.inputview.sample.databinding.ItemFigureGridBinding
-import com.xiaocydx.inputview.sample.scene.figure.Figure
-import com.xiaocydx.inputview.sample.scene.figure.FigureEditor.FigureGrid
-import com.xiaocydx.inputview.sample.scene.figure.FigureScene
-import com.xiaocydx.inputview.sample.scene.figure.FigureViewModel
+import com.xiaocydx.inputview.sample.transform.figure.Figure
+import com.xiaocydx.inputview.sample.transform.figure.FigureEditor.FigureGrid
+import com.xiaocydx.inputview.sample.transform.figure.FigureScene
+import com.xiaocydx.inputview.sample.transform.figure.FigureViewModel
 import com.xiaocydx.insets.insets
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.launchIn

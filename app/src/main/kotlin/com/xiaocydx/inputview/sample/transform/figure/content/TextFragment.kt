@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.figure.content
+package com.xiaocydx.inputview.sample.transform.figure.content
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -10,10 +10,10 @@ import androidx.fragment.app.activityViewModels
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.common.viewLifecycleScope
 import com.xiaocydx.inputview.sample.databinding.FragmentTextBinding
-import com.xiaocydx.inputview.sample.scene.figure.FigureContent.Text
-import com.xiaocydx.inputview.sample.scene.figure.FigureScene
-import com.xiaocydx.inputview.sample.scene.figure.FigureViewModel
-import com.xiaocydx.inputview.sample.scene.figure.PendingView.Request
+import com.xiaocydx.inputview.sample.transform.figure.FigureContent.Text
+import com.xiaocydx.inputview.sample.transform.figure.FigureScene
+import com.xiaocydx.inputview.sample.transform.figure.FigureViewModel
+import com.xiaocydx.inputview.sample.transform.figure.PendingView.Request
 import com.xiaocydx.inputview.transform.ContentChangeEditText
 import com.xiaocydx.inputview.transform.Overlay
 import com.xiaocydx.insets.doOnApplyWindowInsets

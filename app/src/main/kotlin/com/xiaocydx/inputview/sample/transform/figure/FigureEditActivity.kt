@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.figure
+package com.xiaocydx.inputview.sample.transform.figure
 
 import android.os.Bundle
 import androidx.activity.viewModels
@@ -12,10 +12,10 @@ import com.xiaocydx.inputview.init
 import com.xiaocydx.inputview.sample.common.launchRepeatOnLifecycle
 import com.xiaocydx.inputview.sample.common.snackbar
 import com.xiaocydx.inputview.sample.databinding.ActivityFigureEditBinding
-import com.xiaocydx.inputview.sample.scene.figure.PendingView.Request
-import com.xiaocydx.inputview.sample.scene.figure.PendingView.Result
-import com.xiaocydx.inputview.sample.scene.figure.pager.FigurePager
-import com.xiaocydx.inputview.sample.scene.figure.pager.TextPager
+import com.xiaocydx.inputview.sample.transform.figure.PendingView.Request
+import com.xiaocydx.inputview.sample.transform.figure.PendingView.Result
+import com.xiaocydx.inputview.sample.transform.figure.pager.FigurePager
+import com.xiaocydx.inputview.sample.transform.figure.pager.TextPager
 import com.xiaocydx.inputview.transform.EditorBackground
 import com.xiaocydx.inputview.transform.Overlay
 import com.xiaocydx.inputview.transform.SceneChangedListener

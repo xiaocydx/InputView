@@ -1,4 +1,4 @@
-package com.xiaocydx.inputview.sample.scene.viewpager2
+package com.xiaocydx.inputview.sample.basic.viewpager2
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity

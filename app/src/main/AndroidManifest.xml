@@ -39,6 +39,9 @@
             android:name=".basic.InitCompatActivity"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".basic.viewpager2.ViewPager2Activity"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".editor_adapter.StatefulActivity"
           />
         <activity
@@ -54,13 +57,10 @@
             android:name=".editor_animator.ImeAnimatorActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".scene.video.VideoEditActivity"
+            android:name=".transform.video.VideoEditActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".scene.figure.FigureEditActivity"
-            android:screenOrientation="portrait" />
-        <activity
-            android:name=".scene.viewpager2.ViewPager2Activity"
+            android:name=".transform.figure.FigureEditActivity"
             android:screenOrientation="portrait" />
     </application>
 

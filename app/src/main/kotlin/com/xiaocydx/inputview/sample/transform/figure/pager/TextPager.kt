@@ -1,10 +1,10 @@
-package com.xiaocydx.inputview.sample.scene.figure.pager
+package com.xiaocydx.inputview.sample.transform.figure.pager
 
 import android.view.View
 import android.widget.TextView
 import com.xiaocydx.inputview.sample.common.onClick
-import com.xiaocydx.inputview.sample.scene.figure.FigureScene
-import com.xiaocydx.inputview.sample.scene.figure.FigureState
+import com.xiaocydx.inputview.sample.transform.figure.FigureScene
+import com.xiaocydx.inputview.sample.transform.figure.FigureState
 import java.lang.ref.WeakReference
 
 /**

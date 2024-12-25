@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.xiaocydx.inputview.sample.scene.figure.pager.FigureView
+    <com.xiaocydx.inputview.sample.transform.figure.pager.FigureView
         android:id="@+id/figureView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

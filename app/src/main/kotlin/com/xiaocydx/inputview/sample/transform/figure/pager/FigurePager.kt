@@ -1,6 +1,6 @@
 @file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 
-package com.xiaocydx.inputview.sample.scene.figure.pager
+package com.xiaocydx.inputview.sample.transform.figure.pager
 
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
@@ -28,9 +28,9 @@ import com.xiaocydx.inputview.sample.common.dp
 import com.xiaocydx.inputview.sample.common.launchRepeatOnLifecycle
 import com.xiaocydx.inputview.sample.common.registerOnPageChangeCallback
 import com.xiaocydx.inputview.sample.databinding.ItemFigureBinding
-import com.xiaocydx.inputview.sample.scene.figure.Figure
-import com.xiaocydx.inputview.sample.scene.figure.FigureScene
-import com.xiaocydx.inputview.sample.scene.figure.FigureState
+import com.xiaocydx.inputview.sample.transform.figure.Figure
+import com.xiaocydx.inputview.sample.transform.figure.FigureScene
+import com.xiaocydx.inputview.sample.transform.figure.FigureState
 import kotlinx.coroutines.flow.Flow
 import java.lang.ref.WeakReference
 import kotlin.math.absoluteValue
