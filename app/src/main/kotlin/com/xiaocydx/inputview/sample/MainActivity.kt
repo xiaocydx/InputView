@@ -1,27 +1,21 @@
 package com.xiaocydx.inputview.sample
 
 import android.os.Bundle
-import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.recyclerview.widget.RecyclerView
-import com.xiaocydx.cxrv.binding.bindingDelegate
-import com.xiaocydx.cxrv.concat.Concat
-import com.xiaocydx.cxrv.concat.toAdapter
-import com.xiaocydx.cxrv.divider.divider
-import com.xiaocydx.cxrv.itemclick.reduce.doOnItemClick
-import com.xiaocydx.cxrv.list.adapter
-import com.xiaocydx.cxrv.list.linear
-import com.xiaocydx.cxrv.list.submitList
-import com.xiaocydx.cxrv.multitype.listAdapter
-import com.xiaocydx.cxrv.multitype.register
-import com.xiaocydx.inputview.sample.common.dp
-import com.xiaocydx.inputview.sample.common.layoutParams
-import com.xiaocydx.inputview.sample.common.matchParent
-import com.xiaocydx.inputview.sample.databinding.ItemSampleCategoryBinding
-import com.xiaocydx.inputview.sample.databinding.ItemSampleElementBinding
-import com.xiaocydx.inputview.sample.databinding.SmapleHeaderBinding
+import com.xiaocydx.inputview.sample.basic.InitCompatActivity
+import com.xiaocydx.inputview.sample.basic.dialog.MessageListBottomSheetDialog
+import com.xiaocydx.inputview.sample.basic.dialog.MessageListDialog
+import com.xiaocydx.inputview.sample.basic.message.MessageListActivity
+import com.xiaocydx.inputview.sample.basic.viewpager2.ViewPager2Activity
+import com.xiaocydx.inputview.sample.editor_adapter.StatefulActivity
+import com.xiaocydx.inputview.sample.editor_adapter.fragment.FragmentEditorAdapterActivity
+import com.xiaocydx.inputview.sample.editor_animator.AnimationInterceptorActivity1
+import com.xiaocydx.inputview.sample.editor_animator.AnimationInterceptorActivity2
+import com.xiaocydx.inputview.sample.editor_animator.ImeAnimatorActivity
+import com.xiaocydx.inputview.sample.transform.figure.FigureEditActivity
+import com.xiaocydx.inputview.sample.transform.video.VideoEditActivity
 
 /**
  * **注意**：需要确保`androidx.core`的版本足够高，因为高版本修复了[WindowInsetsCompat]一些常见的问题，
@@ -34,45 +28,41 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(contentView())
+        val sample = Sample(source(), this)
+        setContentView(sample.contentView())
     }
 
-    private fun contentView(): View {
-        val header = SmapleHeaderBinding
-            .inflate(layoutInflater).root
-            .layoutParams(matchParent, 100.dp)
-            .toAdapter()
+    private fun source() = listOf(
+        "Basic".elements(
+            "Activity" desc "消息列表Activity" start MessageListActivity::class,
+            "Dialog" desc "消息列表Dialog，主题包含windowIsFloating = false" show ::MessageListDialog,
+            "BottomSheetDialog" desc "消息列表BottomSheetDialog，实现状态栏Edge-to-Edge" show ::MessageListBottomSheetDialog,
+            "ViewPager2" desc "ViewPager2中使用InputView" start ViewPager2Activity::class,
+            "InitCompat" desc "初始化Window，兼容已有的WindowInsets处理方案" start InitCompatActivity::class
+        ),
 
-        val sampleList = SampleList()
-        val content = listAdapter {
-            submitList(sampleList.filter())
-            register(bindingDelegate(
-                uniqueId = SampleItem.Category::title,
-                inflate = ItemSampleCategoryBinding::inflate
-            ) {
-                onBindView {
-                    tvTitle.text = it.title
-                    ivSelected.setImageResource(it.resId)
-                }
-                getChangePayload(sampleList::categoryPayload)
-                doOnItemClick { submitList(sampleList.toggle(it)) }
-            })
+        "EditorAnimator".elements(
+            "AnimationInterceptor" desc "处理多Window的交互冲突问题" start AnimationInterceptorActivity1::class,
+            "AnimationInterceptor" desc "实现动画时长和插值器的差异化" start AnimationInterceptorActivity2::class,
+            "ImeAnimator" desc "脱离InputView使用EditorAnimator" start ImeAnimatorActivity::class
+        ),
 
-            register(bindingDelegate(
-                uniqueId = SampleItem.Element::title,
-                inflate = ItemSampleElementBinding::inflate
-            ) {
-                onBindView {
-                    tvTitle.text = it.title
-                    tvDesc.text = it.desc
-                }
-                doOnItemClick { it.perform(this@MainActivity) }
-            })
-        }
+        "EditorAdapter".elements(
+            "EditorAdapter-Stateful" desc """
+                页面重建时（因Activity配置更改或进程被杀掉）：
+                1. 不运行动画（IME除外），恢复之前显示的Editor。
+                2. 不恢复Editor视图的状态，该功能由FragmentEditorAdapter完成。
+                """.trimIndent() start StatefulActivity::class,
+            "FragmentEditorAdapter" desc """
+                1. 动画结束时，Lifecycle的状态才会转换为RESUMED。
+                2. 页面重建时，使用可恢复状态的Fragment，不会调用函数再次创建Fragment。
+                3. 页面重建时，Stateful恢复之前显示的Editor，Fragment恢复Editor视图的状态。
+                """.trimIndent() start FragmentEditorAdapterActivity::class
+        ),
 
-        return RecyclerView(this)
-            .linear().divider(height = 2.dp)
-            .layoutParams(matchParent, matchParent)
-            .adapter(Concat.header(header).content(content).concat())
-    }
+        "inputview-transform".elements(
+            "PreviewEdit" desc "预览编辑的交互案例" start VideoEditActivity::class,
+            "SelectEdit" desc "选中编辑的交互案例" start FigureEditActivity::class
+        )
+    )
 }
