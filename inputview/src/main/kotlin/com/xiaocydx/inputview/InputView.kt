@@ -243,12 +243,12 @@ class InputView @JvmOverloads constructor(
         super.requestFitSystemWindows()
     }
 
-    override fun dispatchApplyWindowInsets(insets: WindowInsets?): WindowInsets {
-        val applyInsets = super.dispatchApplyWindowInsets(insets)
+    override fun dispatchApplyWindowInsets(insets: WindowInsets): WindowInsets {
+        super.dispatchApplyWindowInsets(insets)
         // 尝试消费PendingChange，在处理完WindowInsets后，创建、添加、移除子View
         consumePendingChange()
         isApplyInsetsRequested = false
-        return applyInsets
+        return insets
     }
 
     /**
