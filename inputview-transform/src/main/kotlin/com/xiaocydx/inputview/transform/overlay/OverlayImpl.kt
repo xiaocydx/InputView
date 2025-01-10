@@ -19,12 +19,14 @@
 package com.xiaocydx.inputview.transform
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewTreeObserver.OnPreDrawListener
 import android.view.Window
+import android.view.WindowInsets
 import android.widget.FrameLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.OnBackPressedDispatcher
@@ -490,8 +492,16 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
         }
     }
 
+    private class TransformRootView(context: Context) : FrameLayout(context) {
+        override fun dispatchApplyWindowInsets(insets: WindowInsets): WindowInsets {
+            super.dispatchApplyWindowInsets(insets)
+            // 兼容到跟Android 11一样的分发效果，确保同级子View能处理已消费的Insets
+            return insets
+        }
+    }
+
     private inner class TransformStateImpl : TransformState {
-        override lateinit var rootView: FrameLayout; private set
+        override lateinit var rootView: TransformRootView; private set
         override lateinit var backgroundView: View; private set
         override lateinit var contentView: ContentContainer; private set
         override lateinit var inputView: InputView; private set
@@ -511,7 +521,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
 
         fun initialize(window: Window) {
             val context = window.rootParent().context
-            rootView = FrameLayout(context)
+            rootView = TransformRootView(context)
             backgroundView = View(context)
             contentView = ContentContainer(context)
             inputView = InputView(context)
