@@ -51,12 +51,11 @@ import com.xiaocydx.insets.toWindowInsetsCompat
  *
  * 1. 调用[init]初始化[InputView]所需的配置。
  * 2. [InputView]初始化时只能有一个子View，该子View作为[contentView]。
- * 3. [editText]用于兼容Android各版本显示和隐藏IME。
- * 4. [editorAdapter]支持[Editor]的视图创建和显示。
- * 5. [editorAnimator]支持[Editor]的切换过渡动画。
+ * 3. [editorAdapter]支持[Editor]的视图创建和显示。
+ * 4. [editorAnimator]支持[Editor]的切换过渡动画。
  *
  * [contentView]的初始布局位置等同于[Gravity.BOTTOM]，其测量高度不受`layoutParams.height`影响，
- * 最大值是[InputView]的测量高度，测量宽度同理，[Editor]位于[contentView]下方，通知显示[Editor]时，
+ * 最大值是[InputView]的测量高度，测量宽度同理。[Editor]位于[contentView]下方，通知显示[Editor]时，
  * 会平移[contentView]，或者修改[contentView]的尺寸，具体是哪一种行为，取决于[EditorMode]。
  *
  * @author xcc
@@ -112,7 +111,7 @@ class InputView @JvmOverloads constructor(
         }
 
     /**
-     * [EditorMode]默认为[EditorMode.ADJUST_RESIZE]
+     * [editorMode]默认为[EditorMode.ADJUST_RESIZE]
      *
      * 1. [EditorMode.ADJUST_PAN]，显示[Editor]时平移[contentView]。
      * 2. [EditorMode.ADJUST_RESIZE]，显示[Editor]时修改[contentView]的尺寸。
@@ -149,8 +148,7 @@ class InputView @JvmOverloads constructor(
     /**
      * [editorAnimator]默认为[FadeEditorAnimator]
      *
-     * 若需要调整动画的参数，则可以继承[FadeEditorAnimator]进行修改，
-     * 或者参考[FadeEditorAnimator]，继承[EditorAnimator]实现动画。
+     * 可以参考[FadeEditorAnimator]，继承[EditorAnimator]实现动画。
      * 若不需要运行动画，仅分发动画回调，则设置[NopEditorAnimator]。
      *
      * 多[Window]的交互问题，可以通过设置[AnimationInterceptor]解决，
@@ -296,7 +294,7 @@ class InputView @JvmOverloads constructor(
         editorOffset = current
 
         if (isLayoutRequested) {
-            // isLayoutRequested = true，已经申请重新布局
+            // 已申请重新布局
             return
         }
 

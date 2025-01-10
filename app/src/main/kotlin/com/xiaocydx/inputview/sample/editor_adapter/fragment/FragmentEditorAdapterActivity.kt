@@ -47,7 +47,7 @@ class FragmentEditorAdapterActivity : AppCompatActivity() {
          * 按home键将应用退到后台，输入adb shell am kill com.xiaocydx.inputview.sample命令杀掉进程。
          */
         // override fun getStatefulEditorList(): List<MessageEditor> {
-        //     return MessageEditor.values().toList()
+        //     return MessageEditor.entries.toList()
         // }
 
         override fun getEditorKey(editor: MessageEditor) = editor.name

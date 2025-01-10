@@ -110,9 +110,9 @@ class FigurePager(
         return getCurrentBinding()?.figureView?.let(::WeakReference)
     }
 
-    fun updateCurrentPage(state: FigureState) {
-        if (state.currentPosition != viewPager2.currentItem) {
-            viewPager2.setCurrentItem(state.currentPosition, false)
+    fun updateCurrentPage(currentPosition: Int) {
+        if (currentPosition != viewPager2.currentItem) {
+            viewPager2.setCurrentItem(currentPosition, false)
         }
     }
 

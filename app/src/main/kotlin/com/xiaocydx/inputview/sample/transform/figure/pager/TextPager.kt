@@ -4,7 +4,6 @@ import android.view.View
 import android.widget.TextView
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.transform.figure.FigureScene
-import com.xiaocydx.inputview.sample.transform.figure.FigureState
 import java.lang.ref.WeakReference
 
 /**
@@ -21,9 +20,9 @@ class TextPager(
         textView.onClick { go(FigureScene.InputText) }
     }
 
-    fun updateCurrentPage(state: FigureState) {
-        if (state.currentText != text) {
-            text = state.currentText
+    fun updateCurrentPage(currentText: String) {
+        if (currentText != text) {
+            text = currentText
             textView.text = if (text.isNullOrEmpty()) "输入文字" else text
         }
     }

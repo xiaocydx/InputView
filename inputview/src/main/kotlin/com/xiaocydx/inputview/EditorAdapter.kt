@@ -62,7 +62,7 @@ abstract class EditorAdapter<T : Editor> {
 
     /**
      * 在保存和恢复显示的[Editor]时，会调用该函数获取可保存显示状态的[Editor]集合，
-     * 恢复显示的[Editor]，不会运行动画，仅记录动画状态，分发动画回调，在恢复的过程中，
+     * 恢复显示的[Editor]不会运行动画，仅记录动画状态，分发动画回调，在恢复的过程中，
      * 会调用[EditorChangedListener]、[AnimationCallback]、[AnimationInterceptor]。
      *
      * **注意**：

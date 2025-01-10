@@ -29,7 +29,9 @@ class StatefulActivity : AppCompatActivity() {
         InputView.init(window, Decor(gestureNavBarEdgeToEdge = true))
         val adapter = StatefulMessageEditorAdapter()
         setContentView(MessageListBinding.inflate(layoutInflater).init(window, adapter).root)
-        // 即使不重写getStatefulEditorList()，在页面重建期间通知显示Editor，也不会运行动画
+
+        // 即使不重写getStatefulEditorList()，在页面重建期间通知显示Editor，也不会运行动画，
+        // 可以类比Fragment首次创建有过渡动画，重建的Fragment不会运行过渡动画。
         // adapter.notifyShow(MessageEditor.EMOJI)
     }
 }
@@ -38,7 +40,7 @@ class StatefulMessageEditorAdapter : MessageEditorAdapter() {
 
     /**
      * 在保存和恢复显示的[Editor]时，会调用该函数获取可保存显示状态的[Editor]集合，
-     * 恢复显示的[Editor]，不会运行动画，仅记录动画状态，分发动画回调，在恢复的过程中，
+     * 恢复显示的[Editor]不会运行动画，仅记录动画状态，分发动画回调，在恢复的过程中，
      * 会调用[EditorChangedListener]、[AnimationCallback]、[AnimationInterceptor]。
      *
      * **注意**：
@@ -50,6 +52,6 @@ class StatefulMessageEditorAdapter : MessageEditorAdapter() {
      * 按home键将应用退到后台，输入adb shell am kill com.xiaocydx.inputview.sample命令杀掉进程。
      */
     override fun getStatefulEditorList(): List<MessageEditor> {
-        return MessageEditor.values().toList()
+        return MessageEditor.entries.toList()
     }
 }

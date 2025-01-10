@@ -31,9 +31,14 @@ class ImeAnimatorActivity : AppCompatActivity() {
     }
 
     private fun ActivityImeAnimatorBinding.init() = apply {
-        // 1. 当有多个EditText时，选其中一个EditText创建ImeAnimator即可,
+        val animator = InputView.animator(etContainer)
+
+        // 在初始化Window时，gestureNavBarEdgeToEdge = true，
+        // 第4点是支持手势导航栏EdgeToEdge的代码，避免底部被遮挡。
+
+        // 1. 当有多个EditText时，选其中一个EditText跟ImeAnimator关联即可,
         // 多个EditText的焦点处理逻辑，可以看ImeAnimator.editText的注释。
-        val animator = InputView.animator(editText1)
+        animator.editText = editText1
 
         // 2. 创建animator的EditText会自动处理水滴状指示器导致动画卡顿问题，
         // 若其它EditText也需要处理，则调用InputView.addEditText()完成添加。
@@ -51,7 +56,7 @@ class ImeAnimatorActivity : AppCompatActivity() {
             root.updatePadding(bottom = bottom.coerceAtLeast(0))
         })
 
-        // 5. 碰到AnimationInterceptorActivity的多Window交互问题，仍可以通过动画拦截器解决
+        // 5. 碰到AnimationInterceptorActivity1的多Window交互问题，仍可以通过动画拦截器解决
         // animator.setWindowFocusInterceptor()
         // imageView.onClick { InputDialog(this@ImeAnimatorActivity).show() }
     }

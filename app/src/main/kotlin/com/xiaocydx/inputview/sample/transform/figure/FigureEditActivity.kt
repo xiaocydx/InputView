@@ -96,8 +96,8 @@ class FigureEditActivity : AppCompatActivity() {
     private fun launchUpdatePageJob() {
         var requestJob: Job? = null
         sharedViewModel.figureState.onEach {
-            figurePager.updateCurrentPage(it)
-            textPager.updateCurrentPage(it)
+            figurePager.updateCurrentPage(it.currentPosition)
+            textPager.updateCurrentPage(it.currentText)
             if (it.pendingRemove != null) {
                 window.snackbar().setText("已删除").show()
                 sharedViewModel.consumePendingRemove()
