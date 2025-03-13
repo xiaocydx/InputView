@@ -2,7 +2,7 @@ package com.xiaocydx.inputview.sample.basic.message
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.view.MotionEvent
+import android.view.MotionEvent.ACTION_DOWN
 import android.view.Window
 import android.widget.ImageView
 import androidx.annotation.DrawableRes
@@ -13,8 +13,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.xiaocydx.inputview.EditorAdapter
 import com.xiaocydx.inputview.EditorMode
+import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.Insets.Decor
+import com.xiaocydx.inputview.NopEditorAnimator
 import com.xiaocydx.inputview.addAnimationCallback
 import com.xiaocydx.inputview.current
 import com.xiaocydx.inputview.init
@@ -26,6 +28,7 @@ import com.xiaocydx.inputview.sample.basic.message.MessageEditor.Emoji
 import com.xiaocydx.inputview.sample.basic.message.MessageEditor.Extra
 import com.xiaocydx.inputview.sample.basic.message.MessageEditor.Voice
 import com.xiaocydx.inputview.sample.common.addOnItemTouchListener
+import com.xiaocydx.inputview.sample.common.isDispatchTouchEventEnabled
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.databinding.MessageListBinding
 
@@ -54,7 +57,8 @@ class MessageListActivity : AppCompatActivity() {
  */
 fun MessageListBinding.init(
     window: Window,
-    editorAdapter: EditorAdapter<MessageEditor> = MessageEditorAdapter()
+    editorAdapter: EditorAdapter<MessageEditor> = MessageEditorAdapter(),
+    canRunAnimation: Boolean = true,
 ) = apply {
     // 1. 初始化InputView的属性
     inputView.apply {
@@ -62,12 +66,15 @@ fun MessageListBinding.init(
         editorMode = EditorMode.ADJUST_PAN
         this.editorAdapter = editorAdapter
         setEditorBackgroundColor(0xFFF2F2F2.toInt())
-        // 调整Editor的动画时长，需要看durationMillis的注释说明
-        // editorAnimator = FadeEditorAnimator(durationMillis = 500)
-        // 不运行Editor的动画，仅记录动画状态，分发动画回调
-        // editorAnimator = NopEditorAnimator()
-        // 两个非IME的Editor切换，调整为线性更新编辑区的偏移值
-        editorAnimator.linearEditorOffset()
+        if (canRunAnimation) {
+            // 调整Editor的动画时长，需要看durationMillis的注释说明
+            editorAnimator = FadeEditorAnimator(durationMillis = 200L)
+            // 两个非IME的Editor切换，调整为线性更新编辑区的偏移值
+            editorAnimator.linearEditorOffset()
+        } else {
+            // 不运行Editor的动画，仅记录动画状态，分发动画回调
+            editorAnimator = NopEditorAnimator()
+        }
     }
 
     // 2. 初始化RecyclerView的属性
@@ -127,21 +134,25 @@ private fun MessageListBinding.initScroll() {
  * 2. 实际场景可能需要在动画运行时拦截触摸事件。
  */
 @SuppressLint("ClickableViewAccessibility")
-private fun MessageListBinding.initTouch(window: Window) {
+private fun MessageListBinding.initTouch(
+    window: Window,
+    canInterceptTouchEvent: Boolean = false
+) {
     // 触摸RecyclerView隐藏当前MessageEditor
     rvMessage.addOnItemTouchListener(onInterceptTouchEvent = { _, ev ->
-        if (ev.action == MotionEvent.ACTION_DOWN
-                && inputView.editorAdapter.current !== Voice) {
+        if (ev.action == ACTION_DOWN && inputView.editorAdapter.current !== Voice) {
             inputView.editorAdapter.notifyHideCurrent()
         }
         false
     })
 
     // 实际场景可能需要在动画运行时拦截触摸事件
-    inputView.editorAnimator.addAnimationCallback(
-        // onStart = { window.isDispatchTouchEventEnabled = false },
-        // onEnd = { window.isDispatchTouchEventEnabled = true }
-    )
+    if (canInterceptTouchEvent) {
+        inputView.editorAnimator.addAnimationCallback(
+            onStart = { window.isDispatchTouchEventEnabled = false },
+            onEnd = { window.isDispatchTouchEventEnabled = true }
+        )
+    }
 }
 
 /**
