@@ -19,7 +19,7 @@
         <ImageView
             android:layout_width="52dp"
             android:layout_height="52dp"
-            android:src="@mipmap/ic_message_extra_album" />
+            android:src="@drawable/ic_message_extra_album" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -43,7 +43,7 @@
         <ImageView
             android:layout_width="52dp"
             android:layout_height="52dp"
-            android:src="@mipmap/ic_message_extra_camera" />
+            android:src="@drawable/ic_message_extra_camera" />
 
         <TextView
             android:layout_width="wrap_content"

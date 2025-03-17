@@ -160,9 +160,9 @@ private fun MessageListBinding.initTouch(
  */
 private fun MessageListBinding.initToggle(editorAdapter: EditorAdapter<MessageEditor>) {
     val actions = mutableMapOf<MessageEditor, Action>()
-    actions[Voice] = Action(ivVoice, R.mipmap.ic_message_editor_voice)
-    actions[Emoji] = Action(ivEmoji, R.mipmap.ic_message_editor_emoji)
-    actions[Extra] = Action(ivExtra, R.mipmap.ic_message_editor_extra, isKeep = true)
+    actions[Voice] = Action(ivVoice, R.drawable.ic_message_editor_voice)
+    actions[Emoji] = Action(ivEmoji, R.drawable.ic_message_editor_emoji)
+    actions[Extra] = Action(ivExtra, R.drawable.ic_message_editor_extra, isKeep = true)
     // 初始化各个按钮显示的图标
     actions.forEach { it.value.showSelfIcon() }
 
@@ -180,7 +180,7 @@ private fun MessageListBinding.initToggle(editorAdapter: EditorAdapter<MessageEd
 private class Action(
     private val view: ImageView,
     @DrawableRes val iconResId: Int,
-    @DrawableRes val imeResId: Int = R.mipmap.ic_message_editor_ime,
+    @DrawableRes val imeResId: Int = R.drawable.ic_message_editor_ime,
     val isKeep: Boolean = false
 ) {
     private var currentResId = 0

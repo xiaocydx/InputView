@@ -57,7 +57,7 @@
                     android:layout_height="30dp"
                     android:layout_marginStart="6dp"
                     android:layout_marginBottom="10dp"
-                    android:src="@mipmap/ic_message_editor_voice"
+                    android:src="@drawable/ic_message_editor_voice"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toStartOf="parent" />
 
@@ -101,7 +101,7 @@
                     android:layout_height="30dp"
                     android:layout_marginEnd="6dp"
                     android:layout_marginBottom="10dp"
-                    android:src="@mipmap/ic_message_editor_emoji"
+                    android:src="@drawable/ic_message_editor_emoji"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toStartOf="@id/ivExtra" />
 
@@ -111,7 +111,7 @@
                     android:layout_height="30dp"
                     android:layout_marginEnd="6dp"
                     android:layout_marginBottom="10dp"
-                    android:src="@mipmap/ic_message_editor_extra"
+                    android:src="@drawable/ic_message_editor_extra"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>

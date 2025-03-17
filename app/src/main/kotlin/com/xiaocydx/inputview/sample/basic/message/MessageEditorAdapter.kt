@@ -59,8 +59,8 @@ class EmojiRecyclerView(context: Context) : RecyclerView(context) {
 
     private class EmojiAdapter(spanCount: Int) : Adapter<ViewHolder>() {
         private val resIds = intArrayOf(
-            R.mipmap.ic_message_emoji_1, R.mipmap.ic_message_emoji_2,
-            R.mipmap.ic_message_emoji_3, R.mipmap.ic_message_emoji_4,
+            R.drawable.ic_message_emoji_1, R.drawable.ic_message_emoji_2,
+            R.drawable.ic_message_emoji_3, R.drawable.ic_message_emoji_4,
         )
         private val margin = 8.dp
         private val items = (0..147).map { resIds[it % resIds.size] }
