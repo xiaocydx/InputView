@@ -306,6 +306,7 @@ abstract class EditorAnimator(
         private var lastImeHeight = 0
         var lastImeOffset = 0; private set
         var stableImeHeight = 0; private set
+        var progressImeHeight = 0; private set
 
         /**
          * ### StartView和EndView
@@ -394,6 +395,7 @@ abstract class EditorAnimator(
             insets: WindowInsetsCompat,
             runningAnimations: List<WindowInsetsAnimationCompat>
         ): WindowInsetsCompat {
+            progressImeHeight = insets.imeHeight
             animationRecord?.takeIf { it.handleInsetsAnimation }
                 ?.takeIf { runningAnimations.contains(it.insetsAnimation) }
                 ?.let(::dispatchInsetsAnimationUpdate)
@@ -513,17 +515,29 @@ abstract class EditorAnimator(
                 animatedFraction = simpleAnimation?.animatedFraction
                         ?: insetsAnimation?.fraction ?: 0f
             }
-            val fraction = interpolator.getInterpolation(animatedFraction)
-            val realCurrent = realStart + (realEnd - realStart) * fraction
             val realTotal = (realEnd - realStart).absoluteValue
             val total = (endOffset - startOffset).absoluteValue
+
+            var interpolatedFraction: Float
+            if (insetsAnimation != null && (startOffset == 0 || endOffset == 0)) {
+                // Android 15以下：系统用insetsAnimation.interpolatedFraction计算progressImeHeight
+                // Android 15及以上的部分设备：系统用insetsAnimation.fraction计算progressImeHeight（错误）
+                // 为了解决Android 15及以上的源码错误，计算实际的interpolatedFraction，计算逻辑不区分版本。
+                interpolatedFraction = animationDispatcher.progressImeHeight.toFloat() / realTotal
+                if (isIme(previous)) interpolatedFraction = 1f - interpolatedFraction
+            } else {
+                interpolatedFraction = interpolator.getInterpolation(animatedFraction)
+            }
+
+            val realCurrent = realStart + (realEnd - realStart) * interpolatedFraction
             val diff = (realTotal - total).absoluteValue
             setAnimationOffset(currentOffset = (realCurrent - diff).toInt())
+
             interpolatedFraction = when {
-                realStart == startOffset && realEnd == endOffset -> fraction
+                realStart == startOffset && realEnd == endOffset -> interpolatedFraction
                 else -> (currentOffset - startOffset).toFloat() / (endOffset - startOffset)
             }
-            interpolatedFraction = interpolatedFraction.absoluteValue
+            this.interpolatedFraction = interpolatedFraction.absoluteValue
         }
 
         fun setAnimationFraction(fraction: Float) {
