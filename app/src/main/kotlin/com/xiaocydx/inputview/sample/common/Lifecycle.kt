@@ -22,17 +22,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.coroutineScope
-import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -72,24 +63,4 @@ suspend fun Lifecycle.awaitTargetState(state: Lifecycle.State) {
             removeObserver(observer)
         }
     }
-}
-
-/**
- * 若`flow`的最后一个操作符是[Flow.flowWithLifecycle]，则可以调用该函数进行优化，
- * 避免[Flow.flowWithLifecycle]调用[callbackFlow]，创建额外的[Channel]，例如：
- * ```
- * flow
- *     .flowWithLifecycle(lifecycle, Lifecycle.State.STARTED)
- *     .launchIn(lifecycle.coroutineScope)
- * ```
- * 替换为
- * ```
- * flow.launchRepeatOnLifecycle(lifecycle, Lifecycle.State.STARTED)
- * ```
- */
-fun <T> Flow<T>.launchRepeatOnLifecycle(
-    lifecycle: Lifecycle,
-    state: Lifecycle.State = Lifecycle.State.STARTED
-): Job = lifecycle.coroutineScope.launch {
-    lifecycle.repeatOnLifecycle(state) { collect() }
 }

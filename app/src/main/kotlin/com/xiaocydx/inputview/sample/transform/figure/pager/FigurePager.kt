@@ -7,6 +7,7 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.core.view.doOnPreDraw
 import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.coroutineScope
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import androidx.recyclerview.widget.smoothScroller
@@ -25,13 +26,13 @@ import com.xiaocydx.cxrv.list.onEach
 import com.xiaocydx.cxrv.viewpager2.loop.LinearSmoothScrollerProvider
 import com.xiaocydx.inputview.sample.common.awaitPreDraw
 import com.xiaocydx.inputview.sample.common.dp
-import com.xiaocydx.inputview.sample.common.launchRepeatOnLifecycle
 import com.xiaocydx.inputview.sample.common.registerOnPageChangeCallback
 import com.xiaocydx.inputview.sample.databinding.ItemFigureBinding
 import com.xiaocydx.inputview.sample.transform.figure.Figure
 import com.xiaocydx.inputview.sample.transform.figure.FigureScene
 import com.xiaocydx.inputview.sample.transform.figure.FigureState
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.launchIn
 import java.lang.ref.WeakReference
 import kotlin.math.absoluteValue
 
@@ -83,8 +84,9 @@ class FigurePager(
             }
 
             // 收集列表数据流
-            figureListFlow.onEach(listCollector)
-                .launchRepeatOnLifecycle(lifecycle)
+            figureListFlow
+                .onEach(listCollector)
+                .launchIn(lifecycle.coroutineScope)
         }
 
         viewPager2.apply {

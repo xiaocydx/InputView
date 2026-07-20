@@ -33,7 +33,6 @@ import com.xiaocydx.cxrv.paging.pagingCollector
 import com.xiaocydx.inputview.sample.common.awaitTargetState
 import com.xiaocydx.inputview.sample.common.disableItemAnimator
 import com.xiaocydx.inputview.sample.common.dp
-import com.xiaocydx.inputview.sample.common.launchRepeatOnLifecycle
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.common.setRoundRectOutlineProvider
 import com.xiaocydx.inputview.sample.common.viewLifecycle
@@ -121,7 +120,7 @@ class DubbingFragment : Fragment() {
         // 收集配音的分页数据流
         dubbingViewModel.dubbingPagingFlow
             .onEach(dubbingAdapter.pagingCollector)
-            .launchRepeatOnLifecycle(viewLifecycle)
+            .launchIn(viewLifecycleScope)
     }
 
     private fun launchDubbingSelectJob() {

@@ -52,26 +52,30 @@ class CoverFragment : Fragment(), Overlay.Transform {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         var selectJob: Job? = null
-        sharedViewModel.currentSceneFlow().onEach {
-            val isCover = it?.content == Cover
-            if (isCover && selectJob == null) {
-                // Content更改为Cover，启动selectJob
-                selectJob = launchFigureSelectJob()
-            } else if (!isCover && selectJob != null) {
-                selectJob?.cancel()
-                selectJob = null
+        sharedViewModel.currentSceneFlow()
+            .onEach {
+                val isCover = it?.content == Cover
+                if (isCover && selectJob == null) {
+                    // Content更改为Cover，启动selectJob
+                    selectJob = launchFigureSelectJob()
+                } else if (!isCover && selectJob != null) {
+                    selectJob?.cancel()
+                    selectJob = null
+                }
             }
-        }.launchIn(viewLifecycleScope)
+            .launchIn(viewLifecycleScope)
     }
 
     private fun launchFigureSelectJob() = run {
-        sharedViewModel.currentFigureFlow().onEach {
-            val target = sharedViewModel.requestView(Request.Figure) as? FigureView
-            val previous = viewDrawable.setTarget(target)
-            // 恢复之前的figureView.children.alpha
-            previous?.setAnimationAlpha(1f)
-            // 基于当前的figureView，请求执行变换操作
-            coverChangeFitCenter.requestTransform()
-        }.launchIn(viewLifecycleScope)
+        sharedViewModel.currentFigureFlow()
+            .onEach {
+                val target = sharedViewModel.requestView(Request.Figure) as? FigureView
+                val previous = viewDrawable.setTarget(target)
+                // 恢复之前的figureView.children.alpha
+                previous?.setAnimationAlpha(1f)
+                // 基于当前的figureView，请求执行变换操作
+                coverChangeFitCenter.requestTransform()
+            }
+            .launchIn(viewLifecycleScope)
     }
 }

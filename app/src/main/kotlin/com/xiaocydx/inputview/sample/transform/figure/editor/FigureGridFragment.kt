@@ -27,10 +27,8 @@ import com.xiaocydx.cxrv.list.listCollector
 import com.xiaocydx.cxrv.list.onEach
 import com.xiaocydx.inputview.sample.common.disableItemAnimator
 import com.xiaocydx.inputview.sample.common.dp
-import com.xiaocydx.inputview.sample.common.launchRepeatOnLifecycle
 import com.xiaocydx.inputview.sample.common.onClick
 import com.xiaocydx.inputview.sample.common.setRoundRectOutlineProvider
-import com.xiaocydx.inputview.sample.common.viewLifecycle
 import com.xiaocydx.inputview.sample.common.viewLifecycleScope
 import com.xiaocydx.inputview.sample.databinding.FragmentFigureGridBinding
 import com.xiaocydx.inputview.sample.databinding.ItemFigureGridBinding
@@ -107,36 +105,40 @@ class FigureGridFragment : Fragment() {
         // 收集数字人的列表数据流
         sharedViewModel.figureListFlow
             .onEach(figureAdapter.listCollector)
-            .launchRepeatOnLifecycle(viewLifecycle)
+            .launchIn(viewLifecycleScope)
     }
 
     private fun launchFigureGridJob() {
         var selectJob: Job? = null
-        sharedViewModel.currentSceneFlow().onEach {
-            val isGrid = it?.editor == FigureGrid
-            if (isGrid) {
-                // Editor更改为FigureGrid，滚动到目标位置
-                val figureState = sharedViewModel.figureState.value
-                binding.rvFigure.scrollToPosition(figureState.currentPosition)
-            }
+        sharedViewModel.currentSceneFlow()
+            .onEach {
+                val isGrid = it?.editor == FigureGrid
+                if (isGrid) {
+                    // Editor更改为FigureGrid，滚动到目标位置
+                    val figureState = sharedViewModel.figureState.value
+                    binding.rvFigure.scrollToPosition(figureState.currentPosition)
+                }
 
-            if (isGrid && selectJob == null) {
-                // Editor更改为FigureGrid，启动selectJob
-                selectJob = launchFigureSelectJob()
-            } else if (!isGrid && selectJob != null) {
-                selectJob?.cancel()
-                selectJob = null
+                if (isGrid && selectJob == null) {
+                    // Editor更改为FigureGrid，启动selectJob
+                    selectJob = launchFigureSelectJob()
+                } else if (!isGrid && selectJob != null) {
+                    selectJob?.cancel()
+                    selectJob = null
+                }
             }
-        }.launchIn(viewLifecycleScope)
+            .launchIn(viewLifecycleScope)
     }
 
     private fun launchFigureSelectJob() = run {
-        sharedViewModel.currentFigureFlow().onEach {
-            if (it == null) {
-                figureSelection.clearSelected()
-            } else {
-                figureSelection.select(it)
+        sharedViewModel.currentFigureFlow()
+            .onEach {
+                if (it == null) {
+                    figureSelection.clearSelected()
+                } else {
+                    figureSelection.select(it)
+                }
             }
-        }.launchIn(viewLifecycleScope)
+            .launchIn(viewLifecycleScope)
     }
 }

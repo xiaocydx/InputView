@@ -9,7 +9,6 @@ import com.xiaocydx.inputview.FadeEditorAnimator
 import com.xiaocydx.inputview.InputView
 import com.xiaocydx.inputview.Insets.Decor
 import com.xiaocydx.inputview.init
-import com.xiaocydx.inputview.sample.common.launchRepeatOnLifecycle
 import com.xiaocydx.inputview.sample.common.snackbar
 import com.xiaocydx.inputview.sample.databinding.ActivityFigureEditBinding
 import com.xiaocydx.inputview.sample.transform.figure.PendingView.Request
@@ -26,6 +25,7 @@ import com.xiaocydx.insets.insets
 import com.xiaocydx.insets.navigationBars
 import com.xiaocydx.insets.statusBars
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
@@ -95,27 +95,29 @@ class FigureEditActivity : AppCompatActivity() {
 
     private fun launchUpdatePageJob() {
         var requestJob: Job? = null
-        sharedViewModel.figureState.onEach {
-            figurePager.updateCurrentPage(it.currentPosition)
-            textPager.updateCurrentPage(it.currentText)
-            if (it.pendingRemove != null) {
-                window.snackbar().setText("已删除").show()
-                sharedViewModel.consumePendingRemove()
-            }
-            if (it.pendingScene != null) {
-                overlay.go(it.pendingScene.scene)
-                sharedViewModel.consumePendingScene(overlay.current)
-            }
-            if (it.pendingView is Request) {
-                requestJob?.cancel()
-                requestJob = lifecycleScope.launch {
-                    val ref = when (it.pendingView) {
-                        Request.Figure -> figurePager.awaitFigureView()
-                        Request.Text -> textPager.textView()
+        sharedViewModel.figureState
+            .onEach {
+                figurePager.updateCurrentPage(it.currentPosition)
+                textPager.updateCurrentPage(it.currentText)
+                if (it.pendingRemove != null) {
+                    window.snackbar().setText("已删除").show()
+                    sharedViewModel.consumePendingRemove()
+                }
+                if (it.pendingScene != null) {
+                    overlay.go(it.pendingScene.scene)
+                    sharedViewModel.consumePendingScene(overlay.current)
+                }
+                if (it.pendingView is Request) {
+                    requestJob?.cancel()
+                    requestJob = lifecycleScope.launch {
+                        val ref = when (it.pendingView) {
+                            Request.Figure -> figurePager.awaitFigureView()
+                            Request.Text -> textPager.textView()
+                        }
+                        sharedViewModel.consumePendingView(Result(ref))
                     }
-                    sharedViewModel.consumePendingView(Result(ref))
                 }
             }
-        }.launchRepeatOnLifecycle(lifecycle)
+            .launchIn(lifecycleScope)
     }
 }
