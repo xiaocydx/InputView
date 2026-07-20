@@ -47,7 +47,7 @@ inline fun View.getPaddings(paddings: Rect, change: Rect.() -> Unit = {}) {
  * 更新View的`paddings`
  */
 fun View.updatePaddings(paddings: Rect) {
-    paddings.apply { updatePadding(left, top, right, bottom) }
+    paddings.apply { setPadding(left, top, right, bottom) }
 }
 
 /**
