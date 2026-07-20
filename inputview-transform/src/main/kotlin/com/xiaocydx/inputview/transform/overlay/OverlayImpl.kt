@@ -389,6 +389,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
         override fun onAnimationStart(animation: AnimationState) {
             transformState.preStart(animation)
             dispatchMatchTransformers { onStart(transformState) }
+            dispatchMatchTransformers { onUpdate(transformState) }
         }
 
         override fun onAnimationUpdate(animation: AnimationState) {
@@ -577,7 +578,7 @@ internal class OverlayImpl<S : Scene<C, E>, C : Content, E : Editor>(
         }
 
         fun preStart(animation: AnimationState) {
-            setOffset(animation)
+            preUpdate(animation)
         }
 
         fun preUpdate(animation: AnimationState) {
